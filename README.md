@@ -48,7 +48,7 @@ Variáveis opcionais:
 |----------|-----------|
 | `PORT` | Porta (padrão `8080`) |
 | `NODE_ENV` | `production` valida certificados TLS no scraping |
-| `WS_AUTH_TOKEN` | Exige `?token=` na conexão WebSocket |
+| `WS_AUTH_TOKEN` | Exige `?token=` na conexão WebSocket (ver [`server/.env.example`](server/.env.example)) |
 | `RATE_LIMIT_MAX` | Limite de mensagens por IP |
 
 ## App Android

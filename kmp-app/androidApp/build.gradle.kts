@@ -65,6 +65,7 @@ android {
             buildConfigField("String", "WS_HOST", "\"10.0.2.2\"")
             buildConfigField("int", "WS_PORT", "8080")
             buildConfigField("String", "WS_SCHEME", "\"ws\"")
+            buildConfigField("String", "WS_AUTH_TOKEN", "\"\"")
         }
         create("staging") {
             dimension = "environment"
@@ -73,12 +74,14 @@ android {
             buildConfigField("String", "WS_HOST", "\"staging-api.caninde.ce.gov.br\"")
             buildConfigField("int", "WS_PORT", "443")
             buildConfigField("String", "WS_SCHEME", "\"wss\"")
+            buildConfigField("String", "WS_AUTH_TOKEN", "\"\"")
         }
         create("prod") {
             dimension = "environment"
             buildConfigField("String", "WS_HOST", "\"transparencia.caninde.ce.gov.br\"")
             buildConfigField("int", "WS_PORT", "443")
             buildConfigField("String", "WS_SCHEME", "\"wss\"")
+            buildConfigField("String", "WS_AUTH_TOKEN", "\"\"")
         }
     }
 

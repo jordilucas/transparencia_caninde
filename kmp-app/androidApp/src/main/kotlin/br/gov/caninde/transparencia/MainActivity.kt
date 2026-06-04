@@ -19,6 +19,7 @@ class MainActivity : ComponentActivity() {
                 scheme = BuildConfig.WS_SCHEME,
                 host = BuildConfig.WS_HOST,
                 port = BuildConfig.WS_PORT,
+                authToken = BuildConfig.WS_AUTH_TOKEN,
             )
             startKoin { modules(createAppModule(endpoint)) }
             Koin.setStarted()

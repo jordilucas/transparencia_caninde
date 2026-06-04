@@ -57,7 +57,7 @@ cd kmp-app
 
 ```bash
 # Build + install
-./gradlew installDevDebug
+cd kmp-app && ./gradlew :androidApp:installDevDebug
 
 # Abrir app
 adb shell am start -n br.gov.caninde.transparencia.dev/.MainActivity

@@ -1,84 +1,33 @@
-// ─── buildTypes e productFlavors para diferentes ambientes ───────────────────
-// Adicione ao androidApp/build.gradle.kts
+# Variantes de build (Android)
 
-android {
-    // ... configurações anteriores ...
+Configuração ativa em [`androidApp/build.gradle.kts`](androidApp/build.gradle.kts).
 
-    // Variantes de build
-    buildTypes {
-        debug {
-            debuggable = true
-            minifyEnabled = false
-            buildConfigField("String", "WS_HOST", "\"10.0.2.2\"")  // Emulador
-            buildConfigField("int", "WS_PORT", "8080")
-            buildConfigField("String", "WS_SCHEME", "\"ws\"")
-        }
+## Product flavors (`environment`)
 
-        release {
-            debuggable = false
-            minifyEnabled = true
-            shrinkResources = true
-            buildConfigField("String", "WS_HOST", "\"transparencia.caninde.ce.gov.br\"")
-            buildConfigField("int", "WS_PORT", "443")
-            buildConfigField("String", "WS_SCHEME", "\"wss\"")
-            signingConfig = signingConfigs.getByName("release")
-        }
-    }
+| Flavor | `WS_HOST` | `WS_PORT` | `WS_SCHEME` | `applicationId` |
+|--------|-----------|-----------|-------------|-----------------|
+| **dev** | `10.0.2.2` | `8080` | `ws` | `…transparencia.dev` |
+| **staging** | `staging-api.caninde.ce.gov.br` | `443` | `wss` | `…transparencia.staging` |
+| **prod** | `transparencia.caninde.ce.gov.br` | `443` | `wss` | `…transparencia` |
 
-    // Flavores de build (dev, staging, prod)
-    flavorDimensions.add("environment")
-    productFlavors {
-        create("dev") {
-            dimension = "environment"
-            applicationIdSuffix = ".dev"
-            versionNameSuffix = "-dev"
-            buildConfigField("String", "WS_HOST", "\"10.0.2.2\"")
-            buildConfigField("int", "WS_PORT", "8080")
-            buildConfigField("String", "API_ENV", "\"development\"")
-        }
+`WS_AUTH_TOKEN` fica vazio em dev; em staging/prod defina no Gradle se o servidor exigir `?token=` (ver `server/.env.example`).
 
-        create("staging") {
-            dimension = "environment"
-            applicationIdSuffix = ".staging"
-            versionNameSuffix = "-staging"
-            buildConfigField("String", "WS_HOST", "\"staging-api.caninde.ce.gov.br\"")
-            buildConfigField("int", "WS_PORT", "443")
-            buildConfigField("String", "WS_SCHEME", "\"wss\"")
-            buildConfigField("String", "API_ENV", "\"staging\"")
-        }
+## Comandos
 
-        create("prod") {
-            dimension = "environment"
-            buildConfigField("String", "WS_HOST", "\"transparencia.caninde.ce.gov.br\"")
-            buildConfigField("int", "WS_PORT", "443")
-            buildConfigField("String", "WS_SCHEME", "\"wss\"")
-            buildConfigField("String", "API_ENV", "\"production\"")
-        }
-    }
+```bash
+cd kmp-app
 
-    // Signing config
-    signingConfigs {
-        create("release") {
-            storeFile = file(System.getenv("KEYSTORE_FILE") ?: "release.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("KEY_ALIAS") ?: ""
-            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
-        }
-    }
-}
+# Desenvolvimento (emulador → host local)
+./gradlew :androidApp:installDevDebug
 
-// ────────────────────────────────────────────────────────────────────────────
+# Staging / produção
+./gradlew :androidApp:assembleStagingDebug
+./gradlew :androidApp:assembleProdRelease
+```
 
-// Build commands:
-//
-// Desenvolvimento (emulador):
-// ./gradlew installDevDebug
-// ./gradlew runDevDebug
-//
-// Staging:
-// ./gradlew assembleStaging
-// ./gradlew installStagingRelease
-//
-// Produção:
-// ./gradlew assembleProdRelease
-// ./gradlew bundleProdRelease
+## Rede
+
+- **dev:** cleartext permitido para `10.0.2.2` em [`network_security_config.xml`](androidApp/src/main/res/xml/network_security_config.xml).
+- **staging/prod:** apenas `wss` (TLS).
+
+O endpoint é injetado no Koin em `MainActivity` via `WebSocketEndpoint` (sem reflexão em `BuildConfig` no módulo shared).
