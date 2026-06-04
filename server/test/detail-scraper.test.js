@@ -33,6 +33,14 @@ describe('scraper-detail-camara', () => {
     assert.equal(normalizeWhatsapp('https://wa.me/?text=x'), '');
     assert.equal(normalizeWhatsapp('https://www.addtoany.com/share'), '');
   });
+
+  it('resolveHref absolutiza PDF relativo', () => {
+    const { resolveHref } = require('../lib/scraper-detail-camara');
+    assert.equal(
+      resolveHref('/wp-content/uploads/doc.pdf'),
+      'https://www.cmcaninde.ce.gov.br/wp-content/uploads/doc.pdf',
+    );
+  });
 });
 
 describe('scraper-detail-prefeitura', () => {

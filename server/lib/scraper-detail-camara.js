@@ -2,6 +2,14 @@
 
 const BASE = 'https://www.cmcaninde.ce.gov.br';
 
+function resolveHref(href, base = BASE) {
+  if (!href || typeof href !== 'string') return '';
+  const t = href.trim();
+  if (!t) return '';
+  if (/^https?:\/\//i.test(t)) return t;
+  return `${base}${t.startsWith('/') ? '' : '/'}${t}`;
+}
+
 function emptyContato() {
   return { email: '', telefone: '', whatsapp: '', endereco: '', horarioFuncionamento: '' };
 }
@@ -116,7 +124,12 @@ function scrapeMateriaDetail(html, cheerio, slug) {
     const t = $(el).text().trim();
     if (/tipo/i.test(t) && t.length < 80) tipo = t.replace(/tipo:/i, '').trim();
   });
-  const pdfUrl = $('a[href$=".pdf"]').first().attr('href') || '';
+  let pdfUrl = '';
+  $('a[href*=".pdf" i]').each((_, el) => {
+    if (pdfUrl) return;
+    const href = $(el).attr('href') || '';
+    if (href) pdfUrl = resolveHref(href);
+  });
   const autor = $('h6:contains("AUTOR"), h6').filter((_, el) => /autor/i.test($(el).text())).first().text().replace(/autor:/i, '').trim();
   const resumo = $('.entry-content, article p').first().text().trim().substring(0, 500);
   return {
@@ -159,6 +172,7 @@ function scrapeInstitucionalCamara(html, cheerio) {
 
 module.exports = {
   BASE,
+  resolveHref,
   normalizeWhatsapp,
   scrapeVereadorDetail,
   scrapeMateriaDetail,

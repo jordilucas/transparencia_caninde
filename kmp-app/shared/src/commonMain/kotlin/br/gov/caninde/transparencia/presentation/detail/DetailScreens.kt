@@ -92,23 +92,55 @@ fun DetailBodyText(text: String) {
 }
 
 @Composable
-fun DetailPortalLink(url: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable { openExternalUrl(url) }
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Icon(
-            Icons.AutoMirrored.Filled.OpenInNew,
-            contentDescription = null,
-            tint = AppColors.Blue500,
-            modifier = Modifier.size(18.dp),
-        )
-        Text("Abrir no portal", fontSize = 13.sp, color = AppColors.Blue500, fontWeight = FontWeight.Medium)
+fun DetailPortalLink(url: String, baseUrl: String = CAMARA_PORTAL_BASE) {
+    DetailLinkAction(
+        label = "Portal",
+        url = url,
+        baseUrl = baseUrl,
+        actionText = "Abrir no portal",
+        usePdfIcon = false,
+    )
+}
+
+/** Link ou PDF clicável — abre em app externo (navegador / visualizador de PDF). */
+@Composable
+fun DetailLinkAction(
+    label: String,
+    url: String,
+    baseUrl: String = CAMARA_PORTAL_BASE,
+    actionText: String? = null,
+    usePdfIcon: Boolean? = null,
+) {
+    val resolved = remember(url, baseUrl) { resolveAbsoluteUrl(url, baseUrl) }
+    if (resolved.isBlank()) return
+    val isPdf = usePdfIcon ?: isPdfLink(resolved)
+    val text = actionText ?: if (isPdf) pdfLinkLabel(resolved) else "Abrir link"
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, fontSize = 10.sp, color = AppColors.TextTertiary, fontWeight = FontWeight.Medium)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { openExternalUrl(resolved) }
+                .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                if (isPdf) Icons.Default.PictureAsPdf else Icons.AutoMirrored.Filled.OpenInNew,
+                contentDescription = null,
+                tint = AppColors.Blue500,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text,
+                fontSize = 13.sp,
+                color = AppColors.Blue500,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -267,8 +299,15 @@ fun MateriaDetailScreen(viewModel: TransparenciaViewModel, slug: String, onBack:
             if (it.autor.isNotBlank()) DetailField("Autor", it.autor)
             if (it.dataPublicacao.isNotBlank()) DetailField("Publicação", it.dataPublicacao)
             if (it.resumo.isNotBlank()) DetailField("Resumo", it.resumo)
-            if (it.pdfUrl.isNotBlank()) DetailField("PDF", it.pdfUrl)
-            if (it.url.isNotBlank()) Text("Portal: ${it.url}", fontSize = 11.sp, color = AppColors.Blue500)
+            if (it.pdfUrl.isNotBlank()) {
+                DetailLinkAction(
+                    label = "Documento PDF",
+                    url = it.pdfUrl,
+                    baseUrl = CAMARA_PORTAL_BASE,
+                    usePdfIcon = true,
+                )
+            }
+            if (it.url.isNotBlank()) DetailPortalLink(it.url, CAMARA_PORTAL_BASE)
         }
     }
 }
@@ -284,7 +323,7 @@ fun SecretariaDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
             if (it.secretario.isNotBlank()) DetailField("Secretário(a)", it.secretario)
             DetailSectionHeader("Contato")
             ContatoSection(it.contato)
-            if (it.url.isNotBlank()) DetailPortalLink(it.url)
+            if (it.url.isNotBlank()) DetailPortalLink(it.url, PREFEITURA_PORTAL_BASE)
         }
     }
 }
@@ -302,7 +341,14 @@ fun ContratoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onBa
             DetailField("Valor", it.valor.ifBlank { "—" })
             DetailField("Empresa", it.empresa.ifBlank { "—" })
             DetailField("Data", it.data.ifBlank { "—" })
-            if (it.url.isNotBlank()) Text("Link: ${it.url}", fontSize = 11.sp, color = AppColors.Blue500)
+            if (it.url.isNotBlank()) {
+                val resolved = resolveAbsoluteUrl(it.url, PREFEITURA_PORTAL_BASE)
+                DetailLinkAction(
+                    label = if (isPdfLink(resolved)) "Documento PDF" else "Link",
+                    url = it.url,
+                    baseUrl = PREFEITURA_PORTAL_BASE,
+                )
+            }
         }
     }
 }
@@ -319,7 +365,14 @@ fun LicitacaoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onB
             DetailField("Modalidade", it.modalidade.ifBlank { "—" })
             DetailField("Objeto", it.objeto.ifBlank { "—" })
             DetailField("Situação", it.situacao.ifBlank { "—" })
-            if (it.url.isNotBlank()) Text("Link: ${it.url}", fontSize = 11.sp, color = AppColors.Blue500)
+            if (it.url.isNotBlank()) {
+                val resolved = resolveAbsoluteUrl(it.url, PREFEITURA_PORTAL_BASE)
+                DetailLinkAction(
+                    label = if (isPdfLink(resolved)) "Documento PDF" else "Link",
+                    url = it.url,
+                    baseUrl = PREFEITURA_PORTAL_BASE,
+                )
+            }
         }
     }
 }
@@ -334,7 +387,7 @@ fun SessaoDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack: ()
         s?.let {
             if (it.data.isNotBlank()) DetailField("Data", it.data)
             if (it.resumo.isNotBlank()) DetailField("Resumo", it.resumo)
-            if (it.url.isNotBlank()) DetailPortalLink(it.url)
+            if (it.url.isNotBlank()) DetailPortalLink(it.url, CAMARA_PORTAL_BASE)
         }
     }
 }

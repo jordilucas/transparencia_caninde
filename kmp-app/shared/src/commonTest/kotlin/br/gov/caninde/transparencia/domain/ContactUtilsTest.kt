@@ -26,6 +26,16 @@ class ContactUtilsTest {
     }
 }
 
+class LinkUtilsTest {
+
+    @Test
+    fun resolveRelativePdfUrl() {
+        val url = resolveAbsoluteUrl("/docs/materia.pdf", CAMARA_PORTAL_BASE)
+        assertEquals("https://www.cmcaninde.ce.gov.br/docs/materia.pdf", url)
+        assert(isPdfLink(url))
+    }
+}
+
 class BioUtilsTest {
 
     @Test
