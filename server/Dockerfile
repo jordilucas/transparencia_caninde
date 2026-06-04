@@ -2,24 +2,15 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Install dependencies
-RUN npm ci --only=production
+COPY server.js ./
+COPY lib ./lib
 
-# Copy application
-COPY server.js .
-
-# Create logs directory
-RUN mkdir -p logs
-
-# Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:8080', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:8080/health || exit 1
 
-# Start application
 CMD ["node", "server.js"]

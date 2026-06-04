@@ -8,6 +8,7 @@
  *  - Câmara     : https://www.cmcaninde.ce.gov.br (+ governotransparente.com.br id=11979588)
  */
 
+const http = require('http');
 const WebSocket = require('ws');
 const axios = require('axios');
 const cheerio = require('cheerio');
@@ -193,8 +194,24 @@ async function payloadForSource(source, forceScrape) {
   return null;
 }
 
-// ─── WebSocket server ─────────────────────────────────────────────────────────
-const wss = new WebSocket.Server({ port: PORT });
+// ─── HTTP + WebSocket (mesma porta; /health para hospedagem) ─────────────────
+const httpServer = http.createServer((req, res) => {
+  const path = (req.url || '/').split('?')[0];
+  if (path === '/health' || path === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      ok: true,
+      service: 'transparencia-caninde-ws',
+      wsClients: wss.clients.size,
+      lastUpdated: cache.lastUpdated,
+    }));
+    return;
+  }
+  res.writeHead(404, { 'Content-Type': 'text/plain' });
+  res.end('Not Found');
+});
+
+const wss = new WebSocket.Server({ server: httpServer });
 
 wss.on('connection', (ws, req) => {
   const ip = extractClientIp(req);
@@ -309,13 +326,14 @@ async function initAndSchedule() {
   }, CAMARA_INTERVAL);
 }
 
-wss.on('listening', () => {
+httpServer.listen(PORT, () => {
   console.log(`\n🚀 Servidor WebSocket rodando na porta ${PORT}`);
   console.log(`   ws://localhost:${PORT}`);
+  console.log(`   health: http://localhost:${PORT}/health`);
   console.log(`   NODE_ENV=${process.env.NODE_ENV || 'development'} TLS verify=${config.isProduction}`);
   if (config.wsAuthToken) console.log('   Autenticação WS: token obrigatório (?token=...)');
   console.log('');
   initAndSchedule();
 });
 
-wss.on('error', (err) => console.error('[WS Server] erro:', err));
+httpServer.on('error', (err) => console.error('[WS Server] erro:', err));

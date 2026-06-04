@@ -18,7 +18,7 @@ services:
     networks:
       - transparencia-net
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3

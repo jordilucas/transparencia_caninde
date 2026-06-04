@@ -71,7 +71,7 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            buildConfigField("String", "WS_HOST", "\"staging-api.caninde.ce.gov.br\"")
+            buildConfigField("String", "WS_HOST", "\"transparencia-caninde.onrender.com\"")
             buildConfigField("int", "WS_PORT", "443")
             buildConfigField("String", "WS_SCHEME", "\"wss\"")
             buildConfigField("String", "WS_AUTH_TOKEN", "\"\"")

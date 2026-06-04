@@ -295,6 +295,14 @@ docker compose up
 
 Sobe o servidor na porta **8080** ([`docker-compose.yml`](docker-compose.yml)).
 
+### Hospedagem gratuita (nuvem)
+
+Deploy no **Render** (plano free) com um clique via [`render.yaml`](render.yaml). Guia completo: [`docs/HOSPEDAGEM-GRATUITA.md`](docs/HOSPEDAGEM-GRATUITA.md).
+
+- URL WebSocket (staging): `wss://transparencia-caninde.onrender.com`
+- Health check: `GET /health`
+- Alternativa 24/7: [Fly.io](docs/HOSPEDAGEM-GRATUITA.md#alternativa-flyio-mais-estável-247) (`server/fly.toml`)
+
 ## App Android
 
 ```bash

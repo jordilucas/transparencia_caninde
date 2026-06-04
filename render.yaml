@@ -1,0 +1,22 @@
+# Blueprint Render (plano gratuito) — conecte o repositório em https://dashboard.render.com
+# Documentação: docs/HOSPEDAGEM-GRATUITA.md
+
+services:
+  - type: web
+    name: transparencia-caninde
+    runtime: node
+    rootDir: server
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RATE_LIMIT_MAX
+        value: "120"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      # Defina no painel Render (recomendado em produção pública):
+      # - key: WS_AUTH_TOKEN
+      #   sync: false
