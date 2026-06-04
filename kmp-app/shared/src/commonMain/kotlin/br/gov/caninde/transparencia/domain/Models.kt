@@ -20,6 +20,8 @@ data class WsPayload(
     val licitacoes: List<Licitacao>? = null,
     val diariosOficiais: List<String>? = null,
     val secretarias: List<Secretaria>? = null,
+    val publicacoes: List<Publicacao>? = null,
+    val linksTransparencia: List<LinkExterno>? = null,
     val resumo: ResumoPrefeitura? = null,
     val resumoCamara: ResumoCamara? = null,
     val scrapedAt: String? = null,
@@ -74,21 +76,44 @@ data class Gestor(
 
 @Serializable
 data class Contrato(
+    val id: String = "",
     val numero: String = "",
     val objeto: String = "",
     val valor: String = "",
     val empresa: String = "",
     val data: String = "",
     val url: String = "",
+    val cnpjCredor: String = "",
+    val secretaria: String = "",
+    val modalidade: String = "",
+    val pdfUrl: String = "",
 )
 
 @Serializable
 data class Licitacao(
+    val id: String = "",
     val numero: String = "",
     val modalidade: String = "",
     val objeto: String = "",
     val situacao: String = "",
     val url: String = "",
+    val dataAbertura: String = "",
+)
+
+@Serializable
+data class Publicacao(
+    val id: String = "",
+    val titulo: String = "",
+    val tipo: String = "",
+    val data: String = "",
+    val url: String = "",
+)
+
+@Serializable
+data class LinkExterno(
+    val titulo: String = "",
+    val url: String = "",
+    val categoria: String = "",
 )
 
 @Serializable
@@ -104,6 +129,7 @@ data class Secretaria(
 data class ResumoPrefeitura(
     val totalContratos: Int = 0,
     val totalLicitacoes: Int = 0,
+    val totalPublicacoes: Int = 0,
     val exercicio: Int = 2025,
 )
 
@@ -204,7 +230,9 @@ data class PrefeituraUiState(
     val contratos: List<Contrato> = emptyList(),
     val licitacoes: List<Licitacao> = emptyList(),
     val diariosOficiais: List<String> = emptyList(),
+    val publicacoes: List<Publicacao> = emptyList(),
     val secretarias: List<Secretaria> = emptyList(),
+    val linksTransparencia: List<LinkExterno> = emptyList(),
     val graficos: GraficosPayload? = null,
     val resumo: ResumoPrefeitura = ResumoPrefeitura(),
     val lastUpdated: String = "",
@@ -217,6 +245,7 @@ data class CamaraUiState(
     val sessoes: List<Sessao> = emptyList(),
     val materias: List<Materia> = emptyList(),
     val mesaDiretora: List<MembroMesa> = emptyList(),
+    val linksTransparencia: List<LinkExterno> = emptyList(),
     val graficos: GraficosPayload? = null,
     val resumo: ResumoCamara = ResumoCamara(),
     val lastUpdated: String = "",

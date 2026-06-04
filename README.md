@@ -23,6 +23,7 @@ caninde.ce.gov.br  +  cmcaninde.ce.gov.br
 | [`server/`](server/) | Scraping Cheerio/Axios + broadcast WebSocket |
 | [`kmp-app/`](kmp-app/) | UI e lógica KMP (`:shared`, `:androidApp`) |
 | [`API.md`](API.md) | Contrato das mensagens WebSocket |
+| [`docs/ROADMAP-DADOS.md`](docs/ROADMAP-DADOS.md) | Roadmap de fontes de dados e fases de implementação (continuidade) |
 | [`docker-compose.yml`](docker-compose.yml) | Sobe o servidor na porta 8080 |
 
 ## Pré-requisitos

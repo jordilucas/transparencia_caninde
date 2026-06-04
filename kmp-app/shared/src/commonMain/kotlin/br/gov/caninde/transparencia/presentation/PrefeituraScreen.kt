@@ -16,6 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.domain.*
+import br.gov.caninde.transparencia.platform.openExternalUrl
+import br.gov.caninde.transparencia.domain.PREFEITURA_PORTAL_BASE
+import br.gov.caninde.transparencia.domain.resolveAbsoluteUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,7 +33,7 @@ fun PrefeituraScreen(
     onInstitucionalClick: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Contratos", "Licitações", "Diário Oficial", "Secretarias")
+    val tabs = listOf("Contratos", "Licitações", "Publicações", "Secretarias", "Transparência")
 
     Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
 
@@ -104,7 +107,7 @@ fun PrefeituraScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         MetricCard(
-                            label = "Contratos ativos",
+                            label = "Contratos",
                             value = "${state.resumo.totalContratos}",
                             delta = "Exercício ${state.resumo.exercicio}",
                             modifier = Modifier.weight(1f)
@@ -112,9 +115,28 @@ fun PrefeituraScreen(
                         MetricCard(
                             label = "Licitações",
                             value = "${state.resumo.totalLicitacoes}",
-                            delta = "abertas no ano",
+                            delta = "no exercício",
                             modifier = Modifier.weight(1f)
                         )
+                    }
+                    if (state.resumo.totalPublicacoes > 0) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            MetricCard(
+                                label = "Publicações",
+                                value = "${state.resumo.totalPublicacoes}",
+                                delta = "diário e atos",
+                                modifier = Modifier.weight(1f)
+                            )
+                            MetricCard(
+                                label = "Secretarias",
+                                value = "${state.secretarias.size}",
+                                delta = "com gestor",
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                     LastUpdatedText(state.lastUpdated)
                 }
@@ -143,8 +165,12 @@ fun PrefeituraScreen(
                 when (selectedTab) {
                     0 -> contratosItems(state.contratos, onContratoClick)
                     1 -> licitacoesItems(state.licitacoes, onLicitacaoClick)
-                    2 -> diariosItems(state.diariosOficiais)
+                    2 -> publicacoesItems(state.publicacoes, state.diariosOficiais)
                     3 -> secretariasItems(state.secretarias, onSecretariaClick)
+                    4 -> {
+                        item { TransparenciaLinksIntro("a Prefeitura") }
+                        transparenciaLinksItems(state.linksTransparencia)
+                    }
                 }
 
                 item { Spacer(Modifier.height(80.dp)) }
@@ -178,7 +204,11 @@ fun ContratosRow(c: Contrato, onClick: (() -> Unit)? = null) {
             }
         },
         title = c.objeto.ifEmpty { "Contrato ${c.numero}" },
-        subtitle = c.empresa.ifEmpty { c.data },
+        subtitle = listOfNotNull(
+            c.empresa.takeIf { it.isNotBlank() },
+            c.secretaria.takeIf { it.isNotBlank() },
+            c.data.takeIf { it.isNotBlank() },
+        ).joinToString(" · ").ifEmpty { c.numero },
         trailing = {
             Column(horizontalAlignment = Alignment.End) {
                 Text(c.valor, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
@@ -208,7 +238,10 @@ fun LazyListScope.licitacoesItems(licitacoes: List<Licitacao>, onClick: (Licitac
                 }
             },
             title = l.objeto.ifEmpty { "Licitação ${l.numero}" },
-            subtitle = l.modalidade,
+            subtitle = listOfNotNull(
+                l.modalidade.takeIf { it.isNotBlank() },
+                l.dataAbertura.takeIf { it.isNotBlank() },
+            ).joinToString(" · ").ifEmpty { l.numero },
             trailing = { StatusBadge(l.situacao.ifEmpty { "Aberta" }) },
             onClick = { onClick(l) },
         )
@@ -217,15 +250,45 @@ fun LazyListScope.licitacoesItems(licitacoes: List<Licitacao>, onClick: (Licitac
     }
 }
 
-// ─── Diário Oficial ───────────────────────────────────────────────────────────
+// ─── Publicações / Diário ─────────────────────────────────────────────────────
 
-fun LazyListScope.diariosItems(diarios: List<String>) {
-    item { SectionHeader(title = "Diário Oficial") }
-    if (diarios.isEmpty()) {
+fun LazyListScope.publicacoesItems(publicacoes: List<Publicacao>, diariosFallback: List<String>) {
+    item { SectionHeader(title = "Publicações oficiais", action = "") }
+    if (publicacoes.isNotEmpty()) {
+        items(publicacoes) { p ->
+            ListRow(
+                icon = {
+                    IconContainer(AppColors.Green100) {
+                        Icon(Icons.Default.Article, contentDescription = null,
+                            tint = AppColors.Green700, modifier = Modifier.size(18.dp))
+                    }
+                },
+                title = p.titulo,
+                subtitle = listOfNotNull(
+                    p.tipo.takeIf { it.isNotBlank() },
+                    p.data.takeIf { it.isNotBlank() },
+                ).joinToString(" · "),
+                trailing = {
+                    Icon(Icons.Default.OpenInNew, contentDescription = null,
+                        tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
+                },
+                onClick = {
+                    if (p.url.isNotBlank()) {
+                        openExternalUrl(resolveAbsoluteUrl(p.url, PREFEITURA_PORTAL_BASE))
+                    }
+                },
+            )
+            HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
+                modifier = Modifier.padding(horizontal = 16.dp))
+        }
+        return
+    }
+    if (diariosFallback.isEmpty()) {
         item { EmptyState("Nenhuma publicação encontrada") }
         return
     }
-    items(diarios) { d ->
+    items(diariosFallback.size) { index ->
+        val d = diariosFallback[index]
         ListRow(
             icon = {
                 IconContainer(AppColors.Green100) {
@@ -233,12 +296,9 @@ fun LazyListScope.diariosItems(diarios: List<String>) {
                         tint = AppColors.Green700, modifier = Modifier.size(18.dp))
                 }
             },
-            title = d.take(80),
-            subtitle = "",
-            trailing = {
-                Icon(Icons.Default.ChevronRight, contentDescription = null,
-                    tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
-            }
+            title = d.take(120),
+            subtitle = "Diário oficial",
+            trailing = {},
         )
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))
@@ -262,7 +322,10 @@ fun LazyListScope.secretariasItems(secretarias: List<Secretaria>, onClick: (Secr
                 }
             },
             title = s.nome,
-            subtitle = s.secretario,
+            subtitle = listOfNotNull(
+                s.secretario.takeIf { it.isNotBlank() },
+                s.contato.email.takeIf { it.isNotBlank() },
+            ).joinToString(" · "),
             trailing = {
                 Icon(Icons.Default.ChevronRight, contentDescription = null,
                     tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))

@@ -106,18 +106,19 @@ function scrapeMesaDiretoraFromHtml(html, cheerio) {
 function scrapeSessoesFromHtml(html, cheerio) {
   const $ = cheerio.load(html);
   const sessoes = [];
-  $('h3.mb-0').each((i, el) => {
-    if (i >= 12) return false;
-    const block = $(el);
-    const titulo = block.find('span, a').first().text().trim() || block.text().trim();
-    const parent = block.parent();
-    const data = parent.find('p, small').first().text().trim().substring(0, 80);
-    const url = block.find('a').attr('href') || '';
-    if (titulo && titulo.length > 3) {
+  $('h3.mb-0, article h2 a, .video a').each((i, el) => {
+    if (i >= 15) return false;
+    const block = $(el).closest('article, .card, li').length ? $(el).closest('article, .card, li') : $(el).parent();
+    const linkEl = block.find('a[href*="/video/"], a[href*="/sessao"]').first();
+    const titulo = (linkEl.text() || $(el).text()).trim();
+    const href = linkEl.attr('href') || block.find('a').first().attr('href') || '';
+    const data = block.find('p, small, time').first().text().trim().substring(0, 80);
+    if (titulo && titulo.length > 5) {
+      const url = href.startsWith('http') ? href : (href ? `${BASE}${href.startsWith('/') ? '' : '/'}${href}` : '');
       sessoes.push({
         titulo: titulo.substring(0, 120),
         data,
-        url: url.startsWith('http') ? url : (url ? `${BASE}${url.startsWith('/') ? '' : '/'}${url}` : ''),
+        url,
         resumo: '',
       });
     }

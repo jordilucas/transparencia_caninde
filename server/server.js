@@ -20,6 +20,8 @@ const scraperCamara = require('./lib/scraper-camara');
 const scraperPrefeitura = require('./lib/scraper-prefeitura');
 const { attachCharts } = require('./lib/charts');
 const { createDetailHandler } = require('./lib/detail-handler');
+const dadosAbertos = require('./lib/scraper-prefeitura-dadosabertos');
+const camaraTransp = require('./lib/scraper-camara-transparencia');
 
 const PORT = config.port;
 const PREF_INTERVAL = config.prefInterval;
@@ -72,20 +74,44 @@ function broadcast(wss, type, payload) {
 async function scrapePrefeitura() {
   console.log('[Prefeitura] iniciando scraping...');
   try {
-    // 1. Página principal de transparência
-    const { data: htmlMain } = await http.get('https://www.caninde.ce.gov.br/acessoainformacao.php');
-    const $m = cheerio.load(htmlMain);
+    const year = new Date().getFullYear();
+    let da = null;
+    try {
+      da = await dadosAbertos.scrapePrefeituraDadosAbertos(http, year);
+      console.log(`[Prefeitura] dados abertos JSON — ${da.contratos.length} contratos, ${da.licitacoes.length} licitações`);
+    } catch (e) {
+      console.warn('[Prefeitura] dados abertos indisponível:', e.message);
+    }
 
-    // 2. Contratos
-    const { data: htmlContratos } = await http.get('https://www.caninde.ce.gov.br/contratos.php');
-    const $c = cheerio.load(htmlContratos);
+    let contratos = da?.contratos || [];
+    let licitacoes = da?.licitacoes || [];
+    let secretarias = da?.secretarias || [];
+    const publicacoes = da?.publicacoes || [];
 
-    const contratos = scraperPrefeitura.scrapeContratos($c, 30);
-    const { data: htmlLicit } = await http.get('https://www.caninde.ce.gov.br/licitacao.php');
-    const licitacoes = scraperPrefeitura.scrapeLicitacoes(cheerio.load(htmlLicit), 25);
-    const { data: htmlDiario } = await http.get('https://www.caninde.ce.gov.br/diariolista.php');
-    const diarios = scraperPrefeitura.scrapeDiarios(cheerio.load(htmlDiario), 15);
-    const secretarias = scraperPrefeitura.scrapeSecretariasFromHtml($m).slice(0, 20);
+    if (!contratos.length || !licitacoes.length) {
+      const { data: htmlMain } = await http.get('https://www.caninde.ce.gov.br/acessoainformacao.php');
+      const $m = cheerio.load(htmlMain);
+      if (!contratos.length) {
+        const { data: htmlContratos } = await http.get('https://www.caninde.ce.gov.br/contratos.php');
+        contratos = scraperPrefeitura.scrapeContratos(cheerio.load(htmlContratos), 30);
+      }
+      if (!licitacoes.length) {
+        const { data: htmlLicit } = await http.get('https://www.caninde.ce.gov.br/licitacao.php');
+        licitacoes = scraperPrefeitura.scrapeLicitacoes(cheerio.load(htmlLicit), 25);
+      }
+      if (!secretarias.length) {
+        secretarias = scraperPrefeitura.scrapeSecretariasFromHtml($m).slice(0, 20);
+      }
+    }
+
+    let diarios = publicacoes.slice(0, 15).map((p) => {
+      const t = `${p.titulo}${p.data ? ` — ${p.data}` : ''}`;
+      return t.substring(0, 200);
+    });
+    if (!diarios.length) {
+      const { data: htmlDiario } = await http.get('https://www.caninde.ce.gov.br/diariolista.php');
+      diarios = scraperPrefeitura.scrapeDiarios(cheerio.load(htmlDiario), 15);
+    }
 
     const result = {
       ...scrapeResult.buildPrefeituraPayload({
@@ -93,7 +119,9 @@ async function scrapePrefeitura() {
         licitacoes,
         diariosOficiais: diarios,
         secretarias,
-        fonte: 'https://www.caninde.ce.gov.br/acessoainformacao.php',
+        publicacoes,
+        linksTransparencia: camaraTransp.buildLinksTransparenciaPrefeitura(),
+        fonte: da?.fonte || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
       }),
       scrapedAt: now(),
     };
@@ -131,6 +159,7 @@ async function scrapeCamara() {
         sessoes,
         materias,
         mesaDiretora,
+        linksTransparencia: camaraTransp.buildLinksTransparenciaCamara(),
         fonte: `${scraperCamara.BASE}/parlamentares/`,
       }),
       scrapedAt: now(),

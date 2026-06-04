@@ -15,12 +15,12 @@ function createDetailHandler({ http, cheerio, getCache }) {
 
   function findContrato(cache, id) {
     const list = cache?.prefeitura?.contratos || [];
-    return list.find((c) => c.numero === id) || null;
+    return list.find((c) => c.numero === id || String(c.id) === String(id)) || null;
   }
 
   function findLicitacao(cache, id) {
     const list = cache?.prefeitura?.licitacoes || [];
-    return list.find((l) => l.numero === id) || null;
+    return list.find((l) => l.numero === id || String(l.id) === String(id)) || null;
   }
 
   function findSessao(cache, id) {

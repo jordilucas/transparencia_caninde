@@ -1,0 +1,15 @@
+[
+  {
+    "Id": 101,
+    "NumeroContrato": "001/2025",
+    "Objeto": "Fornecimento de material",
+    "ValorGlobal": 15000.5,
+    "NomeCredor": "Empresa Teste LTDA",
+    "CNPJCPF": "12.345.678/0001-90",
+    "DataContrato": "15/01/2025",
+    "Secretaria": "Saúde",
+    "Modalidade": "Pregão",
+    "Url": "/contratos.php?id=101",
+    "Arquivo": "/uploads/contrato.pdf"
+  }
+]

@@ -10,13 +10,15 @@ function buildPrefeituraPayload({
   licitacoes = [],
   diariosOficiais = [],
   secretarias = [],
+  publicacoes = [],
+  linksTransparencia = [],
   fonte,
   scrapeError = null,
 }) {
   const missing = [];
   if (contratos.length === 0) missing.push('contratos');
   if (licitacoes.length === 0) missing.push('licitações');
-  if (diariosOficiais.length === 0) missing.push('diário oficial');
+  if (diariosOficiais.length === 0 && publicacoes.length === 0) missing.push('diário oficial');
   if (secretarias.length === 0) missing.push('secretarias');
 
   const partial =
@@ -39,9 +41,12 @@ function buildPrefeituraPayload({
     licitacoes,
     diariosOficiais,
     secretarias,
+    publicacoes,
+    linksTransparencia,
     resumo: {
       totalContratos: contratos.length,
       totalLicitacoes: licitacoes.length,
+      totalPublicacoes: publicacoes.length,
       exercicio: new Date().getFullYear(),
     },
     error,
@@ -53,6 +58,7 @@ function buildCamaraPayload({
   sessoes = [],
   materias = [],
   mesaDiretora = [],
+  linksTransparencia = [],
   fonte,
   scrapeError = null,
 }) {
@@ -82,6 +88,7 @@ function buildCamaraPayload({
     sessoes,
     materias,
     mesaDiretora,
+    linksTransparencia,
     resumoCamara: {
       totalParlamentares: parlamentares.length,
       totalSessoes2025: sessoes.length,

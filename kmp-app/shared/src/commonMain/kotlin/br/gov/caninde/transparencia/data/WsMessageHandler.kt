@@ -52,7 +52,9 @@ class WsMessageHandler(
         contratos = p.contratos ?: emptyList(),
         licitacoes = p.licitacoes ?: emptyList(),
         diariosOficiais = p.diariosOficiais ?: emptyList(),
+        publicacoes = p.publicacoes ?: emptyList(),
         secretarias = p.secretarias ?: emptyList(),
+        linksTransparencia = p.linksTransparencia ?: emptyList(),
         graficos = p.graficos,
         resumo = p.resumo ?: ResumoPrefeitura(),
         lastUpdated = p.scrapedAt ?: timestamp,
@@ -65,6 +67,7 @@ class WsMessageHandler(
         sessoes = p.sessoes ?: emptyList(),
         materias = p.materias ?: emptyList(),
         mesaDiretora = p.mesaDiretora ?: emptyList(),
+        linksTransparencia = p.linksTransparencia ?: emptyList(),
         graficos = p.graficos,
         resumo = p.resumoCamara ?: ResumoCamara(
             totalParlamentares = p.parlamentares?.size ?: 0,

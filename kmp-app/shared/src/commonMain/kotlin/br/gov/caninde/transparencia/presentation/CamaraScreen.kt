@@ -29,6 +29,7 @@ fun CamaraScreen(
     onSessaoClick: (Int, Sessao) -> Unit = { _, _ -> },
     onInstitucionalClick: () -> Unit = {},
 ) {
+    var areaLegislativo by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Parlamentares", "Sessões", "Matérias", "Mesa Diretora")
 
@@ -75,30 +76,57 @@ fun CamaraScreen(
                     }
                 }
 
-                // Tabs
-                ScrollableTabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = AppColors.Navy800,
-                    contentColor = AppColors.Blue100,
-                    edgePadding = 12.dp,
-                    indicator = { tabPositions ->
-                        if (selectedTab < tabPositions.size) {
-                            TabRowDefaults.SecondaryIndicator(
-                                Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                                color = AppColors.Blue500
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilterChip(
+                        selected = areaLegislativo,
+                        onClick = { areaLegislativo = true },
+                        label = { Text("Legislativo", fontSize = 11.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = AppColors.Blue500,
+                            selectedLabelColor = AppColors.Blue100,
+                        ),
+                    )
+                    FilterChip(
+                        selected = !areaLegislativo,
+                        onClick = { areaLegislativo = false },
+                        label = { Text("Transparência", fontSize = 11.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = AppColors.Blue500,
+                            selectedLabelColor = AppColors.Blue100,
+                        ),
+                    )
+                }
+
+                if (areaLegislativo) {
+                    ScrollableTabRow(
+                        selectedTabIndex = selectedTab,
+                        containerColor = AppColors.Navy800,
+                        contentColor = AppColors.Blue100,
+                        edgePadding = 12.dp,
+                        indicator = { tabPositions ->
+                            if (selectedTab < tabPositions.size) {
+                                TabRowDefaults.SecondaryIndicator(
+                                    Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                                    color = AppColors.Blue500
+                                )
+                            }
+                        }
+                    ) {
+                        tabs.forEachIndexed { i, t ->
+                            Tab(
+                                selected = selectedTab == i,
+                                onClick = { selectedTab = i },
+                                text = {
+                                    Text(t, fontSize = 12.sp,
+                                        color = if (selectedTab == i) AppColors.Blue100 else AppColors.Blue300)
+                                }
                             )
                         }
-                    }
-                ) {
-                    tabs.forEachIndexed { i, t ->
-                        Tab(
-                            selected = selectedTab == i,
-                            onClick = { selectedTab = i },
-                            text = {
-                                Text(t, fontSize = 12.sp,
-                                    color = if (selectedTab == i) AppColors.Blue100 else AppColors.Blue300)
-                            }
-                        )
                     }
                 }
             }
@@ -109,7 +137,11 @@ fun CamaraScreen(
             ShimmerContent()
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
-                item {
+                if (!areaLegislativo) {
+                    item { TransparenciaLinksIntro("a Câmara Municipal") }
+                    transparenciaLinksItems(state.linksTransparencia, "Canindé Transparente")
+                    item { Spacer(Modifier.height(80.dp)) }
+                } else item {
                     // Cards resumo
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
@@ -154,32 +186,34 @@ fun CamaraScreen(
                     LastUpdatedText(state.lastUpdated)
                 }
 
-                item {
-                    ListRow(
-                        icon = {
-                            IconContainer(AppColors.Blue100) {
-                                Icon(Icons.Default.Info, contentDescription = null,
-                                    tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
-                            }
-                        },
-                        title = "Dados institucionais",
-                        subtitle = "Contato da Câmara",
-                        trailing = {
-                            Icon(Icons.Default.ChevronRight, contentDescription = null,
-                                tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
-                        },
-                        onClick = onInstitucionalClick,
-                    )
-                }
+                if (areaLegislativo) {
+                    item {
+                        ListRow(
+                            icon = {
+                                IconContainer(AppColors.Blue100) {
+                                    Icon(Icons.Default.Info, contentDescription = null,
+                                        tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
+                                }
+                            },
+                            title = "Dados institucionais",
+                            subtitle = "Contato da Câmara",
+                            trailing = {
+                                Icon(Icons.Default.ChevronRight, contentDescription = null,
+                                    tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
+                            },
+                            onClick = onInstitucionalClick,
+                        )
+                    }
 
-                when (selectedTab) {
-                    0 -> parlamentaresItems(state.parlamentares, onVereadorClick)
-                    1 -> sessoesItems(state.sessoes, onSessaoClick)
-                    2 -> materiasItems(state.materias, onMateriaClick)
-                    3 -> mesaDiretoraItems(state.mesaDiretora)
-                }
+                    when (selectedTab) {
+                        0 -> parlamentaresItems(state.parlamentares, onVereadorClick)
+                        1 -> sessoesItems(state.sessoes, onSessaoClick)
+                        2 -> materiasItems(state.materias, onMateriaClick)
+                        3 -> mesaDiretoraItems(state.mesaDiretora)
+                    }
 
-                item { Spacer(Modifier.height(80.dp)) }
+                    item { Spacer(Modifier.height(80.dp)) }
+                }
             }
         }
     }
@@ -264,10 +298,15 @@ fun LazyListScope.sessoesItems(sessoes: List<Sessao>, onClick: (Int, Sessao) -> 
                 }
             },
             title = s.titulo.ifEmpty { "Sessão" },
-            subtitle = s.data,
+            subtitle = s.data.ifBlank { "Sessão legislativa" },
             trailing = {
-                Icon(Icons.Default.ChevronRight, contentDescription = null,
-                    tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
+                if (s.url.isNotBlank()) {
+                    Icon(Icons.Default.PlayCircle, contentDescription = null,
+                        tint = AppColors.Green700, modifier = Modifier.size(18.dp))
+                } else {
+                    Icon(Icons.Default.ChevronRight, contentDescription = null,
+                        tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
+                }
             },
             onClick = { onClick(index, s) },
         )

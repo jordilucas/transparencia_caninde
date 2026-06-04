@@ -124,4 +124,28 @@ class WsMessageHandlerTest {
         assertEquals("99", state.contratos.first().numero)
         assertEquals("timeout", state.error)
     }
+
+    @Test
+    fun toPrefeituraUiStateMapeiaPublicacoesELinks() {
+        val state = handler.toPrefeituraUiState(
+            WsPayload(
+                publicacoes = listOf(Publicacao(id = "1", titulo = "Diário")),
+                linksTransparencia = listOf(LinkExterno(titulo = "Receitas", url = "https://example.com")),
+                resumo = ResumoPrefeitura(totalPublicacoes = 1),
+            ),
+            "2025-06-04T12:00:00Z",
+        )
+        assertEquals(1, state.publicacoes.size)
+        assertEquals(1, state.linksTransparencia.size)
+        assertEquals(1, state.resumo.totalPublicacoes)
+    }
+
+    @Test
+    fun toCamaraUiStateMapeiaLinksTransparencia() {
+        val state = handler.toCamaraUiState(
+            WsPayload(linksTransparencia = listOf(LinkExterno(titulo = "Despesas", url = "https://gt.example"))),
+            "2025-06-04T12:00:00Z",
+        )
+        assertEquals(1, state.linksTransparencia.size)
+    }
 }

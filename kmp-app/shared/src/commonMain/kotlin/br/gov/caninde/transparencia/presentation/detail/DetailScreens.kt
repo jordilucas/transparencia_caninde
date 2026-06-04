@@ -340,12 +340,16 @@ fun ContratoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onBa
             DetailField("Objeto", it.objeto.ifBlank { "—" })
             DetailField("Valor", it.valor.ifBlank { "—" })
             DetailField("Empresa", it.empresa.ifBlank { "—" })
+            if (it.cnpjCredor.isNotBlank()) DetailField("CNPJ/CPF", it.cnpjCredor)
+            if (it.secretaria.isNotBlank()) DetailField("Secretaria", it.secretaria)
+            if (it.modalidade.isNotBlank()) DetailField("Modalidade", it.modalidade)
             DetailField("Data", it.data.ifBlank { "—" })
-            if (it.url.isNotBlank()) {
-                val resolved = resolveAbsoluteUrl(it.url, PREFEITURA_PORTAL_BASE)
+            val docUrl = it.pdfUrl.ifBlank { it.url }
+            if (docUrl.isNotBlank()) {
+                val resolved = resolveAbsoluteUrl(docUrl, PREFEITURA_PORTAL_BASE)
                 DetailLinkAction(
-                    label = if (isPdfLink(resolved)) "Documento PDF" else "Link",
-                    url = it.url,
+                    label = if (isPdfLink(resolved)) "Documento PDF" else "Ver no portal",
+                    url = docUrl,
                     baseUrl = PREFEITURA_PORTAL_BASE,
                 )
             }
@@ -365,6 +369,7 @@ fun LicitacaoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onB
             DetailField("Modalidade", it.modalidade.ifBlank { "—" })
             DetailField("Objeto", it.objeto.ifBlank { "—" })
             DetailField("Situação", it.situacao.ifBlank { "—" })
+            if (it.dataAbertura.isNotBlank()) DetailField("Abertura", it.dataAbertura)
             if (it.url.isNotBlank()) {
                 val resolved = resolveAbsoluteUrl(it.url, PREFEITURA_PORTAL_BASE)
                 DetailLinkAction(
