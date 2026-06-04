@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Brand Colors -->
+    <color name="primary">#1B3A5C</color>
+    <color name="primary_light">#378ADD</color>
+    <color name="primary_dark">#0D2137</color>
+
+    <!-- Secondary Colors -->
+    <color name="secondary">#3B6D11</color>
+    <color name="secondary_light">#EAF3DE</color>
+
+    <!-- Background -->
+    <color name="surface">#F5F7FA</color>
+    <color name="card">#FFFFFF</color>
+
+    <!-- Text -->
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#4B5563</color>
+    <color name="text_tertiary">#9CA3AF</color>
+
+    <!-- Status -->
+    <color name="success">#3B6D11</color>
+    <color name="warning">#854F0B</color>
+    <color name="error">#A32D2D</color>
+
+    <!-- Divider -->
+    <color name="divider">#E8EBF0</color>
+</resources>

@@ -1,0 +1,54 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Gradle
+.gradle/
+build/
+*.apk
+*.aab
+
+# Android
+.idea/
+.DS_Store
+local.properties
+*.iml
+*.iws
+*.ipr
+*.swp
+*.swo
+
+# iOS
+Pods/
+*.xcworkspace/
+DerivedData/
+
+# Kotlin
+.kotlin/
+out/
+
+# IDE
+*.sublime-project
+*.sublime-workspace
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Misc
+.cache
+dist/
+coverage/

@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  transparencia-ws:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: transparencia-caninde-ws
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      # WS_AUTH_TOKEN: "defina-um-token-secreto"  # opcional: exige ?token= no WebSocket
+      RATE_LIMIT_MAX: 120
+      RATE_LIMIT_WINDOW_MS: 60000
+    restart: unless-stopped
+    networks:
+      - transparencia-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    volumes:
+      - ./server/logs:/app/logs
+
+networks:
+  transparencia-net:
+    driver: bridge
+
+volumes:
+  logs:

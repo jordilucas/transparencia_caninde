@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Transparência Canindé</string>
+    <string name="prefeitura">Prefeitura</string>
+    <string name="camara">Câmara</string>
+    <string name="graficos">Gráficos</string>
+    <string name="busca">Busca</string>
+    <string name="contratos">Contratos</string>
+    <string name="licitacoes">Licitações</string>
+    <string name="diario_oficial">Diário Oficial</string>
+    <string name="secretarias">Secretarias</string>
+    <string name="vereadores">Vereadores</string>
+    <string name="sessoes">Sessões</string>
+    <string name="materias">Matérias</string>
+    <string name="mesa_diretora">Mesa Diretora</string>
+    <string name="atualizar">Atualizar</string>
+    <string name="conectando">Conectando ao servidor…</string>
+    <string name="reconectando">Reconectando…</string>
+    <string name="sem_conexao">Sem conexão</string>
+    <string name="tempo_real">Tempo real</string>
+</resources>
