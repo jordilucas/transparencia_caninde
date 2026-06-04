@@ -8,29 +8,37 @@ import kotlinx.serialization.Serializable
 data class WsMessage(
     val type: String,
     val payload: WsPayload? = null,
-    val timestamp: String = ""
+    val timestamp: String = "",
 )
 
 @Serializable
 data class WsPayload(
-    // Prefeitura
     val municipio: String? = null,
     val estado: String? = null,
     val fonte: String? = null,
     val contratos: List<Contrato>? = null,
     val licitacoes: List<Licitacao>? = null,
     val diariosOficiais: List<String>? = null,
-    val secretarias: List<String>? = null,
+    val secretarias: List<Secretaria>? = null,
     val resumo: ResumoPrefeitura? = null,
+    val resumoCamara: ResumoCamara? = null,
     val scrapedAt: String? = null,
     val error: String? = null,
-    // Câmara
     val parlamentares: List<Parlamentar>? = null,
     val sessoes: List<Sessao>? = null,
     val materias: List<Materia>? = null,
     val mesaDiretora: List<MembroMesa>? = null,
-    val resumoCamara: ResumoCamara? = null,
-    // Status
+    val graficos: GraficosPayload? = null,
+    val entity: String? = null,
+    val entityId: String? = null,
+    val gestores: List<Gestor>? = null,
+    val institucional: Institucional? = null,
+    val parlamentar: Parlamentar? = null,
+    val materia: Materia? = null,
+    val secretaria: Secretaria? = null,
+    val contrato: Contrato? = null,
+    val licitacao: Licitacao? = null,
+    val sessao: Sessao? = null,
     val version: String? = null,
     val sources: List<String>? = null,
     val intervals: Intervals? = null,
@@ -39,7 +47,30 @@ data class WsPayload(
     val message: String? = null,
 )
 
-// ─── Prefeitura ───────────────────────────────────────────────────────────────
+@Serializable
+data class Contato(
+    val email: String = "",
+    val telefone: String = "",
+    val whatsapp: String = "",
+    val endereco: String = "",
+    val horarioFuncionamento: String = "",
+)
+
+@Serializable
+data class Institucional(
+    val orgao: String = "",
+    val endereco: String = "",
+    val contato: Contato = Contato(),
+    val siteUrl: String = "",
+)
+
+@Serializable
+data class Gestor(
+    val nome: String = "",
+    val cargo: String = "",
+    val foto: String = "",
+    val contato: Contato = Contato(),
+)
 
 @Serializable
 data class Contrato(
@@ -47,7 +78,8 @@ data class Contrato(
     val objeto: String = "",
     val valor: String = "",
     val empresa: String = "",
-    val data: String = ""
+    val data: String = "",
+    val url: String = "",
 )
 
 @Serializable
@@ -55,70 +87,114 @@ data class Licitacao(
     val numero: String = "",
     val modalidade: String = "",
     val objeto: String = "",
-    val situacao: String = ""
+    val situacao: String = "",
+    val url: String = "",
+)
+
+@Serializable
+data class Secretaria(
+    val id: String = "",
+    val nome: String = "",
+    val secretario: String = "",
+    val url: String = "",
+    val contato: Contato = Contato(),
 )
 
 @Serializable
 data class ResumoPrefeitura(
     val totalContratos: Int = 0,
     val totalLicitacoes: Int = 0,
-    val exercicio: Int = 2025
+    val exercicio: Int = 2025,
 )
-
-// ─── Câmara ───────────────────────────────────────────────────────────────────
 
 @Serializable
 data class Parlamentar(
     val nome: String = "",
+    val nomeCompleto: String = "",
     val partido: String = "",
     val cargo: String = "",
-    val foto: String = ""
+    val foto: String = "",
+    val slug: String = "",
+    val profileUrl: String = "",
+    val contato: Contato = Contato(),
+    val biografia: String = "",
 )
 
 @Serializable
 data class Sessao(
     val titulo: String = "",
-    val data: String = ""
+    val data: String = "",
+    val url: String = "",
+    val resumo: String = "",
 )
 
 @Serializable
 data class Materia(
     val titulo: String = "",
-    val tipo: String = ""
+    val tipo: String = "",
+    val slug: String = "",
+    val url: String = "",
+    val autor: String = "",
+    val dataPublicacao: String = "",
+    val pdfUrl: String = "",
+    val resumo: String = "",
 )
 
 @Serializable
 data class MembroMesa(
     val nome: String = "",
-    val cargo: String = ""
+    val cargo: String = "",
 )
 
 @Serializable
 data class ResumoCamara(
     val totalParlamentares: Int = 0,
     val totalSessoes2025: Int = 0,
-    val totalMaterias: Int = 0
+    val totalMaterias: Int = 0,
 )
 
-// ─── Auxiliares ───────────────────────────────────────────────────────────────
+@Serializable
+data class ChartSeries(
+    val titulo: String = "",
+    val labels: List<String> = emptyList(),
+    val valores: List<Int> = emptyList(),
+)
+
+@Serializable
+data class GraficosPayload(
+    val prefeitura: List<ChartSeries> = emptyList(),
+    val camara: List<ChartSeries> = emptyList(),
+)
 
 @Serializable
 data class Intervals(
     val prefeitura: Long = 60000,
-    val camara: Long = 90000
+    val camara: Long = 90000,
 )
 
 @Serializable
 data class LastUpdated(
     val prefeitura: String? = null,
-    val camara: String? = null
+    val camara: String? = null,
 )
 
-// ─── Estado da UI ─────────────────────────────────────────────────────────────
+// ─── Detalhe (UI) ───────────────────────────────────────────────────────────
+
+enum class DetailEntity {
+    Vereador, Materia, Secretaria, Contrato, Licitacao, Sessao, Gestores, InstitucionalCamara, InstitucionalPrefeitura,
+}
+
+data class DetailUiState(
+    val isLoading: Boolean = false,
+    val entity: DetailEntity? = null,
+    val entityId: String = "",
+    val payload: WsPayload? = null,
+    val error: String? = null,
+)
 
 sealed class ConnectionState {
     object Connecting : ConnectionState()
-    object Connected  : ConnectionState()
+    object Connected : ConnectionState()
     object Reconnecting : ConnectionState()
     data class Error(val message: String) : ConnectionState()
 }
@@ -128,7 +204,8 @@ data class PrefeituraUiState(
     val contratos: List<Contrato> = emptyList(),
     val licitacoes: List<Licitacao> = emptyList(),
     val diariosOficiais: List<String> = emptyList(),
-    val secretarias: List<String> = emptyList(),
+    val secretarias: List<Secretaria> = emptyList(),
+    val graficos: GraficosPayload? = null,
     val resumo: ResumoPrefeitura = ResumoPrefeitura(),
     val lastUpdated: String = "",
     val error: String? = null,
@@ -140,6 +217,7 @@ data class CamaraUiState(
     val sessoes: List<Sessao> = emptyList(),
     val materias: List<Materia> = emptyList(),
     val mesaDiretora: List<MembroMesa> = emptyList(),
+    val graficos: GraficosPayload? = null,
     val resumo: ResumoCamara = ResumoCamara(),
     val lastUpdated: String = "",
     val error: String? = null,

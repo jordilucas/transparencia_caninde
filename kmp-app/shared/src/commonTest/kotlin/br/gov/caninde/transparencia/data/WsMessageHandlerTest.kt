@@ -1,7 +1,6 @@
 package br.gov.caninde.transparencia.data
 
-import br.gov.caninde.transparencia.domain.Contrato
-import br.gov.caninde.transparencia.domain.WsPayload
+import br.gov.caninde.transparencia.domain.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -57,6 +56,60 @@ class WsMessageHandlerTest {
         val reduced = handler.reduce(WsHandlerState(), raw)
         assertEquals("Falha no scraping", reduced.prefeitura.error)
         assertEquals("Falha no scraping", reduced.camara.error)
+    }
+
+    @Test
+    fun parseDetailDataAtualizaDetailState() {
+        val raw = """
+            {
+              "type": "DETAIL_DATA",
+              "timestamp": "2025-06-04T12:00:00Z",
+              "payload": {
+                "entity": "vereador",
+                "entityId": "karlinda-coelho",
+                "parlamentar": {
+                  "nome": "Karlinda Coelho",
+                  "slug": "karlinda-coelho",
+                  "contato": { "email": "v@cmcaninde.ce.gov.br" }
+                }
+              }
+            }
+        """.trimIndent()
+
+        val reduced = handler.reduce(
+            WsHandlerState(detail = DetailUiState(isLoading = true, entity = DetailEntity.Vereador, entityId = "karlinda-coelho")),
+            raw,
+        )
+        assertEquals(false, reduced.detail.isLoading)
+        assertEquals("Karlinda Coelho", reduced.detail.payload?.parlamentar?.nome)
+        assertEquals("v@cmcaninde.ce.gov.br", reduced.detail.payload?.parlamentar?.contato?.email)
+    }
+
+    @Test
+    fun buildRequestDetailFormataJson() {
+        val json = handler.buildRequestDetail(DetailEntity.Secretaria, "5")
+        assert(json.contains("REQUEST_DETAIL"))
+        assert(json.contains("secretaria"))
+        assert(json.contains("\"id\":\"5\""))
+    }
+
+    @Test
+    fun toPrefeituraUiStateMapeiaGraficos() {
+        val state = handler.toPrefeituraUiState(
+            WsPayload(
+                graficos = br.gov.caninde.transparencia.domain.GraficosPayload(
+                    prefeitura = listOf(
+                        br.gov.caninde.transparencia.domain.ChartSeries(
+                            titulo = "Licitações",
+                            labels = listOf("Aberta"),
+                            valores = listOf(2),
+                        ),
+                    ),
+                ),
+            ),
+            "2025-06-04T12:00:00Z",
+        )
+        assertEquals(1, state.graficos?.prefeitura?.size)
     }
 
     @Test

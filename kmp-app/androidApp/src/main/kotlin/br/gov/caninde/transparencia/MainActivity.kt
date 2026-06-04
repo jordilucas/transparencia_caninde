@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import br.gov.caninde.transparencia.data.TransparenciaViewModel
 import br.gov.caninde.transparencia.data.WebSocketEndpoint
 import br.gov.caninde.transparencia.data.createAppModule
+import br.gov.caninde.transparencia.platform.initExternalLinks
 import br.gov.caninde.transparencia.presentation.TransparenciaApp
 import org.koin.android.ext.android.inject
 import org.koin.core.context.startKoin
@@ -13,6 +14,7 @@ import org.koin.core.context.startKoin
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initExternalLinks(this)
 
         if (!Koin.isStarted()) {
             val endpoint = WebSocketEndpoint(

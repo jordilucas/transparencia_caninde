@@ -12,6 +12,7 @@ class TransparenciaViewModel(
     val connectionState: StateFlow<ConnectionState> = repository.connectionState
     val prefeituraState: StateFlow<PrefeituraUiState> = repository.prefeituraState
     val camaraState: StateFlow<CamaraUiState> = repository.camaraState
+    val detailState: StateFlow<DetailUiState> = repository.detailState
 
     fun onStart() {
         repository.connect(scope)
@@ -31,6 +32,10 @@ class TransparenciaViewModel(
 
     fun refreshAll() {
         scope.launch { repository.requestRefresh("all") }
+    }
+
+    fun loadDetail(entity: DetailEntity, id: String) {
+        scope.launch { repository.loadDetail(entity, id) }
     }
 
     fun dispose() {

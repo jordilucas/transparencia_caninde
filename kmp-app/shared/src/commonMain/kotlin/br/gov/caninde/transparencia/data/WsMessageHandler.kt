@@ -33,6 +33,9 @@ class WsMessageHandler(
                 camara = msg.payload?.let { toCamaraUiState(it, msg.timestamp) }
                     ?: current.camara,
             )
+            "DETAIL_DATA" -> current.copy(
+                detail = toDetailUiState(msg.payload, current.detail),
+            )
             "ERROR" -> {
                 val errorMsg = msg.payload?.message ?: "Erro no servidor"
                 current.copy(
@@ -50,6 +53,7 @@ class WsMessageHandler(
         licitacoes = p.licitacoes ?: emptyList(),
         diariosOficiais = p.diariosOficiais ?: emptyList(),
         secretarias = p.secretarias ?: emptyList(),
+        graficos = p.graficos,
         resumo = p.resumo ?: ResumoPrefeitura(),
         lastUpdated = p.scrapedAt ?: timestamp,
         error = p.error,
@@ -61,7 +65,8 @@ class WsMessageHandler(
         sessoes = p.sessoes ?: emptyList(),
         materias = p.materias ?: emptyList(),
         mesaDiretora = p.mesaDiretora ?: emptyList(),
-        resumo = ResumoCamara(
+        graficos = p.graficos,
+        resumo = p.resumoCamara ?: ResumoCamara(
             totalParlamentares = p.parlamentares?.size ?: 0,
             totalSessoes2025 = p.sessoes?.size ?: 0,
             totalMaterias = p.materias?.size ?: 0,
@@ -69,9 +74,44 @@ class WsMessageHandler(
         lastUpdated = p.scrapedAt ?: timestamp,
         error = p.error,
     )
+
+    fun toDetailUiState(p: WsPayload?, previous: DetailUiState): DetailUiState {
+        if (p == null) return previous.copy(isLoading = false, error = "Resposta vazia")
+        val err = p.error?.takeIf { it.isNotBlank() }
+        return previous.copy(
+            isLoading = false,
+            entityId = p.entityId ?: previous.entityId,
+            payload = p,
+            error = err,
+        )
+    }
+
+    fun entityToWs(entity: DetailEntity): String = when (entity) {
+        DetailEntity.Vereador -> "vereador"
+        DetailEntity.Materia -> "materia"
+        DetailEntity.Secretaria -> "secretaria"
+        DetailEntity.Contrato -> "contrato"
+        DetailEntity.Licitacao -> "licitacao"
+        DetailEntity.Sessao -> "sessao"
+        DetailEntity.Gestores -> "gestores"
+        DetailEntity.InstitucionalCamara -> "institucional"
+        DetailEntity.InstitucionalPrefeitura -> "institucional"
+    }
+
+    fun buildRequestDetail(entity: DetailEntity, id: String): String {
+        val wsEntity = entityToWs(entity)
+        val resolvedId = when (entity) {
+            DetailEntity.InstitucionalCamara -> "camara"
+            DetailEntity.InstitucionalPrefeitura -> "prefeitura"
+            DetailEntity.Gestores -> "all"
+            else -> id
+        }
+        return """{"type":"REQUEST_DETAIL","payload":{"entity":"$wsEntity","id":"$resolvedId"}}"""
+    }
 }
 
 data class WsHandlerState(
     val prefeitura: PrefeituraUiState = PrefeituraUiState(),
     val camara: CamaraUiState = CamaraUiState(),
+    val detail: DetailUiState = DetailUiState(),
 )

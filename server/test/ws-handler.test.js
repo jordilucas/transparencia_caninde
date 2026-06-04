@@ -46,6 +46,18 @@ describe('handleWsMessage', () => {
     assert.equal(out[1].source, 'prefeitura');
     assert.equal(out[1].forceScrape, true);
   });
+
+  it('REQUEST_DETAIL retorna DETAIL_DATA com entity e id', () => {
+    const out = handleWsMessage({
+      type: 'REQUEST_DETAIL',
+      payload: { entity: 'vereador', id: 'karlinda-coelho' },
+    });
+    assert.equal(out.length, 1);
+    assert.equal(out[0].type, 'DETAIL_DATA');
+    assert.equal(out[0].entity, 'vereador');
+    assert.equal(out[0].entityId, 'karlinda-coelho');
+    assert.equal(out[0].detailRequest, true);
+  });
 });
 
 describe('buildServerStatusPayload', () => {

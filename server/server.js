@@ -17,6 +17,9 @@ const scrapeResult = require('./lib/scrape-result');
 const { createRateLimiter, extractClientIp } = require('./lib/rate-limit');
 const wsHandler = require('./lib/ws-handler');
 const scraperCamara = require('./lib/scraper-camara');
+const scraperPrefeitura = require('./lib/scraper-prefeitura');
+const { attachCharts } = require('./lib/charts');
+const { createDetailHandler } = require('./lib/detail-handler');
 
 const PORT = config.port;
 const PREF_INTERVAL = config.prefInterval;
@@ -43,6 +46,12 @@ let cache = {
   camara: null,
   lastUpdated: { prefeitura: null, camara: null }
 };
+
+const detailHandler = createDetailHandler({
+  http,
+  cheerio,
+  getCache: () => cache,
+});
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 function parseBRL(str) {
@@ -71,64 +80,24 @@ async function scrapePrefeitura() {
     const { data: htmlContratos } = await http.get('https://www.caninde.ce.gov.br/contratos.php');
     const $c = cheerio.load(htmlContratos);
 
-    const contratos = [];
-    $c('table tbody tr').each((i, row) => {
-      if (i >= 10) return false;
-      const cols = $c(row).find('td');
-      if (cols.length >= 3) {
-        contratos.push({
-          numero:    $c(cols[0]).text().trim(),
-          objeto:    $c(cols[1]).text().trim().substring(0, 80),
-          valor:     $c(cols[2]).text().trim(),
-          empresa:   $c(cols[3])?.text().trim() || '',
-          data:      $c(cols[4])?.text().trim() || '',
-        });
-      }
-    });
-
-    // 3. Licitações
+    const contratos = scraperPrefeitura.scrapeContratos($c, 30);
     const { data: htmlLicit } = await http.get('https://www.caninde.ce.gov.br/licitacao.php');
-    const $l = cheerio.load(htmlLicit);
-    const licitacoes = [];
-    $l('table tbody tr').each((i, row) => {
-      if (i >= 8) return false;
-      const cols = $l(row).find('td');
-      if (cols.length >= 2) {
-        licitacoes.push({
-          numero:    $l(cols[0]).text().trim(),
-          modalidade:$l(cols[1]).text().trim(),
-          objeto:    $l(cols[2])?.text().trim().substring(0, 80) || '',
-          situacao:  $l(cols[3])?.text().trim() || '',
-        });
-      }
-    });
-
-    // 4. Diário Oficial (últimas publicações)
+    const licitacoes = scraperPrefeitura.scrapeLicitacoes(cheerio.load(htmlLicit), 25);
     const { data: htmlDiario } = await http.get('https://www.caninde.ce.gov.br/diariolista.php');
-    const $d = cheerio.load(htmlDiario);
-    const diarios = [];
-    $d('table tbody tr, .lista-publicacoes li, ul.publicacoes li').each((i, el) => {
-      if (i >= 5) return false;
-      const txt = $d(el).text().trim();
-      if (txt.length > 5) diarios.push(txt.substring(0, 120));
-    });
-
-    // 5. Secretarias (estrutura organizacional)
-    const secretarias = [];
-    $m('a[href*="secretaria.php?sec="]').each((i, el) => {
-      secretarias.push($m(el).text().trim());
-    });
+    const diarios = scraperPrefeitura.scrapeDiarios(cheerio.load(htmlDiario), 15);
+    const secretarias = scraperPrefeitura.scrapeSecretariasFromHtml($m).slice(0, 20);
 
     const result = {
       ...scrapeResult.buildPrefeituraPayload({
         contratos,
         licitacoes,
         diariosOficiais: diarios,
-        secretarias: secretarias.slice(0, 15),
+        secretarias,
         fonte: 'https://www.caninde.ce.gov.br/acessoainformacao.php',
       }),
       scrapedAt: now(),
     };
+    attachCharts(result, cache.camara);
 
     cache.prefeitura = result;
     cache.lastUpdated.prefeitura = now();
@@ -166,6 +135,7 @@ async function scrapeCamara() {
       }),
       scrapedAt: now(),
     };
+    attachCharts(cache.prefeitura, result);
 
     cache.camara = result;
     cache.lastUpdated.camara = now();
@@ -247,7 +217,30 @@ wss.on('connection', (ws, req) => {
       const responses = wsHandler.handleWsMessage(msg);
       for (const r of responses) {
         let payload = r.payload;
-        if (r.source) {
+        if (r.detailRequest) {
+          try {
+            const detail = await detailHandler.loadDetail(r.entity, r.entityId);
+            payload = {
+              entity: detail.entity || r.entity,
+              entityId: detail.entityId || r.entityId,
+              error: detail.error || null,
+              parlamentar: detail.parlamentar,
+              materia: detail.materia,
+              secretaria: detail.secretaria,
+              contrato: detail.contrato,
+              licitacao: detail.licitacao,
+              sessao: detail.sessao,
+              gestores: detail.gestores,
+              institucional: detail.institucional,
+            };
+          } catch (err) {
+            payload = {
+              entity: r.entity,
+              entityId: r.entityId,
+              error: err.message,
+            };
+          }
+        } else if (r.source) {
           payload = await payloadForSource(r.source, r.forceScrape);
         }
         const envelope = { type: r.type, timestamp: r.timestamp || now() };

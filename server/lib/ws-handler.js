@@ -38,6 +38,12 @@ function handleWsMessage(msg) {
     case 'PING':
       return [{ type: 'PONG', timestamp }];
 
+    case 'REQUEST_DETAIL': {
+      const entity = msg.payload?.entity || msg.entity;
+      const id = msg.payload?.id || msg.id || '';
+      return [{ type: 'DETAIL_DATA', timestamp, entity, entityId: id, detailRequest: true }];
+    }
+
     default:
       return [];
   }

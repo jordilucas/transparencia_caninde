@@ -4,6 +4,8 @@ Aplicativo **Kotlin Multiplatform** (Compose) + **servidor Node.js** para consul
 
 O app **não inventa dados**: exibe apenas o que foi obtido dos portais oficiais. Se o scraping falhar, mostra mensagem de erro ou um resumo mínimo (contagens e listas vazias).
 
+**Recursos:** listas clicáveis com telas de detalhe (vereador, matéria, secretaria, contrato, licitação, sessão, gestores), gráficos agregados no servidor (`REQUEST_DETAIL` / `DETAIL_DATA` — ver [`API.md`](API.md)).
+
 ## Arquitetura
 
 ```

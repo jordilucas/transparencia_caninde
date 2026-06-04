@@ -82,7 +82,7 @@ function buildCamaraPayload({
     sessoes,
     materias,
     mesaDiretora,
-    resumo: {
+    resumoCamara: {
       totalParlamentares: parlamentares.length,
       totalSessoes2025: sessoes.length,
       totalMaterias: materias.length,

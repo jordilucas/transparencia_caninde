@@ -23,7 +23,11 @@ import br.gov.caninde.transparencia.domain.*
 fun CamaraScreen(
     state: CamaraUiState,
     connectionState: ConnectionState,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onVereadorClick: (Parlamentar) -> Unit = {},
+    onMateriaClick: (Materia) -> Unit = {},
+    onSessaoClick: (Int, Sessao) -> Unit = { _, _ -> },
+    onInstitucionalClick: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Parlamentares", "Sessões", "Matérias", "Mesa Diretora")
@@ -150,10 +154,28 @@ fun CamaraScreen(
                     LastUpdatedText(state.lastUpdated)
                 }
 
+                item {
+                    ListRow(
+                        icon = {
+                            IconContainer(AppColors.Blue100) {
+                                Icon(Icons.Default.Info, contentDescription = null,
+                                    tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
+                            }
+                        },
+                        title = "Dados institucionais",
+                        subtitle = "Contato da Câmara",
+                        trailing = {
+                            Icon(Icons.Default.ChevronRight, contentDescription = null,
+                                tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
+                        },
+                        onClick = onInstitucionalClick,
+                    )
+                }
+
                 when (selectedTab) {
-                    0 -> parlamentaresItems(state.parlamentares)
-                    1 -> sessoesItems(state.sessoes)
-                    2 -> materiasItems(state.materias)
+                    0 -> parlamentaresItems(state.parlamentares, onVereadorClick)
+                    1 -> sessoesItems(state.sessoes, onSessaoClick)
+                    2 -> materiasItems(state.materias, onMateriaClick)
                     3 -> mesaDiretoraItems(state.mesaDiretora)
                 }
 
@@ -189,21 +211,21 @@ fun StatCard(
 
 // ─── Lista de Parlamentares ───────────────────────────────────────────────────
 
-fun LazyListScope.parlamentaresItems(parlamentares: List<Parlamentar>) {
+fun LazyListScope.parlamentaresItems(parlamentares: List<Parlamentar>, onClick: (Parlamentar) -> Unit) {
     item { SectionHeader(title = "Vereadores") }
     if (parlamentares.isEmpty()) {
         item { EmptyState("Nenhum vereador encontrado") }
         return
     }
     items(parlamentares) { p ->
-        ParlamentarRow(p)
+        ParlamentarRow(p, onClick = { onClick(p) })
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))
     }
 }
 
 @Composable
-fun ParlamentarRow(p: Parlamentar) {
+fun ParlamentarRow(p: Parlamentar, onClick: (() -> Unit)? = null) {
     ListRow(
         icon = { InitialAvatar(p.nome, size = 36) },
         title = p.nome,
@@ -221,18 +243,19 @@ fun ParlamentarRow(p: Parlamentar) {
                 )
             }
         },
+        onClick = onClick,
     )
 }
 
 // ─── Lista de Sessões ─────────────────────────────────────────────────────────
 
-fun LazyListScope.sessoesItems(sessoes: List<Sessao>) {
+fun LazyListScope.sessoesItems(sessoes: List<Sessao>, onClick: (Int, Sessao) -> Unit) {
     item { SectionHeader(title = "Sessões Realizadas") }
     if (sessoes.isEmpty()) {
         item { EmptyState("Nenhuma sessão encontrada") }
         return
     }
-    items(sessoes) { s ->
+    itemsIndexed(sessoes) { index, s ->
         ListRow(
             icon = {
                 IconContainer(AppColors.Green100) {
@@ -245,7 +268,8 @@ fun LazyListScope.sessoesItems(sessoes: List<Sessao>) {
             trailing = {
                 Icon(Icons.Default.ChevronRight, contentDescription = null,
                     tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
-            }
+            },
+            onClick = { onClick(index, s) },
         )
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))
@@ -254,7 +278,7 @@ fun LazyListScope.sessoesItems(sessoes: List<Sessao>) {
 
 // ─── Lista de Matérias ────────────────────────────────────────────────────────
 
-fun LazyListScope.materiasItems(materias: List<Materia>) {
+fun LazyListScope.materiasItems(materias: List<Materia>, onClick: (Materia) -> Unit) {
     item { SectionHeader(title = "Matérias em Votação") }
     if (materias.isEmpty()) {
         item { EmptyState("Nenhuma matéria encontrada") }
@@ -284,7 +308,8 @@ fun LazyListScope.materiasItems(materias: List<Materia>) {
             trailing = {
                 Icon(Icons.Default.ChevronRight, contentDescription = null,
                     tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
-            }
+            },
+            onClick = { onClick(m) },
         )
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))

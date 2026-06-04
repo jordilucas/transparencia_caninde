@@ -27,6 +27,10 @@ class TransparenciaRepository(
     private val _camaraState = MutableStateFlow(CamaraUiState())
     val camaraState: StateFlow<CamaraUiState> = _camaraState.asStateFlow()
 
+    private val _detailState = MutableStateFlow(DetailUiState())
+    val detailState: StateFlow<DetailUiState> = _detailState.asStateFlow()
+
+    private val detailCache = mutableMapOf<String, DetailUiState>()
     private var wsSession: DefaultClientWebSocketSession? = null
     private var connectJob: Job? = null
 
@@ -91,14 +95,30 @@ class TransparenciaRepository(
         sendMessage("""{"type":"REQUEST_REFRESH","source":"$source"}""")
     }
 
+    suspend fun loadDetail(entity: DetailEntity, id: String) {
+        val cacheKey = "${entity.name}:$id"
+        detailCache[cacheKey]?.let {
+            _detailState.value = it
+            return
+        }
+        _detailState.value = DetailUiState(isLoading = true, entity = entity, entityId = id, payload = null, error = null)
+        sendMessage(messageHandler.buildRequestDetail(entity, id))
+    }
+
     private fun processMessage(raw: String) {
         try {
             val reduced = messageHandler.reduce(
-                WsHandlerState(_prefeituraState.value, _camaraState.value),
+                WsHandlerState(_prefeituraState.value, _camaraState.value, _detailState.value),
                 raw,
             )
             _prefeituraState.value = reduced.prefeitura
             _camaraState.value = reduced.camara
+            _detailState.value = reduced.detail
+            val msg = messageHandler.parse(raw)
+            if (msg.type == "DETAIL_DATA" && msg.payload != null && reduced.detail.error.isNullOrBlank()) {
+                val key = "${msg.payload.entity}:${msg.payload.entityId}"
+                detailCache[key] = reduced.detail
+            }
         } catch (e: Exception) {
             println("[WS] erro ao parsear mensagem: ${e.message}")
         }

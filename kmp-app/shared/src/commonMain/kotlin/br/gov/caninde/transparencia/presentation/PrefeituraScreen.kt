@@ -22,7 +22,12 @@ import br.gov.caninde.transparencia.domain.*
 fun PrefeituraScreen(
     state: PrefeituraUiState,
     connectionState: ConnectionState,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onContratoClick: (Contrato) -> Unit = {},
+    onLicitacaoClick: (Licitacao) -> Unit = {},
+    onSecretariaClick: (Secretaria) -> Unit = {},
+    onGestoresClick: () -> Unit = {},
+    onInstitucionalClick: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Contratos", "Licitações", "Diário Oficial", "Secretarias")
@@ -114,12 +119,32 @@ fun PrefeituraScreen(
                     LastUpdatedText(state.lastUpdated)
                 }
 
+                item {
+                    ListRow(
+                        icon = {
+                            IconContainer(AppColors.Purple100) {
+                                Icon(Icons.Default.People, contentDescription = null,
+                                    tint = AppColors.Purple700, modifier = Modifier.size(18.dp))
+                            }
+                        },
+                        title = "Prefeito e Vice",
+                        subtitle = "Gestão municipal",
+                        trailing = {
+                            Icon(Icons.Default.ChevronRight, contentDescription = null,
+                                tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
+                        },
+                        onClick = onGestoresClick,
+                    )
+                    HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
+                        modifier = Modifier.padding(horizontal = 16.dp))
+                }
+
                 // Conteúdo por tab
                 when (selectedTab) {
-                    0 -> contratosItems(state.contratos)
-                    1 -> licitacoesItems(state.licitacoes)
+                    0 -> contratosItems(state.contratos, onContratoClick)
+                    1 -> licitacoesItems(state.licitacoes, onLicitacaoClick)
                     2 -> diariosItems(state.diariosOficiais)
-                    3 -> secretariasItems(state.secretarias)
+                    3 -> secretariasItems(state.secretarias, onSecretariaClick)
                 }
 
                 item { Spacer(Modifier.height(80.dp)) }
@@ -130,21 +155,21 @@ fun PrefeituraScreen(
 
 // ─── Lista de Contratos ───────────────────────────────────────────────────────
 
-fun LazyListScope.contratosItems(contratos: List<Contrato>) {
+fun LazyListScope.contratosItems(contratos: List<Contrato>, onClick: (Contrato) -> Unit) {
     item { SectionHeader(title = "Contratos Recentes") }
     if (contratos.isEmpty()) {
         item { EmptyState("Nenhum contrato encontrado") }
         return
     }
     items(contratos) { c ->
-        ContratosRow(c)
+        ContratosRow(c, onClick = { onClick(c) })
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))
     }
 }
 
 @Composable
-fun ContratosRow(c: Contrato) {
+fun ContratosRow(c: Contrato, onClick: (() -> Unit)? = null) {
     ListRow(
         icon = {
             IconContainer(AppColors.Blue100) {
@@ -161,13 +186,14 @@ fun ContratosRow(c: Contrato) {
                 Spacer(Modifier.height(3.dp))
                 StatusBadge("Ativo")
             }
-        }
+        },
+        onClick = onClick,
     )
 }
 
 // ─── Lista de Licitações ──────────────────────────────────────────────────────
 
-fun LazyListScope.licitacoesItems(licitacoes: List<Licitacao>) {
+fun LazyListScope.licitacoesItems(licitacoes: List<Licitacao>, onClick: (Licitacao) -> Unit) {
     item { SectionHeader(title = "Licitações") }
     if (licitacoes.isEmpty()) {
         item { EmptyState("Nenhuma licitação encontrada") }
@@ -183,7 +209,8 @@ fun LazyListScope.licitacoesItems(licitacoes: List<Licitacao>) {
             },
             title = l.objeto.ifEmpty { "Licitação ${l.numero}" },
             subtitle = l.modalidade,
-            trailing = { StatusBadge(l.situacao.ifEmpty { "Aberta" }) }
+            trailing = { StatusBadge(l.situacao.ifEmpty { "Aberta" }) },
+            onClick = { onClick(l) },
         )
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))
@@ -220,7 +247,7 @@ fun LazyListScope.diariosItems(diarios: List<String>) {
 
 // ─── Secretarias ─────────────────────────────────────────────────────────────
 
-fun LazyListScope.secretariasItems(secretarias: List<String>) {
+fun LazyListScope.secretariasItems(secretarias: List<Secretaria>, onClick: (Secretaria) -> Unit) {
     item { SectionHeader(title = "Secretarias Municipais") }
     if (secretarias.isEmpty()) {
         item { EmptyState("Nenhuma secretaria encontrada") }
@@ -234,12 +261,13 @@ fun LazyListScope.secretariasItems(secretarias: List<String>) {
                         tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
                 }
             },
-            title = s,
-            subtitle = "",
+            title = s.nome,
+            subtitle = s.secretario,
             trailing = {
                 Icon(Icons.Default.ChevronRight, contentDescription = null,
                     tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
-            }
+            },
+            onClick = { onClick(s) },
         )
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))

@@ -13,6 +13,21 @@ function parseCargoPartido(cargoText) {
   return { cargo: cargoText.replace(/Cargo:\s*/i, '').trim(), partido: '' };
 }
 
+function slugFromHref(href) {
+  if (!href) return '';
+  const m = href.match(/\/vereadores\/([^/]+)\/?/i);
+  return m ? m[1] : '';
+}
+
+function slugifyNome(nome) {
+  return nome
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 function parseParlamentarCard($, el) {
   const block = $(el);
   const nomeUrna = block.find('p strong').first().text().trim();
@@ -26,6 +41,10 @@ function parseParlamentarCard($, el) {
   const cargoLine = block.find('p.cargo').not('.d-none').first().text().trim();
   const { cargo, partido } = parseCargoPartido(cargoLine);
   const foto = block.find('img.img-fluid').attr('src') || '';
+  const linkEl = block.find('a[href*="/vereadores/"]').first();
+  const href = linkEl.attr('href') || block.closest('a[href*="/vereadores/"]').attr('href') || '';
+  const slug = slugFromHref(href) || slugifyNome(nomeUrna || nomeCompleto);
+  const profileUrl = slug ? `${BASE}/vereadores/${slug}/` : '';
   const nome = nomeUrna || nomeCompleto;
   if (!nome || nome.length < 2) return null;
   return {
@@ -34,6 +53,10 @@ function parseParlamentarCard($, el) {
     partido,
     cargo,
     foto,
+    slug,
+    profileUrl,
+    contato: { email: '', telefone: '', whatsapp: '', endereco: '', horarioFuncionamento: '' },
+    biografia: '',
   };
 }
 
@@ -46,12 +69,7 @@ function scrapeParlamentaresFromHtml(html, cheerio) {
     const p = parseParlamentarCard($, el);
     if (p && !seen.has(p.nome)) {
       seen.add(p.nome);
-      parlamentares.push({
-        nome: p.nome,
-        partido: p.partido,
-        cargo: p.cargo,
-        foto: p.foto,
-      });
+      parlamentares.push(p);
     }
   });
 
@@ -88,11 +106,20 @@ function scrapeMesaDiretoraFromHtml(html, cheerio) {
 function scrapeSessoesFromHtml(html, cheerio) {
   const $ = cheerio.load(html);
   const sessoes = [];
-  $('h3.mb-0 span').each((i, el) => {
+  $('h3.mb-0').each((i, el) => {
     if (i >= 12) return false;
-    const titulo = $(el).text().trim();
+    const block = $(el);
+    const titulo = block.find('span, a').first().text().trim() || block.text().trim();
+    const parent = block.parent();
+    const data = parent.find('p, small').first().text().trim().substring(0, 80);
+    const url = block.find('a').attr('href') || '';
     if (titulo && titulo.length > 3) {
-      sessoes.push({ titulo: titulo.substring(0, 120), data: '' });
+      sessoes.push({
+        titulo: titulo.substring(0, 120),
+        data,
+        url: url.startsWith('http') ? url : (url ? `${BASE}${url.startsWith('/') ? '' : '/'}${url}` : ''),
+        resumo: '',
+      });
     }
   });
   return sessoes;
@@ -109,8 +136,19 @@ function scrapeMateriasFromHtml(html, cheerio) {
     if (/requerimento/i.test(titulo) || /requerimento/i.test(href)) tipo = 'Requerimento';
     else if (/projeto|pl-/i.test(titulo)) tipo = 'Projeto de Lei';
     else if (/indica/i.test(titulo)) tipo = 'Indicação';
+    const slug = href.match(/\/materia\/([^/]+)\/?/i)?.[1] || '';
+    const url = href.startsWith('http') ? href : (href ? `${BASE}${href.startsWith('/') ? '' : '/'}${href}` : '');
     if (titulo && titulo.length > 3) {
-      materias.push({ titulo: titulo.substring(0, 120), tipo });
+      materias.push({
+        titulo: titulo.substring(0, 120),
+        tipo,
+        slug,
+        url,
+        autor: '',
+        dataPublicacao: '',
+        pdfUrl: '',
+        resumo: '',
+      });
     }
   });
   return materias;

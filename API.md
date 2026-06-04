@@ -69,10 +69,20 @@ Solicita dados atuais da Prefeitura.
       ...
     ],
     "secretarias": [
-      "Secretaria de Educação",
-      "Secretaria de Saúde",
-      ...
+      {
+        "id": "3",
+        "nome": "Secretaria de Educação",
+        "secretario": "",
+        "url": "https://www.caninde.ce.gov.br/secretaria.php?sec=3",
+        "contato": { "email": "", "telefone": "", "whatsapp": "", "endereco": "", "horarioFuncionamento": "" }
+      }
     ],
+    "graficos": {
+      "prefeitura": [
+        { "titulo": "Licitações por situação", "labels": ["Aberta", "Homologada"], "valores": [5, 2] }
+      ],
+      "camara": []
+    },
     "resumo": {
       "totalContratos": 127,
       "totalLicitacoes": 34,
@@ -107,12 +117,16 @@ Solicita dados atuais da Câmara Municipal.
     "fonte": "https://www.cmcaninde.ce.gov.br/caninde-transparente/",
     "parlamentares": [
       {
-        "nome": "Cícero Rodrigues",
-        "partido": "PT",
+        "nome": "Karlinda Coelho",
+        "nomeCompleto": "Karlinda Coelho da Silva",
+        "partido": "REPUBLICANOS",
         "cargo": "Presidente",
-        "foto": "url/foto.jpg"
-      },
-      ...
+        "foto": "url/foto.jpg",
+        "slug": "karlinda-coelho",
+        "profileUrl": "https://www.cmcaninde.ce.gov.br/vereadores/karlinda-coelho/",
+        "contato": { "email": "", "telefone": "", "whatsapp": "", "endereco": "", "horarioFuncionamento": "" },
+        "biografia": ""
+      }
     ],
     "sessoes": [
       {
@@ -124,10 +138,21 @@ Solicita dados atuais da Câmara Municipal.
     "materias": [
       {
         "titulo": "PL 023/2025 — Institui o Programa Municipal de Incentivo ao Esporte",
-        "tipo": "Projeto de Lei"
-      },
-      ...
+        "tipo": "Projeto de Lei",
+        "slug": "pl-023-2025",
+        "url": "https://www.cmcaninde.ce.gov.br/materia/pl-023-2025/",
+        "autor": "",
+        "dataPublicacao": "",
+        "pdfUrl": "",
+        "resumo": ""
+      }
     ],
+    "graficos": {
+      "prefeitura": [],
+      "camara": [
+        { "titulo": "Matérias por tipo", "labels": ["Requerimento", "Projeto de Lei"], "valores": [4, 2] }
+      ]
+    },
     "mesaDiretora": [
       {
         "nome": "Cícero Rodrigues",
@@ -135,7 +160,7 @@ Solicita dados atuais da Câmara Municipal.
       },
       ...
     ],
-    "resumo": {
+    "resumoCamara": {
       "totalParlamentares": 13,
       "totalSessoes2025": 42,
       "totalMaterias": 89
@@ -181,7 +206,42 @@ Seguido por `PREFEITURA_DATA` ou `CAMARA_DATA` com dados atualizados.
 
 ---
 
-### 4. PING
+### 4. REQUEST_DETAIL
+
+Carrega ficha de detalhe sob demanda (scraping HTTP pontual com cache LRU no servidor).
+
+**Requisição:**
+```json
+{
+  "type": "REQUEST_DETAIL",
+  "payload": {
+    "entity": "vereador",
+    "id": "karlinda-coelho"
+  }
+}
+```
+
+**Entidades suportadas:** `vereador`, `materia`, `secretaria`, `contrato`, `licitacao`, `sessao`, `gestores`, `institucional` (id `camara` ou `prefeitura`).
+
+**Resposta:**
+```json
+{
+  "type": "DETAIL_DATA",
+  "payload": {
+    "entity": "vereador",
+    "entityId": "karlinda-coelho",
+    "parlamentar": { "nome": "...", "contato": { "email": "..." } },
+    "error": null
+  },
+  "timestamp": "2025-06-04T12:00:00Z"
+}
+```
+
+Contrato, licitação e sessão sem página no portal usam os dados já presentes na listagem em cache.
+
+---
+
+### 5. PING
 
 Heartbeat para manter a conexão viva e verificar saúde do servidor.
 
