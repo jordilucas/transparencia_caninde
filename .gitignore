@@ -1,54 +1,65 @@
-# Node.js
+# ─── Node.js (servidor WebSocket) ───────────────────────────────────────────
+server/node_modules/
 node_modules/
-npm-debug.log
-yarn-error.log
-package-lock.json
-yarn.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# Gradle
-.gradle/
-build/
+# ─── Kotlin / Gradle (kmp-app) ──────────────────────────────────────────────
+kmp-app/.gradle/
+kmp-app/build/
+kmp-app/**/build/
+kmp-app/local.properties
+kmp-app/.kotlin/
 *.apk
 *.aab
+*.dex
+*.class
 
-# Android
+# Gradle wrapper jar is committed; ignore only local caches
+.gradle/
+build/
+out/
+
+# ─── Android / IDE ───────────────────────────────────────────────────────────
 .idea/
-.DS_Store
-local.properties
 *.iml
-*.iws
 *.ipr
-*.swp
-*.swo
+*.iws
+.cxx/
+.externalNativeBuild/
+captures/
 
-# iOS
+# ─── iOS (quando o módulo iosApp for adicionado) ─────────────────────────────
 Pods/
 *.xcworkspace/
 DerivedData/
+*.xcuserstate
 
-# Kotlin
-.kotlin/
-out/
-
-# IDE
-*.sublime-project
-*.sublime-workspace
-.vscode/
-.idea/
-
-# Environment
+# ─── Ambiente e segredos ─────────────────────────────────────────────────────
 .env
-.env.local
+.env.*
+!.env.example
+*.jks
+*.keystore
+release.jks
 
-# OS
+# ─── Sistema e logs ───────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# Logs
 logs/
 *.log
+server/logs/
 
-# Misc
-.cache
-dist/
+# ─── Testes / artefatos locais ───────────────────────────────────────────────
 coverage/
+.cache/
+dist/
+*.tmp
+*.swp
+*.swo
+
+# ─── Editor ──────────────────────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
