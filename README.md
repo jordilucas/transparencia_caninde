@@ -1,127 +1,112 @@
 # Transparência Canindé
 
-Aplicativo **Kotlin Multiplatform** (Compose) + **servidor Node.js** para consultar dados públicos da **Prefeitura** e da **Câmara Municipal de Canindé**, CE, em tempo quase real via WebSocket.
+Aplicativo **Kotlin Multiplatform** (Compose Multiplatform) + **servidor Node.js** para consultar dados públicos da **Prefeitura** e da **Câmara Municipal de Canindé**, CE, em tempo quase real via **WebSocket**.
 
-O app **não inventa dados**: exibe apenas o que foi obtido dos portais oficiais (ou links curados para portais externos). Se a coleta falhar, mostra mensagem de erro ou listas vazias com aviso no payload.
-
-**Recursos:** listas com detalhe sob demanda (vereador, matéria, secretaria, contrato, licitação, sessão, gestores), gráficos agregados no servidor, abas de transparência com links para Governo Transparente, publicações oficiais (JSON) e PDFs/links clicáveis nas telas de detalhe.
+**Versão Android atual:** `1.1.0` (versionCode 2) · pacote `br.gov.caninde.transparencia`
 
 | Documento | Conteúdo |
 |-----------|----------|
 | [`API.md`](API.md) | Contrato completo das mensagens WebSocket |
-| [`docs/ROADMAP-DADOS.md`](docs/ROADMAP-DADOS.md) | Roadmap de fontes e fases futuras (federal, TCE, busca, etc.) |
-| [`server/TEST.md`](server/TEST.md) | Como testar o WS manualmente |
-| [`kmp-app/BUILD_VARIANTS.md`](kmp-app/BUILD_VARIANTS.md) | Variantes `dev` / `staging` / `prod` do app |
+| [`docs/ROADMAP-DADOS.md`](docs/ROADMAP-DADOS.md) | Roadmap de fontes e fases futuras |
+| [`docs/HOSPEDAGEM-GRATUITA.md`](docs/HOSPEDAGEM-GRATUITA.md) | Deploy no Render / Fly.io |
+| [`server/TEST.md`](server/TEST.md) | Testes manuais do WebSocket |
+| [`kmp-app/BUILD_VARIANTS.md`](kmp-app/BUILD_VARIANTS.md) | Flavors `dev` / `staging` / `prod` |
 
 ---
 
-## Fontes de dados utilizadas
+## Visão geral
+
+O projeto separa **coleta de dados** (servidor) de **apresentação** (app). O servidor faz scraping periódico dos portais oficiais, normaliza os dados em JSON e distribui via WebSocket. O app mantém estado local, mescla atualizações e exibe listas, detalhes, gráficos e busca.
+
+### Princípios
+
+- **Não inventar dados** — só exibir o que veio das fontes ou erro/lista vazia com aviso no payload.
+- **Preferir JSON/REST oficial** a parse HTML frágil.
+- **Merge inteligente** — quando JSON e HTML coexistem, o registro mais completo e recente prevalece.
+- **Detalhe sob demanda** — biografias, páginas longas e HTML pesado são buscados apenas quando o usuário abre o item.
+- **Links externos** — portais financeiros (Governo Transparente) abrem no navegador; o app não simula dados que não possui.
+
+### O que o app oferece hoje
+
+| Área | Funcionalidades |
+|------|-----------------|
+| **Prefeitura** | Contratos, licitações, publicações/diário, secretarias enriquecidas, gestores, links GT |
+| **Secretarias** | Secretário(a) atual, contratos/licitações/projetos em andamento e total em contratos por secretaria |
+| **Câmara** | Vereadores, sessões, matérias, mesa diretora, produção legislativa, links GT |
+| **Gráficos** | Agregações calculadas no servidor (licitações, contratos, matérias, etc.) |
+| **Busca** | Filtro local sobre listas em cache |
+| **Detalhes** | Vereador, matéria, secretaria, contrato, licitação, sessão, gestores, institucional + PDFs/links |
 
 Município correto: **Canindé, CE** (IBGE **2302800**). Não confundir com Canindé de São Francisco (SE).
 
-### Prefeitura Municipal
+---
 
-| Fonte | URL / endpoint | Uso no sistema |
-|-------|----------------|----------------|
-| Portal principal | https://www.caninde.ce.gov.br | Metadados, fallback HTML |
-| Transparência | https://www.caninde.ce.gov.br/acessoainformacao.php | Institucional (detalhe) |
-| **Dados abertos JSON** (prioritário) | `https://www.caninde.ce.gov.br/dadosabertosexportar.php?d={dataset}&a={ano}&f=json` | Contratos, licitações, secretarias, publicações |
-| Contratos (HTML fallback) | https://www.caninde.ce.gov.br/contratos.php | Se JSON vier vazio |
-| Licitações (HTML fallback) | https://www.caninde.ce.gov.br/licitacao.php | Se JSON vier vazio |
-| Diário (HTML fallback) | https://www.caninde.ce.gov.br/diariolista.php | Se não houver `publicacoes` no JSON |
-| Secretarias (HTML fallback) | Links `secretaria.php?sec=` na página de transparência | Se JSON vier vazio |
-| Secretaria (detalhe) | `secretaria.php?sec={id}` | Scrape sob demanda (`REQUEST_DETAIL`) |
-| Gestores | https://www.caninde.ce.gov.br/gestores.php | Prefeito/vice (detalhe) |
-| Portal dados abertos | https://www.caninde.ce.gov.br/dadosabertos.php | Link na aba Transparência |
+## Stack tecnológica
 
-**Datasets JSON consumidos hoje** (`d=`):
-
-| Dataset | Campos principais mapeados |
-|---------|---------------------------|
-| `contratos` | `NumeroContrato`, `Objeto`, `ValorGlobal`, `NomeCredor`, `CNPJCPF`, `Secretaria`, `DataContrato`, `Arquivo`, `Url` |
-| `licitacoes` | `NumeroPrecesso`, `Objeto`, `Modalidade`, `DataAbertura`, `Situacao`, `Url` |
-| `secretarias` | `Secretaria`, `Gestor`, `Email`, `Telefone1`, `HorarioFunciona` |
-| `publicacoes` | `Descricao`, `TipoArquivo`, `Data`, `Url` |
-
-Outros datasets listados no portal (`obras`, `diarias`, `pessoal`, `LRF`, etc.) estão documentados no roadmap para fases futuras.
-
-### Câmara Municipal
-
-| Fonte | URL | Uso no sistema |
-|-------|-----|----------------|
-| Portal | https://www.cmcaninde.ce.gov.br | Base de todos os scrapes legislativos |
-| Vereadores + mesa | `/parlamentares/` | Lista, foto, cargo, partido, `slug` |
-| Sessões | `/sessoes/` | Título, data, link de vídeo/sessão |
-| Matérias | `/materias/` | Título, tipo, autor, PDF |
-| Vereador (detalhe) | `/vereadores/{slug}/` | Biografia, contato, WhatsApp normalizado |
-| Matéria (detalhe) | `/materia/{slug}/` | Texto, PDF, links |
-| Canindé Transparente | https://www.cmcaninde.ce.gov.br/caninde-transparente/ | Hub de transparência da Câmara |
-| Institucional (detalhe) | Página inicial da Câmara | Contato institucional |
-
-### Governo Transparente (links curados, sem API ainda)
-
-IDs oficiais usados apenas para montar URLs no app (abrem no navegador):
-
-| Órgão | ID GT | Exemplos de destino |
-|-------|-------|---------------------|
-| Prefeitura | **11979490** | Receitas, despesas, convênios, obras, emendas |
-| Câmara | **11979588** | Receitas, despesas, licitações/contratos, LRF |
-
-Base: `https://www.governotransparente.com.br/transparencia/...`
-
-### Referências planejadas (não integradas)
-
-Documentadas em [`docs/ROADMAP-DADOS.md`](docs/ROADMAP-DADOS.md): API Portal da Transparência (CGU), TCE-CE, TCU, busca unificada.
+| Camada | Tecnologia |
+|--------|------------|
+| App UI | Kotlin Multiplatform, Compose Multiplatform, Material 3 |
+| App rede | Ktor Client (WebSocket), Kotlinx Serialization |
+| App DI | Koin |
+| App arquitetura | Repository + ViewModel + `StateFlow` + `WsMessageHandler` (reducer puro) |
+| Servidor | Node.js 18+, Express-like HTTP mínimo + `ws`, Axios, Cheerio |
+| Deploy | Docker, Render (`render.yaml`), health em `/health` |
+| Testes servidor | Node.js built-in test runner (47 testes) |
+| Testes app | Kotlin common tests (`WsMessageHandler`, domain utils) |
 
 ---
 
-## Arquitetura geral
+## Arquitetura end-to-end
 
 ```mermaid
 flowchart TB
   subgraph fontes [Fontes públicas]
-    PF_JSON[dadosabertosexportar.php JSON]
-    PF_HTML[caninde.ce.gov.br HTML]
-    CM_HTML[cmcaninde.ce.gov.br HTML]
-    GT[Governo Transparente links]
+    PF_JSON["caninde.ce.gov.br<br/>dadosabertosexportar.php JSON"]
+    PF_HTML["caninde.ce.gov.br HTML"]
+    CM_WP["cmcaninde.ce.gov.br<br/>WP REST API"]
+    CM_HTML["cmcaninde.ce.gov.br HTML"]
+    GT["Governo Transparente<br/>links curados"]
   end
 
   subgraph server [server/ Node.js]
-    SCR[Scrapers + mappers]
-    CACHE[(Cache em memória)]
-    CHARTS[charts.js agregações]
-    DET[detail-handler + LRU]
-    WS[WebSocket :8080]
-    SCR --> CACHE
+    SCR["Scrapers + mappers"]
+    MERGE["merge-sources.js<br/>merge-camara-sources.js"]
+    ENRICH["secretaria-enrich.js"]
+    CACHE[("Cache em memória<br/>prefeitura + camara")]
+    CHARTS["charts.js"]
+    DET["detail-handler + LRU"]
+    WS["WebSocket + /health"]
+    SCR --> MERGE --> ENRICH --> CACHE
     CACHE --> CHARTS
     CACHE --> WS
     DET --> WS
   end
 
-  subgraph app [kmp-app KMP]
-    REPO[TransparenciaRepository Ktor WS]
-    HANDLER[WsMessageHandler]
-    VM[TransparenciaViewModel]
-    UI[Compose: Prefeitura / Câmara / Gráficos / Busca]
-    REPO --> HANDLER --> VM --> UI
+  subgraph app [kmp-app/ KMP]
+    REPO["TransparenciaRepository<br/>Ktor WebSocket"]
+    HANDLER["WsMessageHandler<br/>parse + reduce"]
+    MERGE_APP["DataMerge.kt"]
+    VM["TransparenciaViewModel"]
+    UI["Compose UI"]
+    REPO --> HANDLER --> MERGE_APP --> VM --> UI
   end
 
   PF_JSON --> SCR
   PF_HTML --> SCR
+  CM_WP --> SCR
   CM_HTML --> SCR
   GT --> SCR
   WS <-->|JSON| REPO
+  fontes -.->|REQUEST_DETAIL scrape| DET
 ```
 
-```
-Portais oficiais (HTTP)
-        ↓
-  server/ — scrape periódico + cache + detalhe sob demanda
-        ↓ WebSocket (JSON)
-  kmp-app/shared — domain + data + presentation
-        ↓
-  androidApp — APK por flavor (dev/staging/prod)
-```
+### Fluxo de dados (resumo)
+
+1. **Servidor** faz scrape HTTP a cada 60 s (Prefeitura) e 90 s (Câmara).
+2. Dados normalizados ficam em **cache em memória**.
+3. Clientes WebSocket recebem `PREFEITURA_DATA` / `CAMARA_DATA` na conexão e após cada ciclo (broadcast).
+4. **App** parseia JSON, mescla com estado anterior (`DataMerge`) e atualiza `StateFlow`s.
+5. Toque em item → `REQUEST_DETAIL` → scrape pontual ou item do cache → `DETAIL_DATA`.
 
 ---
 
@@ -129,54 +114,96 @@ Portais oficiais (HTTP)
 
 ### Responsabilidades
 
-1. **Coleta HTTP** (Axios + Cheerio) dos portais, com prioridade JSON na Prefeitura.
-2. **Cache em memória** (`cache.prefeitura`, `cache.camara`) atualizado em intervalos fixos.
-3. **Broadcast** de `PREFEITURA_DATA` / `CAMARA_DATA` a todos os clientes após cada ciclo.
-4. **Detalhe sob demanda** via `REQUEST_DETAIL` (scrape de página ou objeto já no cache).
-5. **Rate limit** por IP e autenticação opcional por token na query string.
+| # | Função |
+|---|--------|
+| 1 | Coleta HTTP (Axios + Cheerio) com prioridade JSON na Prefeitura |
+| 2 | Merge paralelo JSON + HTML; enriquecimento de secretarias |
+| 3 | Cache em memória e broadcast WebSocket |
+| 4 | Detalhe sob demanda (`REQUEST_DETAIL`) com cache LRU |
+| 5 | Rate limit por IP e token WS opcional |
+| 6 | Health check HTTP (`GET /health`) para hospedagem |
 
 ### Ciclo de vida
 
 | Etapa | Comportamento |
 |-------|----------------|
 | Startup | `initAndSchedule()` — scrape inicial paralelo Prefeitura + Câmara |
-| Periódico | Prefeitura a cada **60 s**; Câmara a cada **90 s** (`lib/config.js`) |
+| Periódico | Prefeitura **60 s**; Câmara **90 s** (`lib/config.js`) |
 | Nova conexão WS | Envia cache atual + `SERVER_STATUS` |
-| `REQUEST_*` | Retorna cache ou força novo scrape (`REQUEST_REFRESH`) |
-| `REQUEST_DETAIL` | `detail-handler` → scrape HTML ou item da listagem (contrato/licitação) |
+| `REQUEST_*` | Retorna cache ou força scrape (`REQUEST_REFRESH`) |
+| `REQUEST_DETAIL` | `detail-handler` → HTML ou item já listado no cache |
 
 ### Módulos (`server/lib/`)
 
 | Módulo | Função |
 |--------|--------|
-| `server.js` | Orquestração, intervalos, WebSocket, broadcast |
+| `server.js` | Orquestração, intervalos, WebSocket, broadcast, `/health` |
 | `config.js` | Porta, intervalos, TLS, `WS_AUTH_TOKEN`, rate limit |
 | `ws-handler.js` | Parse e roteamento de mensagens WS |
-| `scrape-result.js` | Monta payloads `PREFEITURA_DATA` / `CAMARA_DATA`, erros parciais |
-| `scraper-prefeitura-dadosabertos.js` | **Fase 1:** JSON oficial (`fetchDataset`, mappers) |
+| `scrape-result.js` | Payloads `PREFEITURA_DATA` / `CAMARA_DATA`, erros parciais |
+| **Prefeitura** | |
+| `scraper-prefeitura-dadosabertos.js` | JSON oficial (`fetchDataset`, mappers) |
 | `scraper-prefeitura.js` | Fallback HTML: contratos, licitações, diários, secretarias |
-| `scraper-camara.js` | Vereadores, sessões, matérias, mesa diretora |
-| `scraper-camara-transparencia.js` | **Fase 2:** `linksTransparencia` (GT + portal) |
-| `scraper-detail-prefeitura.js` | Detalhe secretaria, gestores, institucional |
-| `scraper-detail-camara.js` | Detalhe vereador, matéria, institucional; WhatsApp |
+| `merge-sources.js` | Merge JSON+HTML; gestores; publicações; **enriquece secretarias** |
+| `secretaria-enrich.js` | Vincula contratos/licitações/projetos por secretaria |
+| `contrato-html.js` | Parser HTML de contratos (secretaria/objeto/valor colados) |
+| `licitacao-html.js` | Filtro de licitações (exclui comissão permanente) |
+| `gestor-html.js` | Prefeito e vice a partir de `gestores.php` |
+| **Câmara** | |
+| `scraper-camara-wp.js` | WP REST API (`/wp-json/wp/v2/vereadores`, `sessao`, `materia`) |
+| `scraper-camara.js` | HTML: cards `.cardlist`, badges matérias/sessões |
+| `merge-camara-sources.js` | Merge WP + HTML (preferência por `modifiedAt`) |
+| `scraper-camara-transparencia.js` | Links Governo Transparente / portal (sem folha pessoal) |
+| **Detalhe e utilitários** | |
+| `scraper-detail-prefeitura.js` | Secretaria, gestores, institucional |
+| `scraper-detail-camara.js` | Vereador (mandato, sessões presentes), matéria, institucional |
 | `detail-handler.js` | Roteamento `REQUEST_DETAIL` por entidade |
 | `detail-cache.js` | LRU de respostas de detalhe |
-| `charts.js` | Séries para `graficos` no payload |
+| `charts.js` | Séries para campo `graficos` |
 | `rate-limit.js` | Limite de mensagens por IP |
 
 ### Fluxo Prefeitura (`scrapePrefeitura`)
 
-1. Tenta `scrapePrefeituraDadosAbertos(http, anoCorrente)`.
-2. Se contratos/licitações/secretarias vazios → fallback nas páginas HTML.
-3. Diários: derivados de `publicacoes` ou scrape de `diariolista.php`.
-4. Anexa `linksTransparencia` (Prefeitura) e `attachCharts`.
-5. Persiste em `cache.prefeitura`.
+```mermaid
+sequenceDiagram
+  participant S as server.js
+  participant JSON as dadosabertos.js
+  participant HTML as scraper-prefeitura.js
+  participant M as merge-sources.js
+  participant E as secretaria-enrich.js
+
+  S->>JSON: scrapePrefeituraDadosAbertos(ano)
+  S->>HTML: scrapePrefeituraHtml (parallel)
+  JSON-->>M: contratos, licitações, secretarias, publicações
+  HTML-->>M: fallback + gestores + diários
+  M->>M: mergeContratos/Licitacoes/Secretarias
+  M->>E: enrichSecretarias(secretarias, contratos, licitacoes)
+  E-->>S: secretarias com resumo financeiro
+  S->>S: attachCharts + cache.prefeitura
+```
+
+**Notas importantes:**
+
+- Dataset `secretarias` **não usa** parâmetro `a=` (ano); os demais datasets usam exercício corrente.
+- Secretarias recebem gestor (`Gestor`), contato, endereço e listas derivadas de contratos/licitações.
+- Licitações sem campo `Secretaria` são associadas por texto do `Objeto`.
 
 ### Fluxo Câmara (`scrapeCamara`)
 
-1. GET `/parlamentares/`, `/sessoes/`, `/materias/`.
-2. Parse HTML (layout WordPress `.cardlist`, vídeos em sessões).
-3. Anexa `linksTransparencia` (Câmara), gráficos e cache.
+```mermaid
+sequenceDiagram
+  participant S as server.js
+  participant WP as scraper-camara-wp.js
+  participant HTML as scraper-camara.js
+  participant M as merge-camara-sources.js
+
+  S->>WP: scrapeCamaraWp (parallel)
+  S->>HTML: scrapeCamaraHtml (parallel)
+  WP-->>M: vereadores, sessões, matérias (orderby modified)
+  HTML-->>M: fotos, partido, badges, mesa diretora
+  M-->>S: merge por slug + modifiedAt
+  S->>S: linksTransparencia + attachCharts + cache.camara
+```
 
 ### Mensagens WebSocket (resumo)
 
@@ -188,7 +215,7 @@ Portais oficiais (HTTP)
 | `REQUEST_DETAIL` | `DETAIL_DATA` |
 | `PING` | `PONG` |
 
-Payloads, campos opcionais (`publicacoes`, `linksTransparencia`, `pdfUrl`, etc.) e exemplos: [`API.md`](API.md).
+Contrato completo, campos e exemplos: [`API.md`](API.md).
 
 ### Testes
 
@@ -196,59 +223,173 @@ Payloads, campos opcionais (`publicacoes`, `linksTransparencia`, `pdfUrl`, etc.)
 cd server && npm test
 ```
 
-Inclui mapeamento JSON (`test/dadosabertos.test.js`), scrapers, `ws-handler`, gráficos.
+Cobertura: dados abertos, merge, secretarias, Câmara WP, WS handler, parsers HTML, gráficos.
 
 ---
 
 ## Arquitetura do app (`kmp-app/`)
 
-### Módulos Gradle
-
-| Módulo | Papel |
-|--------|-------|
-| `:shared` | Lógica comum: domain, WebSocket, ViewModel, UI Compose |
-| `:androidApp` | Entry point Android, `BuildConfig` (URL do WS por flavor) |
-
-### Camadas (`shared/src/commonMain/kotlin/...`)
+### Estrutura de módulos
 
 ```
-domain/          Modelos @Serializable, DetailEntity, estados de UI
-data/            TransparenciaRepository (Ktor WebSocket)
-                 WsMessageHandler (parse + reduce estado)
-                 TransparenciaViewModel, WebSocketEndpoint, AppModule
-presentation/    App.kt (navegação), telas Prefeitura/Câmara/Gráficos/Busca
-                 Components, Theme, TransparenciaLinks
-presentation/detail/  DetailScreens, links PDF, contato WhatsApp
-platform/        openExternalUrl (expect/actual Android/iOS)
+kmp-app/
+├── androidApp/          # Entry Android, BuildConfig, flavors, assinatura release
+└── shared/
+    └── src/
+        ├── commonMain/  # Domain, data, UI Compose (compartilhável)
+        ├── androidMain/ # HttpClient, ExternalLinks (actual)
+        ├── iosMain/     # Stubs iOS (preparado para target futuro)
+        └── commonTest/  # Testes unitários compartilhados
 ```
+
+### Camadas (`shared/src/commonMain/kotlin/br/gov/caninde/transparencia/`)
+
+```mermaid
+flowchart TB
+  subgraph presentation [presentation/]
+    APP[App.kt navegação]
+    PREF[PrefeituraScreen]
+    CAM[CamaraScreen]
+    GRAF[GraficosScreen]
+    BUSCA[BuscaScreen]
+    DET_UI[detail/DetailScreens]
+  end
+
+  subgraph data [data/]
+    VM[TransparenciaViewModel]
+    REPO[TransparenciaRepository]
+    HANDLER[WsMessageHandler]
+    EP[WebSocketEndpoint]
+  end
+
+  subgraph domain [domain/]
+    MODELS[Models.kt]
+    MERGE[DataMerge.kt]
+    DISPLAY[ContratoDisplay / LicitacaoDisplay]
+    UTILS[LinkUtils / ContactUtils / BioUtils]
+  end
+
+  APP --> VM
+  VM --> REPO
+  REPO --> HANDLER
+  HANDLER --> MERGE
+  MERGE --> MODELS
+  PREF --> VM
+  CAM --> VM
+  DET_UI --> VM
+```
+
+| Camada | Arquivos principais | Papel |
+|--------|---------------------|-------|
+| **domain** | `Models.kt`, `DataMerge.kt` | Entidades `@Serializable`, merge client-side, formatação de exibição |
+| **data** | `TransparenciaRepository.kt`, `WsMessageHandler.kt`, `TransparenciaViewModel.kt` | WebSocket, reducer de mensagens, exposição via `StateFlow` |
+| **presentation** | `App.kt`, `*Screen.kt`, `Components.kt`, `Theme.kt` | Compose UI, navegação, componentes reutilizáveis |
+| **presentation/detail** | `DetailScreens.kt` | Telas de detalhe + links PDF/portal |
+| **platform** | `ExternalLinks.kt` (expect/actual) | Abrir URL no navegador / visualizador PDF |
 
 ### Fluxo de dados no cliente
 
-1. `TransparenciaRepository.connect()` abre WebSocket (`WebSocketEndpoint.url`).
-2. Envia `REQUEST_PREFEITURA` e `REQUEST_CAMARA`; mantém `PING` a cada 30 s.
-3. Cada frame JSON passa por `WsMessageHandler.reduce()` → atualiza `StateFlow`s.
-4. `TransparenciaViewModel` expõe estados para Compose.
-5. Toque em item → `REQUEST_DETAIL` → `DETAIL_DATA` (com cache local por entidade+id).
+1. `MainActivity` injeta `WebSocketEndpoint` (host/porta/esquema do flavor) via Koin.
+2. `TransparenciaRepository.connect()` abre WebSocket e envia `REQUEST_PREFEITURA` + `REQUEST_CAMARA`.
+3. `PING` a cada 30 s; reconexão automática (até 10 tentativas).
+4. Cada frame JSON → `WsMessageHandler.reduce()` → `DataMerge` preserva dados mais recentes/completos.
+5. `TransparenciaViewModel` expõe `prefeituraState`, `camaraState`, `detailState`, `connectionState`.
+6. Detalhe: cache local por `entity+id`; miss → `REQUEST_DETAIL` → `DETAIL_DATA`.
 
-### Navegação e telas
+### Navegação
 
 **Abas principais** (`NavigationBar`): Prefeitura · Câmara · Gráficos · Busca.
 
-**Rotas de detalhe** (`AppRoute`): vereador, matéria, secretaria, contrato, licitação, sessão, gestores, institucional.
+**Rotas de detalhe** (`AppRoute`):
 
-| Tela | Conteúdo principal |
-|------|-------------------|
-| `PrefeituraScreen` | Abas: Contratos, Licitações, Publicações, Secretarias, Transparência (links GT) |
-| `CamaraScreen` | Modo **Legislativo** (vereadores, sessões, matérias, mesa) ou **Transparência** (links) |
-| Gráficos | Séries `graficos` do payload WS |
-| Busca | Filtro local sobre listas em cache |
-| `DetailScreens` | Campos enriquecidos + PDF/link externo |
+| Rota | Entidade WS | Origem dos dados |
+|------|-------------|------------------|
+| `Vereador(slug)` | `vereador` | Scrape perfil + merge listagem |
+| `Materia(slug)` | `materia` | Scrape página da matéria |
+| `Secretaria(id)` | `secretaria` | Cache enriquecido + scrape contato |
+| `Contrato(numero)` | `contrato` | Item da listagem em cache |
+| `Licitacao(numero)` | `licitacao` | Item da listagem em cache |
+| `Sessao(id)` | `sessao` | Item da listagem (índice ou slug) |
+| `Gestores` | `gestores` | Scrape `gestores.php` |
+| `Institucional` | `institucional` | Scrape página institucional |
 
-### Utilitários de domínio
+### Telas principais
 
-- `LinkUtils.kt` — URLs absolutas e detecção de PDF.
-- `ContactUtils.kt` — WhatsApp clicável (não URL de compartilhamento).
-- `BioUtils.kt` — texto de biografia do vereador.
+| Tela | Abas / modos | Destaques |
+|------|--------------|-----------|
+| **Prefeitura** | Contratos, Licitações, Publicações, Secretarias, Transparência | Cards resumo; gestores; links GT |
+| **Câmara** | Legislativo: Parlamentares, Sessões, Matérias, Mesa · Transparência: links | Badges matérias/sessões; legislatura; detalhe vereador |
+| **Gráficos** | Prefeitura + Câmara | Barras a partir de `graficos` no payload |
+| **Busca** | — | Filtro local em contratos, licitações, secretarias, vereadores, matérias |
+
+### Modelos de domínio (principais)
+
+| Modelo | Campos relevantes |
+|--------|-------------------|
+| `Contrato` | numero, objeto, valor, empresa, secretaria, pdfUrl, cnpjCredor |
+| `Licitacao` | numero, modalidade, objeto, situacao, dataAbertura, url |
+| `Secretaria` | secretario, cargoGestor, contato, resumoFinanceiro, contratos[], licitacoes[], projetosAndamento[] |
+| `Parlamentar` | nome, partido, cargo, vinculo, legislatura, totalMaterias/Sessoes, sessoesPresentes[] |
+| `Sessao` / `Materia` | titulo, data, slug, url, modifiedAt |
+| `GraficosPayload` | Listas `ChartSeries` (titulo, labels, valores) |
+
+Utilitários: `ContratoDisplay.kt` e `LicitacaoDisplay.kt` normalizam títulos/descrições para UI; `ContactUtils.kt` trata WhatsApp clicável.
+
+---
+
+## Fontes de dados utilizadas
+
+### Prefeitura Municipal
+
+| Fonte | URL / endpoint | Uso |
+|-------|----------------|-----|
+| **Dados abertos JSON** (prioritário) | `dadosabertosexportar.php?d={dataset}&f=json` | Contratos, licitações, secretarias, publicações |
+| Portal HTML | caninde.ce.gov.br | Fallback + gestores + parsers especializados |
+| Detalhe secretaria | `secretaria.php?sec={id}` | Contato complementar |
+| Governo Transparente | ID **11979490** | Links na aba Transparência |
+
+**Datasets JSON:**
+
+| `d=` | Conteúdo mapeado |
+|------|------------------|
+| `contratos` | Valor, credor, CNPJ, secretaria, PDF, vigência |
+| `licitacoes` | Processo, objeto, modalidade, abertura, URL |
+| `secretarias` | Nome, gestor, e-mail, telefone, endereço, horário |
+| `publicacoes` | Diários e publicações oficiais |
+
+**Enriquecimento de secretarias:** após merge, `secretaria-enrich.js` agrega contratos (campo `Secretaria`), licitações (match por texto no `Objeto`) e calcula projetos em andamento + total em contratos.
+
+### Câmara Municipal
+
+| Fonte | URL | Uso |
+|-------|-----|-----|
+| **WP REST API** (prioritário) | `/wp-json/wp/v2/vereadores`, `sessao`, `materia` | Listas ordenadas por `modified` |
+| HTML portal | `/parlamentares/`, `/sessoes/`, `/materias/` | Fotos, partido, badges, mesa diretora |
+| Detalhe vereador | `/vereadores/{slug}/` | Mandato, naturalidade, sessões presentes |
+| Detalhe matéria | `/materia/{slug}/` | Texto, PDF |
+| Governo Transparente | ID **11979588** | Links financeiros (sem folha pessoal) |
+
+### Referências planejadas
+
+Documentadas em [`docs/ROADMAP-DADOS.md`](docs/ROADMAP-DADOS.md): integração API Governo Transparente, TCE-CE, Portal da Transparência federal, busca unificada no servidor.
+
+---
+
+## Estrutura do repositório
+
+```
+transparencia-caninde/
+├── server/                 # Servidor WebSocket + scrapers
+├── kmp-app/                # App Kotlin Multiplatform
+│   ├── androidApp/
+│   └── shared/
+├── docs/                   # Roadmap, hospedagem
+├── releases/android/       # Artefatos de release locais (AAB/APK)
+├── store-assets/           # Materiais divulgação (Instagram, etc.)
+├── API.md                  # Contrato WebSocket
+├── render.yaml             # Deploy Render
+└── docker-compose.yml
+```
 
 ---
 
@@ -267,15 +408,10 @@ npm start
 npm run dev
 ```
 
-Servidor em `ws://localhost:8080` (emulador Android: `ws://10.0.2.2:8080`).
-
-Se a porta estiver em uso:
-
-```bash
-lsof -i :8080 -sTCP:LISTEN
-kill <PID>
-npm start
-```
+- Local: `ws://localhost:8080`
+- Emulador Android: `ws://10.0.2.2:8080`
+- Produção (Render): `wss://transparencia-caninde.onrender.com`
+- Health: `GET /health`
 
 ### Variáveis de ambiente
 
@@ -283,7 +419,7 @@ npm start
 |----------|-----------|
 | `PORT` | Porta (padrão `8080`) |
 | `NODE_ENV` | `production` — valida certificados TLS no scraping |
-| `WS_AUTH_TOKEN` | Exige `?token=` na conexão WebSocket ([`.env.example`](server/.env.example)) |
+| `WS_AUTH_TOKEN` | Exige `?token=` na conexão WS ([`.env.example`](server/.env.example)) |
 | `RATE_LIMIT_MAX` | Máximo de mensagens por IP por janela |
 | `RATE_LIMIT_WINDOW_MS` | Janela do rate limit (padrão 60000) |
 
@@ -293,26 +429,37 @@ npm start
 docker compose up
 ```
 
-Sobe o servidor na porta **8080** ([`docker-compose.yml`](docker-compose.yml)).
+### Hospedagem gratuita
 
-### Hospedagem gratuita (nuvem)
+Deploy no **Render** via [`render.yaml`](render.yaml). Guia: [`docs/HOSPEDAGEM-GRATUITA.md`](docs/HOSPEDAGEM-GRATUITA.md).
 
-Deploy no **Render** (plano free) com um clique via [`render.yaml`](render.yaml). Guia completo: [`docs/HOSPEDAGEM-GRATUITA.md`](docs/HOSPEDAGEM-GRATUITA.md).
-
-- URL WebSocket (staging): `wss://transparencia-caninde.onrender.com`
-- Health check: `GET /health`
-- Alternativa 24/7: [Fly.io](docs/HOSPEDAGEM-GRATUITA.md#alternativa-flyio-mais-estável-247) (`server/fly.toml`)
+---
 
 ## App Android
 
+| Flavor | WebSocket | Pacote | Uso |
+|--------|-----------|--------|-----|
+| **dev** | `ws://10.0.2.2:8080` | `…transparencia.dev` | Emulador + servidor local |
+| **staging** | `wss://transparencia-caninde.onrender.com` | `…transparencia.staging` | Testes em dispositivo |
+| **prod** | `wss://transparencia-caninde.onrender.com` | `br.gov.caninde.transparencia` | Play Store |
+
 ```bash
 cd kmp-app
+
+# Desenvolvimento
 ./gradlew :androidApp:installDevDebug
+
+# Staging (celular → Render)
+./gradlew :androidApp:installStagingDebug
+
+# Release Play Store
+./gradlew :androidApp:bundleProdRelease
+# Saída: androidApp/build/outputs/bundle/prodRelease/androidApp-prod-release.aab
 ```
 
-Variantes `dev`, `staging`, `prod` definem host/porta/esquema do WebSocket via `BuildConfig`.
+Artefatos copiados em `releases/android/v1.1.0/`. Assinatura release: `kmp-app/keystore.properties` + `release.jks` (gitignored). Ver [`keystore.properties.example`](kmp-app/keystore.properties.example).
 
-**Ordem de execução:** subir o servidor antes de abrir o app.
+**Ordem:** subir o servidor (ou usar Render) antes de abrir o app.
 
 ---
 
@@ -322,6 +469,8 @@ Variantes `dev`, `staging`, `prod` definem host/porta/esquema do WebSocket via `
 git clone https://github.com/jordilucas/transparencia_caninde.git
 cd transparencia_caninde
 ```
+
+---
 
 ## Licença
 
