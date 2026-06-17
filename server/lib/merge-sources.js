@@ -1,6 +1,7 @@
 'use strict';
 
 const { filterValidLicitacoes } = require('./licitacao-html');
+const { enrichSecretarias } = require('./secretaria-enrich');
 
 function parseBrazilianDate(str) {
   if (!str || typeof str !== 'string') return 0;
@@ -154,6 +155,12 @@ function mergeSecretariaPair(winner, loser) {
     merged.contato = mergeObjects(winner.contato || {}, loser.contato || {});
   }
   merged.fonteOrigem = winner.fonteOrigem || loser.fonteOrigem || '';
+  if ((winner.contratos || []).length >= (loser.contratos || []).length) {
+    merged.contratos = winner.contratos || [];
+    merged.licitacoes = winner.licitacoes || [];
+    merged.projetosAndamento = winner.projetosAndamento || [];
+    merged.resumoFinanceiro = winner.resumoFinanceiro || loser.resumoFinanceiro;
+  }
   return merged;
 }
 
@@ -256,14 +263,19 @@ function mergePrefeituraSources(jsonBundle, htmlBundle) {
 
   const contratos = mergeContratos(jc, hc);
   const licitacoes = mergeLicitacoes(jl, hl);
-  const secretarias = mergeSecretarias(js, hs);
+  const secretariasMerged = mergeSecretarias(js, hs);
+  const secretariasEnriched = enrichSecretarias(
+    secretariasMerged.items,
+    contratos.items,
+    licitacoes.items,
+  );
   const publicacoes = mergePublicacoes(jp, htmlBundle?.diarios || []);
   const gestores = mergeGestores(jg, hg);
 
   const allSources = new Set([
     ...contratos.sourcesUsed,
     ...licitacoes.sourcesUsed,
-    ...secretarias.sourcesUsed,
+    ...secretariasMerged.sourcesUsed,
     ...publicacoes.sourcesUsed,
     ...gestores.sourcesUsed,
   ]);
@@ -273,7 +285,7 @@ function mergePrefeituraSources(jsonBundle, htmlBundle) {
   return {
     contratos: contratos.items,
     licitacoes: licitacoes.items,
-    secretarias: secretarias.items,
+    secretarias: secretariasEnriched,
     publicacoes: mergedPublicacoes,
     gestores: gestores.items,
     diariosOficiais: publicacoesToDiariosStrings(mergedPublicacoes),

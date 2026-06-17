@@ -113,15 +113,36 @@ object DataMerge {
         if (s.secretario.isNotBlank()) score += 100_000
         if (s.contato.email.isNotBlank()) score += 10_000
         if (s.contato.telefone.isNotBlank()) score += 1_000
-        if (s.contato.horarioFuncionamento.isNotBlank()) score += 100
+        if (s.contato.endereco.isNotBlank()) score += 100
+        score += (s.resumoFinanceiro.totalContratos + s.resumoFinanceiro.totalLicitacoes).toLong() * 10
+        score += s.resumoFinanceiro.totalProjetosAndamento.toLong()
         return score
     }
 
     private fun mergeSecretaria(preferred: Secretaria, fallback: Secretaria) = preferred.copy(
         nome = preferred.nome.ifBlank { fallback.nome },
         secretario = preferred.secretario.ifBlank { fallback.secretario },
+        cargoGestor = preferred.cargoGestor.ifBlank { fallback.cargoGestor },
         url = preferred.url.ifBlank { fallback.url },
         contato = mergeContato(preferred.contato, fallback.contato),
+        resumoFinanceiro = mergeResumoFinanceiro(preferred.resumoFinanceiro, fallback.resumoFinanceiro),
+        contratos = if (preferred.contratos.isNotEmpty()) preferred.contratos else fallback.contratos,
+        licitacoes = if (preferred.licitacoes.isNotEmpty()) preferred.licitacoes else fallback.licitacoes,
+        projetosAndamento = if (preferred.projetosAndamento.isNotEmpty()) {
+            preferred.projetosAndamento
+        } else {
+            fallback.projetosAndamento
+        },
+    )
+
+    private fun mergeResumoFinanceiro(
+        preferred: SecretariaResumoFinanceiro,
+        fallback: SecretariaResumoFinanceiro,
+    ) = preferred.copy(
+        totalContratos = maxOf(preferred.totalContratos, fallback.totalContratos),
+        totalLicitacoes = maxOf(preferred.totalLicitacoes, fallback.totalLicitacoes),
+        totalProjetosAndamento = maxOf(preferred.totalProjetosAndamento, fallback.totalProjetosAndamento),
+        totalGastos = preferred.totalGastos.ifBlank { fallback.totalGastos },
     )
 
     private fun mergeContato(preferred: Contato, fallback: Contato) = preferred.copy(

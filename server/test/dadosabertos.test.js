@@ -37,10 +37,22 @@ describe('scraper-prefeitura-dadosabertos', () => {
 
   it('mapSecretarias preenche contato', () => {
     const out = mapSecretarias([
-      { Id: 3, Secretaria: 'Educação', Gestor: 'Maria', Email: 'edu@caninde.ce.gov.br', Telefone1: '8834' },
+      {
+        Id: 3,
+        Secretaria: 'Educação',
+        Gestor: 'Maria Silva',
+        Cargo: 'Secretária',
+        Email: 'edu@caninde.ce.gov.br',
+        Telefone1: '8834',
+        Rua: 'Rua A',
+        Bairro: 'Centro',
+      },
     ]);
     assert.equal(out[0].nome, 'Educação');
+    assert.equal(out[0].secretario, 'Maria Silva');
+    assert.equal(out[0].cargoGestor, 'Secretária');
     assert.equal(out[0].contato.email, 'edu@caninde.ce.gov.br');
+    assert.match(out[0].contato.endereco, /Centro/);
   });
 
   it('mapPublicacoes resolve titulo e url', () => {

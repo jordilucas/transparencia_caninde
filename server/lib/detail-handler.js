@@ -56,6 +56,29 @@ function createDetailHandler({ http, cheerio, getCache }) {
       case 'secretaria': {
         const html = await fetchHtml(`${detailPref.BASE}/secretaria.php?sec=${id}`);
         result = detailPref.scrapeSecretariaDetail(html, cheerio, id);
+        const listItem = (cache?.prefeitura?.secretarias || []).find((s) => String(s.id) === String(id));
+        if (listItem && result?.secretaria) {
+          result.secretaria = {
+            ...listItem,
+            ...result.secretaria,
+            nome: result.secretaria.nome || listItem.nome,
+            secretario: listItem.secretario || result.secretaria.secretario,
+            cargoGestor: listItem.cargoGestor || result.secretaria.cargoGestor || '',
+            contato: {
+              ...(listItem.contato || {}),
+              ...(result.secretaria.contato || {}),
+              email: listItem.contato?.email || result.secretaria.contato?.email || '',
+              telefone: listItem.contato?.telefone || result.secretaria.contato?.telefone || '',
+              endereco: listItem.contato?.endereco || result.secretaria.contato?.endereco || '',
+              horarioFuncionamento: listItem.contato?.horarioFuncionamento
+                || result.secretaria.contato?.horarioFuncionamento || '',
+            },
+            resumoFinanceiro: listItem.resumoFinanceiro || result.secretaria.resumoFinanceiro,
+            contratos: listItem.contratos || [],
+            licitacoes: listItem.licitacoes || [],
+            projetosAndamento: listItem.projetosAndamento || [],
+          };
+        }
         break;
       }
       case 'gestor':

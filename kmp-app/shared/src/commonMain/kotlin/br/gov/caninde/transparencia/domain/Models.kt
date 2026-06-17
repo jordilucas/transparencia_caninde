@@ -117,12 +117,35 @@ data class LinkExterno(
 )
 
 @Serializable
+data class SecretariaResumoFinanceiro(
+    val totalContratos: Int = 0,
+    val totalLicitacoes: Int = 0,
+    val totalProjetosAndamento: Int = 0,
+    val totalGastos: String = "",
+)
+
+@Serializable
+data class ProjetoAndamento(
+    val titulo: String = "",
+    val tipo: String = "",
+    val situacao: String = "",
+    val valor: String = "",
+    val url: String = "",
+    val numero: String = "",
+)
+
+@Serializable
 data class Secretaria(
     val id: String = "",
     val nome: String = "",
     val secretario: String = "",
+    val cargoGestor: String = "",
     val url: String = "",
     val contato: Contato = Contato(),
+    val resumoFinanceiro: SecretariaResumoFinanceiro = SecretariaResumoFinanceiro(),
+    val contratos: List<Contrato> = emptyList(),
+    val licitacoes: List<Licitacao> = emptyList(),
+    val projetosAndamento: List<ProjetoAndamento> = emptyList(),
 )
 
 @Serializable

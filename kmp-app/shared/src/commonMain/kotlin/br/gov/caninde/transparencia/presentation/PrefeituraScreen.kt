@@ -399,6 +399,13 @@ fun LazyListScope.secretariasItems(secretarias: List<Secretaria>, onClick: (Secr
         return
     }
     items(secretarias) { s ->
+        val resumo = s.resumoFinanceiro
+        val stats = buildList {
+            if (resumo.totalProjetosAndamento > 0) add("${resumo.totalProjetosAndamento} em andamento")
+            if (resumo.totalContratos > 0) add("${resumo.totalContratos} contratos")
+            if (resumo.totalLicitacoes > 0) add("${resumo.totalLicitacoes} licitações")
+            if (resumo.totalGastos.isNotBlank()) add(resumo.totalGastos)
+        }
         ListRow(
             icon = {
                 IconContainer(AppColors.Blue100) {
@@ -408,9 +415,12 @@ fun LazyListScope.secretariasItems(secretarias: List<Secretaria>, onClick: (Secr
             },
             title = s.nome,
             subtitle = listOfNotNull(
-                s.secretario.takeIf { it.isNotBlank() },
+                s.secretario.takeIf { it.isNotBlank() }?.let { sec ->
+                    if (s.cargoGestor.isNotBlank()) "$sec · ${s.cargoGestor}" else sec
+                },
+                stats.joinToString(" · ").takeIf { it.isNotBlank() },
                 s.contato.email.takeIf { it.isNotBlank() },
-            ).joinToString(" · "),
+            ).joinToString("\n"),
             trailing = {
                 Icon(Icons.Default.ChevronRight, contentDescription = null,
                     tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))

@@ -24,8 +24,10 @@ function isEmptyResponse(body) {
 }
 
 async function fetchDataset(http, dataset, ano) {
-  const year = ano || new Date().getFullYear();
-  const params = new URLSearchParams({ d: dataset, a: String(year), f: 'json' });
+  const params = new URLSearchParams({ d: dataset, f: 'json' });
+  if (dataset !== 'secretarias') {
+    params.set('a', String(ano || new Date().getFullYear()));
+  }
   const { data } = await http.get(`${EXPORT_URL}?${params.toString()}`, {
     responseType: 'text',
     transformResponse: [(r) => r],
@@ -43,13 +45,16 @@ async function fetchDataset(http, dataset, ano) {
 function mapContratos(rows) {
   return rows.map((r) => {
     const pdf = resolveUrl(r.Arquivo || r.DemaisArquivos || '');
+    const valorNumerico = parseFloat(String(r.ValorGlobal || '').replace(/\./g, '').replace(',', '.')) || 0;
     return {
       id: String(r.Id ?? ''),
       numero: String(r.NumeroContrato || r.NumeroProcesso || r.Id || '').trim(),
       objeto: String(r.Objeto || '').trim().substring(0, 300),
       valor: formatBRL(r.ValorGlobal) || String(r.ValorGlobal || '').trim(),
+      valorNumerico,
       empresa: String(r.NomeCredor || '').trim(),
       data: String(r.DataContrato || r.VigenciaInicio || '').trim(),
+      vigenciaFim: String(r.VigenciaFim || '').trim(),
       cnpjCredor: String(r.CNPJCPF || '').trim(),
       secretaria: String(r.Secretaria || '').trim(),
       modalidade: String(r.Modalidade || '').trim(),
@@ -73,19 +78,35 @@ function mapLicitacoes(rows) {
 }
 
 function mapSecretarias(rows) {
-  return rows.map((r) => ({
-    id: String(r.Id ?? ''),
-    nome: String(r.Secretaria || '').trim(),
-    secretario: String(r.Gestor || '').trim(),
-    url: `${BASE}/secretaria.php?sec=${r.Id || ''}`,
-    contato: {
-      email: String(r.Email || '').trim(),
-      telefone: String(r.Telefone1 || r.Telefone2 || '').trim(),
-      whatsapp: '',
-      endereco: '',
-      horarioFuncionamento: String(r.HorarioFunciona || '').trim(),
-    },
-  })).filter((s) => s.nome);
+  return rows.map((r) => {
+    const rua = String(r.Rua || '').trim();
+    const numero = String(r.Numero || '').trim();
+    const bairro = String(r.Bairro || '').trim();
+    const enderecoParts = [rua, numero, bairro].filter(Boolean);
+    return {
+      id: String(r.Id ?? ''),
+      nome: String(r.Secretaria || '').trim(),
+      secretario: String(r.Gestor || '').trim(),
+      cargoGestor: String(r.Cargo || '').trim(),
+      url: `${BASE}/secretaria.php?sec=${r.Id || ''}`,
+      contato: {
+        email: String(r.Email || '').trim(),
+        telefone: String(r.Telefone1 || r.Telefone2 || '').trim(),
+        whatsapp: '',
+        endereco: enderecoParts.join(', '),
+        horarioFuncionamento: String(r.HorarioFunciona || '').trim(),
+      },
+      resumoFinanceiro: {
+        totalContratos: 0,
+        totalLicitacoes: 0,
+        totalProjetosAndamento: 0,
+        totalGastos: '',
+      },
+      contratos: [],
+      licitacoes: [],
+      projetosAndamento: [],
+    };
+  }).filter((s) => s.nome);
 }
 
 function mapPublicacoes(rows) {

@@ -360,11 +360,109 @@ fun SecretariaDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
     val s = state.payload?.secretaria
     DetailScaffold(title = s?.nome ?: "Secretaria", onBack = onBack) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Secretaria, id) }
-        s?.let {
-            if (it.secretario.isNotBlank()) DetailField("Secretário(a)", it.secretario)
+        s?.let { secretaria ->
+            if (secretaria.secretario.isNotBlank()) {
+                val gestor = if (secretaria.cargoGestor.isNotBlank()) {
+                    "${secretaria.secretario} · ${secretaria.cargoGestor}"
+                } else {
+                    secretaria.secretario
+                }
+                DetailField("Secretário(a) atual", gestor)
+            }
+            val resumo = secretaria.resumoFinanceiro
+            if (resumo.totalGastos.isNotBlank()
+                || resumo.totalContratos > 0
+                || resumo.totalLicitacoes > 0
+            ) {
+                DetailSectionHeader("Resumo financeiro")
+                if (resumo.totalGastos.isNotBlank()) DetailField("Total em contratos", resumo.totalGastos)
+                if (resumo.totalContratos > 0) DetailField("Contratos", "${resumo.totalContratos}")
+                if (resumo.totalLicitacoes > 0) DetailField("Licitações vinculadas", "${resumo.totalLicitacoes}")
+            }
+            if (secretaria.projetosAndamento.isNotEmpty()) {
+                DetailSectionHeader("Projetos em andamento")
+                secretaria.projetosAndamento.forEach { projeto ->
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = AppColors.Card),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                projeto.titulo.ifBlank { projeto.numero },
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp,
+                                color = AppColors.TextPrimary,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                listOfNotNull(
+                                    projeto.tipo.takeIf { it.isNotBlank() },
+                                    projeto.situacao.takeIf { it.isNotBlank() },
+                                    projeto.valor.takeIf { it.isNotBlank() },
+                                ).joinToString(" · "),
+                                fontSize = 11.sp,
+                                color = AppColors.TextSecondary,
+                            )
+                            if (projeto.url.isNotBlank()) {
+                                DetailLinkAction(
+                                    label = "Abrir",
+                                    url = projeto.url,
+                                    baseUrl = PREFEITURA_PORTAL_BASE,
+                                    actionText = "Ver no portal",
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            if (secretaria.licitacoes.isNotEmpty()) {
+                DetailSectionHeader("Licitações")
+                secretaria.licitacoes.forEach { lic ->
+                    val info = lic.displayInfo()
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = AppColors.Card),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(info.titulo, fontWeight = FontWeight.Medium, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            if (info.descricao.isNotBlank()) {
+                                Text(info.descricao, fontSize = 11.sp, color = AppColors.TextSecondary)
+                            }
+                            if (lic.url.isNotBlank()) {
+                                DetailLinkAction(label = "Portal", url = lic.url, baseUrl = PREFEITURA_PORTAL_BASE)
+                            }
+                        }
+                    }
+                }
+            }
+            if (secretaria.contratos.isNotEmpty()) {
+                DetailSectionHeader("Contratos")
+                secretaria.contratos.forEach { contrato ->
+                    val info = contrato.normalized().displayInfo()
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = AppColors.Card),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(info.titulo, fontWeight = FontWeight.Medium, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            if (contrato.valor.isNotBlank()) {
+                                Text(contrato.valor, fontSize = 12.sp, color = AppColors.Green700, fontWeight = FontWeight.SemiBold)
+                            }
+                            if (info.descricao.isNotBlank()) {
+                                Text(info.descricao, fontSize = 11.sp, color = AppColors.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            }
+                            val docUrl = contrato.pdfUrl.ifBlank { contrato.url }
+                            if (docUrl.isNotBlank()) {
+                                DetailLinkAction(label = "Documento", url = docUrl, baseUrl = PREFEITURA_PORTAL_BASE)
+                            }
+                        }
+                    }
+                }
+            }
             DetailSectionHeader("Contato")
-            ContatoSection(it.contato)
-            if (it.url.isNotBlank()) DetailPortalLink(it.url, PREFEITURA_PORTAL_BASE)
+            ContatoSection(secretaria.contato)
+            if (secretaria.url.isNotBlank()) DetailPortalLink(secretaria.url, PREFEITURA_PORTAL_BASE)
         }
     }
 }
