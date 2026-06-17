@@ -20,10 +20,15 @@ cd kmp-app
 # Desenvolvimento (emulador → host local)
 ./gradlew :androidApp:installDevDebug
 
-# Staging / produção
-./gradlew :androidApp:assembleStagingDebug
+# Staging (Render) — recomendado para testar no celular
+./gradlew :androidApp:installStagingDebug
+
+# Release (Play Store): exige keystore.properties — ver keystore.properties.example
+./gradlew :androidApp:assembleStagingRelease
 ./gradlew :androidApp:assembleProdRelease
 ```
+
+Sem `keystore.properties`, **release** assina com a chave **debug** (ok para testes; use keystore próprio na Play Store).
 
 ## Rede
 

@@ -44,6 +44,7 @@ DerivedData/
 *.jks
 *.keystore
 release.jks
+kmp-app/keystore.properties
 
 # ─── Sistema e logs ───────────────────────────────────────────────────────────
 .DS_Store
