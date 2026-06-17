@@ -23,6 +23,7 @@ const { attachCharts } = require('./lib/charts');
 const { createDetailHandler } = require('./lib/detail-handler');
 const dadosAbertos = require('./lib/scraper-prefeitura-dadosabertos');
 const camaraTransp = require('./lib/scraper-camara-transparencia');
+const mergeSources = require('./lib/merge-sources');
 
 const PORT = config.port;
 const PREF_INTERVAL = config.prefInterval;
@@ -33,7 +34,7 @@ const rateLimit = createRateLimiter({
   max: config.rateLimitMax,
 });
 
-const http = axios.create({
+const httpClient = axios.create({
   timeout: 15_000,
   httpsAgent: httpAgent,
   headers: {
@@ -51,7 +52,7 @@ let cache = {
 };
 
 const detailHandler = createDetailHandler({
-  http,
+  http: httpClient,
   cheerio,
   getCache: () => cache,
 });
@@ -76,43 +77,39 @@ async function scrapePrefeitura() {
   console.log('[Prefeitura] iniciando scraping...');
   try {
     const year = new Date().getFullYear();
-    let da = null;
-    try {
-      da = await dadosAbertos.scrapePrefeituraDadosAbertos(http, year);
-      console.log(`[Prefeitura] dados abertos JSON — ${da.contratos.length} contratos, ${da.licitacoes.length} licitações`);
-    } catch (e) {
-      console.warn('[Prefeitura] dados abertos indisponível:', e.message);
+
+    const [jsonResult, htmlResult] = await Promise.allSettled([
+      dadosAbertos.scrapePrefeituraDadosAbertos(httpClient, year),
+      scraperPrefeitura.scrapePrefeituraHtml(httpClient, cheerio),
+    ]);
+
+    const jsonBundle = jsonResult.status === 'fulfilled' ? jsonResult.value : null;
+    const htmlBundle = htmlResult.status === 'fulfilled' ? htmlResult.value : null;
+
+    if (jsonResult.status === 'rejected') {
+      console.warn('[Prefeitura] dados abertos indisponível:', jsonResult.reason?.message || jsonResult.reason);
+    }
+    if (htmlResult.status === 'rejected') {
+      console.warn('[Prefeitura] HTML indisponível:', htmlResult.reason?.message || htmlResult.reason);
     }
 
-    let contratos = da?.contratos || [];
-    let licitacoes = da?.licitacoes || [];
-    let secretarias = da?.secretarias || [];
-    const publicacoes = da?.publicacoes || [];
+    const merged = mergeSources.mergePrefeituraSources(jsonBundle || {}, htmlBundle || {});
 
-    if (!contratos.length || !licitacoes.length) {
-      const { data: htmlMain } = await http.get('https://www.caninde.ce.gov.br/acessoainformacao.php');
-      const $m = cheerio.load(htmlMain);
-      if (!contratos.length) {
-        const { data: htmlContratos } = await http.get('https://www.caninde.ce.gov.br/contratos.php');
-        contratos = scraperPrefeitura.scrapeContratos(cheerio.load(htmlContratos), 30);
-      }
-      if (!licitacoes.length) {
-        const { data: htmlLicit } = await http.get('https://www.caninde.ce.gov.br/licitacao.php');
-        licitacoes = scraperPrefeitura.scrapeLicitacoes(cheerio.load(htmlLicit), 25);
-      }
-      if (!secretarias.length) {
-        secretarias = scraperPrefeitura.scrapeSecretariasFromHtml($m).slice(0, 20);
-      }
-    }
+    const contratos = merged.contratos.slice(0, 30);
+    const licitacoes = merged.licitacoes.slice(0, 25);
+    const secretarias = merged.secretarias.slice(0, 20);
+    const publicacoes = merged.publicacoes.slice(0, 30);
+    const diarios = merged.diariosOficiais.slice(0, 15);
 
-    let diarios = publicacoes.slice(0, 15).map((p) => {
-      const t = `${p.titulo}${p.data ? ` — ${p.data}` : ''}`;
-      return t.substring(0, 200);
-    });
-    if (!diarios.length) {
-      const { data: htmlDiario } = await http.get('https://www.caninde.ce.gov.br/diariolista.php');
-      diarios = scraperPrefeitura.scrapeDiarios(cheerio.load(htmlDiario), 15);
-    }
+    const fonteParts = [
+      jsonBundle?.fonte,
+      htmlBundle?.fonte,
+    ].filter(Boolean);
+
+    console.log(
+      `[Prefeitura] merge — ${contratos.length} contratos, ${licitacoes.length} licitações`
+      + ` (fontes: ${merged.fontesUtilizadas.join('+') || 'nenhuma'})`,
+    );
 
     const result = {
       ...scrapeResult.buildPrefeituraPayload({
@@ -122,7 +119,8 @@ async function scrapePrefeitura() {
         secretarias,
         publicacoes,
         linksTransparencia: camaraTransp.buildLinksTransparenciaPrefeitura(),
-        fonte: da?.fonte || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
+        fonte: fonteParts.join(' + ') || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
+        fontesUtilizadas: merged.fontesUtilizadas,
       }),
       scrapedAt: now(),
     };
@@ -144,14 +142,14 @@ async function scrapePrefeitura() {
 async function scrapeCamara() {
   console.log('[Câmara] iniciando scraping (Canindé/CE)...');
   try {
-    const { data: htmlParl } = await http.get(`${scraperCamara.BASE}/parlamentares/`);
+    const { data: htmlParl } = await httpClient.get(`${scraperCamara.BASE}/parlamentares/`);
     const parlamentares = scraperCamara.scrapeParlamentaresFromHtml(htmlParl, cheerio);
     const mesaDiretora = scraperCamara.scrapeMesaDiretoraFromHtml(htmlParl, cheerio);
 
-    const { data: htmlSessoes } = await http.get(`${scraperCamara.BASE}/sessoes/`);
+    const { data: htmlSessoes } = await httpClient.get(`${scraperCamara.BASE}/sessoes/`);
     const sessoes = scraperCamara.scrapeSessoesFromHtml(htmlSessoes, cheerio);
 
-    const { data: htmlMat } = await http.get(`${scraperCamara.BASE}/materias/`);
+    const { data: htmlMat } = await httpClient.get(`${scraperCamara.BASE}/materias/`);
     const materias = scraperCamara.scrapeMateriasFromHtml(htmlMat, cheerio);
 
     const result = {

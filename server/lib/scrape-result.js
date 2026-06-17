@@ -14,6 +14,7 @@ function buildPrefeituraPayload({
   linksTransparencia = [],
   fonte,
   scrapeError = null,
+  fontesUtilizadas = [],
 }) {
   const missing = [];
   if (contratos.length === 0) missing.push('contratos');
@@ -48,6 +49,7 @@ function buildPrefeituraPayload({
       totalLicitacoes: licitacoes.length,
       totalPublicacoes: publicacoes.length,
       exercicio: new Date().getFullYear(),
+      fontesUtilizadas,
     },
     error,
   };

@@ -71,10 +71,37 @@ function scrapeDiarios($d, limit = 15) {
   return diarios;
 }
 
+async function scrapePrefeituraHtml(http, cheerio, limits = {}) {
+  const maxContratos = limits.contratos ?? 30;
+  const maxLicitacoes = limits.licitacoes ?? 25;
+  const maxDiarios = limits.diarios ?? 15;
+  const maxSecretarias = limits.secretarias ?? 20;
+
+  const { data: htmlMain } = await http.get(`${BASE}/acessoainformacao.php`);
+  const $m = cheerio.load(htmlMain);
+
+  const [{ data: htmlContratos }, { data: htmlLicit }, { data: htmlDiario }] = await Promise.all([
+    http.get(`${BASE}/contratos.php`),
+    http.get(`${BASE}/licitacao.php`),
+    http.get(`${BASE}/diariolista.php`),
+  ]);
+
+  const tag = (list) => list.map((item) => ({ ...item, fonteOrigem: 'html' }));
+
+  return {
+    contratos: tag(scrapeContratos(cheerio.load(htmlContratos), maxContratos)),
+    licitacoes: tag(scrapeLicitacoes(cheerio.load(htmlLicit), maxLicitacoes)),
+    secretarias: tag(scrapeSecretariasFromHtml($m).slice(0, maxSecretarias)),
+    diarios: scrapeDiarios(cheerio.load(htmlDiario), maxDiarios),
+    fonte: `${BASE}/acessoainformacao.php (HTML)`,
+  };
+}
+
 module.exports = {
   BASE,
   scrapeSecretariasFromHtml,
   scrapeContratos,
   scrapeLicitacoes,
   scrapeDiarios,
+  scrapePrefeituraHtml,
 };
