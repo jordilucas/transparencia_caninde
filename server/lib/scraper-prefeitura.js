@@ -2,6 +2,7 @@
 
 const BASE = 'https://www.caninde.ce.gov.br';
 const { parseContratoHtmlRow } = require('./contrato-html');
+const { scrapeGestoresFromHtml } = require('./gestor-html');
 
 function scrapeSecretariasFromHtml($m) {
   const secretarias = [];
@@ -44,22 +45,9 @@ function scrapeContratos($c, limit = 30) {
   return contratos;
 }
 
-function scrapeLicitacoes($l, limit = 25) {
-  const licitacoes = [];
-  $l('table tbody tr').each((i, row) => {
-    if (i >= limit) return false;
-    const cols = $l(row).find('td');
-    if (cols.length >= 2) {
-      licitacoes.push({
-        numero: $l(cols[0]).text().trim(),
-        modalidade: $l(cols[1]).text().trim(),
-        objeto: $l(cols[2])?.text().trim().substring(0, 200) || '',
-        situacao: $l(cols[3])?.text().trim() || '',
-        url: '',
-      });
-    }
-  });
-  return licitacoes;
+function scrapeLicitacoes() {
+  // licitacao.php lista apenas comissão e locais — licitações reais vêm do JSON (dados abertos).
+  return [];
 }
 
 function scrapeDiarios($d, limit = 15) {
@@ -81,17 +69,19 @@ async function scrapePrefeituraHtml(http, cheerio, limits = {}) {
   const { data: htmlMain } = await http.get(`${BASE}/acessoainformacao.php`);
   const $m = cheerio.load(htmlMain);
 
-  const [{ data: htmlContratos }, { data: htmlLicit }, { data: htmlDiario }] = await Promise.all([
+  const [{ data: htmlContratos }, { data: htmlLicit }, { data: htmlDiario }, { data: htmlGestores }] = await Promise.all([
     http.get(`${BASE}/contratos.php`),
     http.get(`${BASE}/licitacao.php`),
     http.get(`${BASE}/diariolista.php`),
+    http.get(`${BASE}/gestores.php`, { responseType: 'text', transformResponse: [(r) => r] }),
   ]);
 
   const tag = (list) => list.map((item) => ({ ...item, fonteOrigem: 'html' }));
 
   return {
     contratos: tag(scrapeContratos(cheerio.load(htmlContratos), maxContratos)),
-    licitacoes: tag(scrapeLicitacoes(cheerio.load(htmlLicit), maxLicitacoes)),
+    licitacoes: tag(scrapeLicitacoes()),
+    gestores: tag(scrapeGestoresFromHtml(htmlGestores, cheerio)),
     secretarias: tag(scrapeSecretariasFromHtml($m).slice(0, maxSecretarias)),
     diarios: scrapeDiarios(cheerio.load(htmlDiario), maxDiarios),
     fonte: `${BASE}/acessoainformacao.php (HTML)`,

@@ -100,6 +100,7 @@ async function scrapePrefeitura() {
     const secretarias = merged.secretarias.slice(0, 20);
     const publicacoes = merged.publicacoes.slice(0, 30);
     const diarios = merged.diariosOficiais.slice(0, 15);
+    const gestores = merged.gestores.slice(0, 4);
 
     const fonteParts = [
       jsonBundle?.fonte,
@@ -118,6 +119,7 @@ async function scrapePrefeitura() {
         diariosOficiais: diarios,
         secretarias,
         publicacoes,
+        gestores,
         linksTransparencia: camaraTransp.buildLinksTransparenciaPrefeitura(),
         fonte: fonteParts.join(' + ') || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
         fontesUtilizadas: merged.fontesUtilizadas,

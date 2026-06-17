@@ -11,6 +11,7 @@ function buildPrefeituraPayload({
   diariosOficiais = [],
   secretarias = [],
   publicacoes = [],
+  gestores = [],
   linksTransparencia = [],
   fonte,
   scrapeError = null,
@@ -43,6 +44,7 @@ function buildPrefeituraPayload({
     diariosOficiais,
     secretarias,
     publicacoes,
+    gestores,
     linksTransparencia,
     resumo: {
       totalContratos: contratos.length,

@@ -332,18 +332,18 @@ fun SecretariaDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
 fun ContratoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onBack: () -> Unit) {
     val state by viewModel.detailState.collectAsState()
     LaunchedEffect(numero) { viewModel.loadDetail(DetailEntity.Contrato, numero) }
-    val c = state.payload?.contrato
-    DetailScaffold(title = "Contrato $numero", onBack = onBack) {
+    val c = state.payload?.contrato?.normalized()
+    val info = c?.displayInfo()
+    DetailScaffold(title = info?.titulo ?: "Contrato $numero", onBack = onBack) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Contrato, numero) }
         c?.let {
-            DetailField("Número", it.numero)
-            DetailField("Objeto", it.objeto.ifBlank { "—" })
-            DetailField("Valor", it.valor.ifBlank { "—" })
-            DetailField("Empresa", it.empresa.ifBlank { "—" })
+            if (it.valor.isNotBlank()) DetailField("Valor", it.valor)
+            if (it.objeto.isNotBlank()) DetailField("Descrição", it.objeto)
+            if (it.empresa.isNotBlank()) DetailField("Empresa", it.empresa)
             if (it.cnpjCredor.isNotBlank()) DetailField("CNPJ/CPF", it.cnpjCredor)
-            if (it.secretaria.isNotBlank()) DetailField("Secretaria", it.secretaria)
+            DetailField("Número", it.numero.replace("CONTRATO ORIGINAL", "", ignoreCase = true).trim().ifBlank { "—" })
             if (it.modalidade.isNotBlank()) DetailField("Modalidade", it.modalidade)
-            DetailField("Data", it.data.ifBlank { "—" })
+            DetailField("Vigência", it.data.ifBlank { "—" })
             val docUrl = it.pdfUrl.ifBlank { it.url }
             if (docUrl.isNotBlank()) {
                 val resolved = resolveAbsoluteUrl(docUrl, PREFEITURA_PORTAL_BASE)
@@ -362,14 +362,16 @@ fun LicitacaoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onB
     val state by viewModel.detailState.collectAsState()
     LaunchedEffect(numero) { viewModel.loadDetail(DetailEntity.Licitacao, numero) }
     val l = state.payload?.licitacao
-    DetailScaffold(title = "Licitação $numero", onBack = onBack) {
+    val info = l?.displayInfo()
+    DetailScaffold(title = info?.titulo?.take(48) ?: "Licitação $numero", onBack = onBack) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Licitacao, numero) }
         l?.let {
-            DetailField("Número", it.numero)
-            DetailField("Modalidade", it.modalidade.ifBlank { "—" })
-            DetailField("Objeto", it.objeto.ifBlank { "—" })
-            DetailField("Situação", it.situacao.ifBlank { "—" })
-            if (it.dataAbertura.isNotBlank()) DetailField("Abertura", it.dataAbertura)
+            val display = it.displayInfo()
+            if (display.descricao.isNotBlank()) DetailField("Modalidade / processo", display.descricao)
+            DetailField("Número", it.numero.ifBlank { "—" })
+            DetailField("Situação", display.situacao)
+            if (display.meta.isNotBlank()) DetailField("Abertura", display.meta)
+            if (it.objeto.isNotBlank() && it.objeto != display.titulo) DetailField("Objeto", it.objeto)
             if (it.url.isNotBlank()) {
                 val resolved = resolveAbsoluteUrl(it.url, PREFEITURA_PORTAL_BASE)
                 DetailLinkAction(
@@ -412,8 +414,8 @@ fun GestoresDetailScreen(viewModel: TransparenciaViewModel, onBack: () -> Unit) 
                 colors = CardDefaults.cardColors(containerColor = AppColors.Card),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(g.nome, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(g.nome, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = AppColors.Navy800)
                     Text(g.cargo, fontSize = 12.sp, color = AppColors.TextSecondary)
                     ContatoSection(g.contato)
                 }

@@ -1,6 +1,7 @@
 'use strict';
 
 const BASE = 'https://www.caninde.ce.gov.br';
+const { scrapeGestoresFromHtml } = require('./gestor-html');
 
 function emptyContato() {
   return { email: '', telefone: '', whatsapp: '', endereco: '', horarioFuncionamento: '' };
@@ -36,28 +37,7 @@ function scrapeSecretariaDetail(html, cheerio, secId) {
 }
 
 function scrapeGestores(html, cheerio) {
-  const $ = cheerio.load(html);
-  const gestores = [];
-  $('table tbody tr, .gestor, .card').each((i, el) => {
-    if (i >= 6) return false;
-    const nome = $(el).find('td, h3, h4, strong').first().text().trim();
-    const cargo = $(el).find('td').eq(1).text().trim() || $(el).find('small, p').first().text().trim();
-    if (nome && nome.length > 3) {
-      gestores.push({
-        nome,
-        cargo: cargo || 'Gestor',
-        foto: $(el).find('img').attr('src') || '',
-        contato: emptyContato(),
-      });
-    }
-  });
-  if (gestores.length === 0) {
-    const body = $('body').text();
-    const prefeitoM = body.match(/Prefeito[^\n]*/i);
-    if (prefeitoM) {
-      gestores.push({ nome: 'Francisco Jardel Sousa Pinho', cargo: 'Prefeito Municipal', foto: '', contato: emptyContato() });
-    }
-  }
+  const gestores = scrapeGestoresFromHtml(html, cheerio);
   return {
     entity: 'gestores',
     entityId: 'all',

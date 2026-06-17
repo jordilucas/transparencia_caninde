@@ -1,9 +1,6 @@
 'use strict';
 
-/**
- * Mescla listas de entidades de fontes distintas (JSON, HTML, cache),
- * mantendo sempre o registro mais recente e os campos mais completos.
- */
+const { filterValidLicitacoes } = require('./licitacao-html');
 
 function parseBrazilianDate(str) {
   if (!str || typeof str !== 'string') return 0;
@@ -169,6 +166,32 @@ function mergeSecretarias(jsonList, htmlList) {
   });
 }
 
+function gestorKey(g) {
+  const nome = String(g.nome || '').trim().toLowerCase();
+  return nome ? `nome:${nome}` : '';
+}
+
+function gestorRecency(g) {
+  const cargoScore = /^prefeito/i.test(String(g.cargo || '')) ? 2 : (/vice/i.test(String(g.cargo || '')) ? 1 : 0);
+  const fotoScore = g.foto ? 1 : 0;
+  return cargoScore * 10 + fotoScore;
+}
+
+function mergeGestorPair(winner, loser) {
+  const merged = mergeObjects(winner, loser);
+  merged.fonteOrigem = winner.fonteOrigem || loser.fonteOrigem || '';
+  return merged;
+}
+
+function mergeGestores(jsonList, htmlList) {
+  return mergeEntityLists(jsonList, htmlList, {
+    getKey: gestorKey,
+    getRecency: gestorRecency,
+    mergePair: mergeGestorPair,
+    tieBreak: (a, b) => (gestorRecency(a) >= gestorRecency(b) ? a : b),
+  });
+}
+
 function publicacaoKey(p) {
   const id = String(p.id || '').trim();
   if (id) return `id:${id}`;
@@ -223,22 +246,26 @@ function publicacoesToDiariosStrings(publicacoes, limit = 15) {
 function mergePrefeituraSources(jsonBundle, htmlBundle) {
   const jc = (jsonBundle?.contratos || []).map((c) => ({ ...c, fonteOrigem: c.fonteOrigem || 'json' }));
   const hc = (htmlBundle?.contratos || []).map((c) => ({ ...c, fonteOrigem: c.fonteOrigem || 'html' }));
-  const jl = (jsonBundle?.licitacoes || []).map((l) => ({ ...l, fonteOrigem: l.fonteOrigem || 'json' }));
-  const hl = (htmlBundle?.licitacoes || []).map((l) => ({ ...l, fonteOrigem: l.fonteOrigem || 'html' }));
+  const jl = filterValidLicitacoes((jsonBundle?.licitacoes || []).map((l) => ({ ...l, fonteOrigem: l.fonteOrigem || 'json' })));
+  const hl = filterValidLicitacoes((htmlBundle?.licitacoes || []).map((l) => ({ ...l, fonteOrigem: l.fonteOrigem || 'html' })));
   const js = (jsonBundle?.secretarias || []).map((s) => ({ ...s, fonteOrigem: s.fonteOrigem || 'json' }));
   const hs = (htmlBundle?.secretarias || []).map((s) => ({ ...s, fonteOrigem: s.fonteOrigem || 'html' }));
   const jp = (jsonBundle?.publicacoes || []).map((p) => ({ ...p, fonteOrigem: p.fonteOrigem || 'json' }));
+  const jg = (jsonBundle?.gestores || []).map((g) => ({ ...g, fonteOrigem: g.fonteOrigem || 'json' }));
+  const hg = (htmlBundle?.gestores || []).map((g) => ({ ...g, fonteOrigem: g.fonteOrigem || 'html' }));
 
   const contratos = mergeContratos(jc, hc);
   const licitacoes = mergeLicitacoes(jl, hl);
   const secretarias = mergeSecretarias(js, hs);
   const publicacoes = mergePublicacoes(jp, htmlBundle?.diarios || []);
+  const gestores = mergeGestores(jg, hg);
 
   const allSources = new Set([
     ...contratos.sourcesUsed,
     ...licitacoes.sourcesUsed,
     ...secretarias.sourcesUsed,
     ...publicacoes.sourcesUsed,
+    ...gestores.sourcesUsed,
   ]);
 
   const mergedPublicacoes = publicacoes.items;
@@ -248,6 +275,7 @@ function mergePrefeituraSources(jsonBundle, htmlBundle) {
     licitacoes: licitacoes.items,
     secretarias: secretarias.items,
     publicacoes: mergedPublicacoes,
+    gestores: gestores.items,
     diariosOficiais: publicacoesToDiariosStrings(mergedPublicacoes),
     fontesUtilizadas: [...allSources],
   };
@@ -258,6 +286,7 @@ module.exports = {
   mergeContratos,
   mergeLicitacoes,
   mergeSecretarias,
+  mergeGestores,
   mergePublicacoes,
   mergePrefeituraSources,
   diarioTextoToPublicacao,

@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.domain.*
@@ -142,6 +143,7 @@ fun PrefeituraScreen(
                 }
 
                 item {
+                    val gestoresResumo = formatGestoresResumo(state.gestores)
                     ListRow(
                         icon = {
                             IconContainer(AppColors.Purple100) {
@@ -150,7 +152,7 @@ fun PrefeituraScreen(
                             }
                         },
                         title = "Prefeito e Vice",
-                        subtitle = "Gestão municipal",
+                        subtitle = gestoresResumo.ifBlank { "Gestão municipal" },
                         trailing = {
                             Icon(Icons.Default.ChevronRight, contentDescription = null,
                                 tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
@@ -196,29 +198,68 @@ fun LazyListScope.contratosItems(contratos: List<Contrato>, onClick: (Contrato) 
 
 @Composable
 fun ContratosRow(c: Contrato, onClick: (() -> Unit)? = null) {
-    ListRow(
-        icon = {
-            IconContainer(AppColors.Blue100) {
-                Icon(Icons.Default.Description, contentDescription = null,
-                    tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
+    val info = c.displayInfo()
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        IconContainer(AppColors.Blue100) {
+            Icon(
+                Icons.Default.Description,
+                contentDescription = null,
+                tint = AppColors.Navy800,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = info.titulo,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.Navy800,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (info.descricao.isNotBlank()) {
+                Text(
+                    text = info.descricao,
+                    fontSize = 12.sp,
+                    color = AppColors.TextSecondary,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 16.sp,
+                )
             }
-        },
-        title = c.objeto.ifEmpty { "Contrato ${c.numero}" },
-        subtitle = listOfNotNull(
-            c.empresa.takeIf { it.isNotBlank() },
-            c.secretaria.takeIf { it.isNotBlank() },
-            c.data.takeIf { it.isNotBlank() },
-        ).joinToString(" · ").ifEmpty { c.numero },
-        trailing = {
-            Column(horizontalAlignment = Alignment.End) {
-                Text(c.valor, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                    color = AppColors.TextPrimary)
-                Spacer(Modifier.height(3.dp))
-                StatusBadge("Ativo")
+            if (info.meta.isNotBlank()) {
+                Text(
+                    text = info.meta,
+                    fontSize = 11.sp,
+                    color = AppColors.TextTertiary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-        },
-        onClick = onClick,
-    )
+        }
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (info.valor.isNotBlank()) {
+                Text(
+                    text = info.valor,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.Green700,
+                )
+            }
+            StatusBadge(info.situacao)
+        }
+    }
 }
 
 // ─── Lista de Licitações ──────────────────────────────────────────────────────
@@ -230,23 +271,60 @@ fun LazyListScope.licitacoesItems(licitacoes: List<Licitacao>, onClick: (Licitac
         return
     }
     items(licitacoes) { l ->
-        ListRow(
-            icon = {
-                IconContainer(AppColors.Amber100) {
-                    Icon(Icons.Default.Gavel, contentDescription = null,
-                        tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
-                }
-            },
-            title = l.objeto.ifEmpty { "Licitação ${l.numero}" },
-            subtitle = listOfNotNull(
-                l.modalidade.takeIf { it.isNotBlank() },
-                l.dataAbertura.takeIf { it.isNotBlank() },
-            ).joinToString(" · ").ifEmpty { l.numero },
-            trailing = { StatusBadge(l.situacao.ifEmpty { "Aberta" }) },
-            onClick = { onClick(l) },
-        )
+        LicitacoesRow(l, onClick = { onClick(l) })
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))
+    }
+}
+
+@Composable
+fun LicitacoesRow(l: Licitacao, onClick: (() -> Unit)? = null) {
+    val info = l.displayInfo()
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        IconContainer(AppColors.Amber100) {
+            Icon(
+                Icons.Default.Gavel,
+                contentDescription = null,
+                tint = AppColors.Amber700,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = info.titulo,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.Navy800,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 18.sp,
+            )
+            if (info.descricao.isNotBlank()) {
+                Text(
+                    text = info.descricao,
+                    fontSize = 12.sp,
+                    color = AppColors.TextSecondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (info.meta.isNotBlank()) {
+                Text(
+                    text = "Abertura: ${info.meta}",
+                    fontSize = 11.sp,
+                    color = AppColors.TextTertiary,
+                )
+            }
+        }
+        StatusBadge(info.situacao)
     }
 }
 

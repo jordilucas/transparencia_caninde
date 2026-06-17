@@ -342,17 +342,8 @@ fun BuscaScreen(
                 if (licitacoes.isNotEmpty()) {
                     SectionHeader("Licitações (${licitacoes.size})")
                     licitacoes.take(5).forEach { l ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Amber100) {
-                                    Icon(Icons.Default.Gavel, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = l.objeto.ifEmpty { l.numero },
-                            subtitle = l.modalidade,
-                            trailing = { StatusBadge(l.situacao.ifEmpty { "—" }) },
-                            onClick = { onLicitacaoClick(l) },
-                        )
+                        LicitacoesRow(l, onClick = { onLicitacaoClick(l) })
+                        HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     }
                 }
                 if (secretarias.isNotEmpty()) {

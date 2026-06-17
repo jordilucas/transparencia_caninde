@@ -230,6 +230,7 @@ data class PrefeituraUiState(
     val isLoading: Boolean = true,
     val contratos: List<Contrato> = emptyList(),
     val licitacoes: List<Licitacao> = emptyList(),
+    val gestores: List<Gestor> = emptyList(),
     val diariosOficiais: List<String> = emptyList(),
     val publicacoes: List<Publicacao> = emptyList(),
     val secretarias: List<Secretaria> = emptyList(),

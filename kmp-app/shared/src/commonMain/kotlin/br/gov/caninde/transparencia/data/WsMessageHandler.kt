@@ -70,6 +70,11 @@ class WsMessageHandler(
         isLoading = false,
         contratos = DataMerge.mergeContratos(previous.contratos, p.contratos ?: emptyList()),
         licitacoes = DataMerge.mergeLicitacoes(previous.licitacoes, p.licitacoes ?: emptyList()),
+        gestores = if ((p.gestores ?: emptyList()).isNotEmpty()) {
+            p.gestores ?: emptyList()
+        } else {
+            previous.gestores
+        },
         diariosOficiais = DataMerge.mergeDiarios(previous.diariosOficiais, p.diariosOficiais ?: emptyList()),
         publicacoes = DataMerge.mergePublicacoes(previous.publicacoes, p.publicacoes ?: emptyList()),
         secretarias = DataMerge.mergeSecretarias(previous.secretarias, p.secretarias ?: emptyList()),

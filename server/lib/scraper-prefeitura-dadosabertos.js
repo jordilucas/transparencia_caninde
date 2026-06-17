@@ -60,13 +60,14 @@ function mapContratos(rows) {
 }
 
 function mapLicitacoes(rows) {
+  const { formatDateBR } = require('./licitacao-html');
   return rows.map((r) => ({
     id: String(r.Id ?? ''),
-    numero: String(r.NumeroPrecesso || r.Id || '').trim(),
-    modalidade: String(r.Modalidade || '').trim(),
+    numero: String(r.NumeroPrecesso || r.NumeroEdital || r.Id || '').trim(),
+    modalidade: String(r.Modalidade || r.Tipo || '').trim(),
     objeto: String(r.Objeto || '').trim().substring(0, 300),
     situacao: String(r.Situacao || 'Em andamento').trim() || 'Em andamento',
-    dataAbertura: String(r.DataAbertura || '').trim(),
+    dataAbertura: formatDateBR(r.DataAbertura || ''),
     url: resolveUrl(r.Url || ''),
   })).filter((l) => l.numero || l.objeto);
 }
@@ -99,16 +100,24 @@ function mapPublicacoes(rows) {
 
 async function scrapePrefeituraDadosAbertos(http, ano) {
   const year = ano || new Date().getFullYear();
-  const [licRows, contRows, secRows] = await Promise.all([
+
+  const [licSettled, contSettled, secSettled, pubSettled] = await Promise.allSettled([
     fetchDataset(http, 'licitacoes', year),
     fetchDataset(http, 'contratos', year),
     fetchDataset(http, 'secretarias', year),
+    fetchDataset(http, 'publicacoes', year),
   ]);
-  let pubRows = [];
-  try {
-    pubRows = await fetchDataset(http, 'publicacoes', year);
-  } catch {
-    pubRows = [];
+
+  const licRows = licSettled.status === 'fulfilled' ? licSettled.value : [];
+  const contRows = contSettled.status === 'fulfilled' ? contSettled.value : [];
+  const secRows = secSettled.status === 'fulfilled' ? secSettled.value : [];
+  const pubRows = pubSettled.status === 'fulfilled' ? pubSettled.value : [];
+
+  if (licSettled.status === 'rejected') {
+    console.warn('[DadosAbertos] licitações indisponível:', licSettled.reason?.message || licSettled.reason);
+  }
+  if (secSettled.status === 'rejected') {
+    console.warn('[DadosAbertos] secretarias indisponível:', secSettled.reason?.message || secSettled.reason);
   }
 
   const licitacoes = mapLicitacoes(licRows);
