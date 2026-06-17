@@ -65,7 +65,7 @@ IDs oficiais usados apenas para montar URLs no app (abrem no navegador):
 | Órgão | ID GT | Exemplos de destino |
 |-------|-------|---------------------|
 | Prefeitura | **11979490** | Receitas, despesas, convênios, obras, emendas |
-| Câmara | **11979588** | Receitas, despesas, licitações/contratos, pessoal, LRF |
+| Câmara | **11979588** | Receitas, despesas, licitações/contratos, LRF |
 
 Base: `https://www.governotransparente.com.br/transparencia/...`
 

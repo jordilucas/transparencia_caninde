@@ -50,7 +50,7 @@ fun CamaraScreen(
                     Column {
                         Text("Câmara Municipal", fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold, color = AppColors.Blue100)
-                        Text("Canindé · CE · Legislativo 2025",
+                        Text("Canindé · CE · Legislativo ${state.resumo.exercicio}",
                             fontSize = 11.sp, color = AppColors.Blue300)
                     }
                     Row(
@@ -120,7 +120,10 @@ fun CamaraScreen(
             LazyColumn(Modifier.fillMaxSize()) {
                 if (!areaLegislativo) {
                     item { TransparenciaLinksIntro("a Câmara Municipal") }
-                    transparenciaLinksItems(state.linksTransparencia, "Canindé Transparente")
+                    transparenciaLinksItems(
+                        state.linksTransparencia.filter { it.categoria != "pessoal" },
+                        "Canindé Transparente",
+                    )
                     item { Spacer(Modifier.height(80.dp)) }
                 } else item {
                     // Cards resumo
@@ -138,7 +141,7 @@ fun CamaraScreen(
                             )
                             StatCard(
                                 icon = Icons.Default.Event,
-                                label = "Sessões em 2025",
+                                label = "Sessões em ${state.resumo.exercicio}",
                                 value = "${state.resumo.totalSessoes2025}",
                                 color = AppColors.Green500,
                                 modifier = Modifier.weight(1f)
@@ -275,15 +278,28 @@ fun LazyListScope.parlamentaresItems(parlamentares: List<Parlamentar>, onClick: 
 
 @Composable
 fun ParlamentarRow(p: Parlamentar, onClick: (() -> Unit)? = null) {
+    val stats = buildList {
+        if (p.totalMaterias > 0) add("${p.totalMaterias} matérias")
+        if (p.totalSessoes > 0) add("${p.totalSessoes} sessões")
+    }
     ListRow(
         icon = { InitialAvatar(p.nome, size = 36) },
         title = p.nome,
         subtitle = listOfNotNull(
             p.partido.takeIf { it.isNotBlank() },
             p.cargo.takeIf { it.isNotBlank() },
+            p.vinculo.takeIf { it.isNotBlank() },
+            stats.joinToString(" · ").takeIf { it.isNotBlank() },
         ).joinToString(" · "),
         trailing = {
-            if (p.cargo.isNotBlank()) {
+            if (p.legislatura.isNotBlank()) {
+                Text(
+                    p.legislatura,
+                    fontSize = 10.sp,
+                    color = AppColors.TextTertiary,
+                    maxLines = 1,
+                )
+            } else if (p.cargo.isNotBlank()) {
                 Text(
                     p.cargo,
                     fontSize = 11.sp,
@@ -313,7 +329,10 @@ fun LazyListScope.sessoesItems(sessoes: List<Sessao>, onClick: (Int, Sessao) -> 
                 }
             },
             title = s.titulo.ifEmpty { "Sessão" },
-            subtitle = s.data.ifBlank { "Sessão legislativa" },
+            subtitle = listOfNotNull(
+                s.data.takeIf { it.isNotBlank() },
+                s.modifiedAt.takeIf { it.isNotBlank() }?.substringBefore('T')?.let { "Atualizado $it" },
+            ).joinToString(" · ").ifBlank { "Sessão legislativa" },
             trailing = {
                 if (s.url.isNotBlank()) {
                     Icon(Icons.Default.PlayCircle, contentDescription = null,
@@ -358,7 +377,10 @@ fun LazyListScope.materiasItems(materias: List<Materia>, onClick: (Materia) -> U
                 }
             },
             title = m.titulo.ifEmpty { "Matéria" },
-            subtitle = m.tipo,
+            subtitle = listOfNotNull(
+                m.tipo.takeIf { it.isNotBlank() },
+                m.dataPublicacao.takeIf { it.isNotBlank() },
+            ).joinToString(" · "),
             trailing = {
                 Icon(Icons.Default.ChevronRight, contentDescription = null,
                     tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))

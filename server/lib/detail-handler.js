@@ -3,6 +3,7 @@
 const scraperCamara = require('./scraper-camara');
 const detailCamara = require('./scraper-detail-camara');
 const detailPref = require('./scraper-detail-prefeitura');
+const { mergeParlamentar } = require('./merge-camara-sources');
 const { createDetailCache } = require('./detail-cache');
 
 function createDetailHandler({ http, cheerio, getCache }) {
@@ -27,7 +28,7 @@ function createDetailHandler({ http, cheerio, getCache }) {
     const list = cache?.camara?.sessoes || [];
     const idx = parseInt(id, 10);
     if (!Number.isNaN(idx) && list[idx]) return list[idx];
-    return list.find((s) => s.titulo === id) || null;
+    return list.find((s) => s.slug === id || s.titulo === id) || null;
   }
 
   async function loadDetail(entity, id) {
@@ -41,6 +42,10 @@ function createDetailHandler({ http, cheerio, getCache }) {
       case 'vereador': {
         const html = await fetchHtml(`${scraperCamara.BASE}/vereadores/${id}/`);
         result = detailCamara.scrapeVereadorDetail(html, cheerio, id);
+        const listItem = (cache?.camara?.parlamentares || []).find((p) => p.slug === id);
+        if (listItem && result?.parlamentar) {
+          result.parlamentar = mergeParlamentar(result.parlamentar, listItem);
+        }
         break;
       }
       case 'materia': {

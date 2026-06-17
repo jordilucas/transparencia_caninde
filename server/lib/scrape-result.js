@@ -65,6 +65,7 @@ function buildCamaraPayload({
   linksTransparencia = [],
   fonte,
   scrapeError = null,
+  fontesUtilizadas = [],
 }) {
   const missing = [];
   if (parlamentares.length === 0) missing.push('vereadores');
@@ -97,6 +98,8 @@ function buildCamaraPayload({
       totalParlamentares: parlamentares.length,
       totalSessoes2025: sessoes.length,
       totalMaterias: materias.length,
+      exercicio: new Date().getFullYear(),
+      fontesUtilizadas,
     },
     error,
   };

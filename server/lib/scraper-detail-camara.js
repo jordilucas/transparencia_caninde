@@ -81,6 +81,39 @@ function extractBiography($) {
   return parts.join('\n\n').substring(0, 2000);
 }
 
+function extractFieldValue($, labelPattern) {
+  let value = '';
+  $('p, li, div').each((_, el) => {
+    if (value) return;
+    const t = $(el).text().replace(/\s+/g, ' ').trim();
+    const m = t.match(new RegExp(`${labelPattern}:\\s*(.+)`, 'i'));
+    if (m) value = m[1].trim();
+  });
+  return value;
+}
+
+function scrapeSessoesPresentes($) {
+  const sessoes = [];
+  const panel = $('#painel-sessao');
+  const root = panel.length ? panel : $('body');
+  root.find('a[href*="/sessao/"]').each((i, el) => {
+    if (i >= 8) return false;
+    const href = $(el).attr('href') || '';
+    const titulo = $(el).text().replace(/\s+/g, ' ').trim();
+    const slug = href.match(/\/sessao\/([^/]+)\/?/i)?.[1] || '';
+    if (!titulo || titulo.length < 5 || !slug) return;
+    sessoes.push({
+      titulo: titulo.substring(0, 120),
+      data: '',
+      url: resolveHref(href),
+      slug,
+      resumo: '',
+      modifiedAt: '',
+    });
+  });
+  return sessoes;
+}
+
 function scrapeVereadorDetail(html, cheerio, slug) {
   const $ = cheerio.load(html);
   const nomeUrna = $('h1, h2').first().text().trim();
@@ -97,8 +130,13 @@ function scrapeVereadorDetail(html, cheerio, slug) {
     cargo = m[1].trim();
     partido = m[2].trim();
   }
+  const vinculo = $('p.vinculo').first().text().trim();
   const foto = $('img.img-fluid').first().attr('src') || '';
   const bio = extractBiography($);
+  const { totalMaterias, totalSessoes } = require('./scraper-camara').parseBadgeCounts($('body'), $);
+  const sessoesPresentes = scrapeSessoesPresentes($);
+  const totalSessoesFinal = Math.max(totalSessoes, sessoesPresentes.length);
+
   return {
     entity: 'vereador',
     entityId: slug,
@@ -107,9 +145,19 @@ function scrapeVereadorDetail(html, cheerio, slug) {
       nomeCompleto: nomeCompleto || nomeUrna,
       partido,
       cargo,
+      vinculo,
+      legislatura: extractFieldValue($, 'Legislatura') || '',
       foto,
       slug,
       profileUrl: `${BASE}/vereadores/${slug}/`,
+      totalMaterias,
+      totalSessoes: totalSessoesFinal,
+      mandatoInicio: extractFieldValue($, 'Data In[ií]cio'),
+      mandatoFim: extractFieldValue($, 'Data Final'),
+      naturalidade: extractFieldValue($, 'Naturalidade'),
+      dataNascimento: extractFieldValue($, 'Data de Nascimento'),
+      estadoCivil: extractFieldValue($, 'Estado Civil'),
+      sessoesPresentes,
       contato: parseContatoFromHtml($),
       biografia: bio,
     },

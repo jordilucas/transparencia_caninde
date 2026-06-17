@@ -148,17 +148,21 @@ object DataMerge {
     )
 
     private fun sessaoKey(s: Sessao): String {
+        if (s.slug.isNotBlank()) return "slug:${s.slug}"
         val t = s.titulo.trim().lowercase()
         return if (t.isNotBlank()) "t:$t|${s.data.trim()}" else ""
     }
 
-    private fun sessaoRecency(s: Sessao): Long = parseBrazilianDate(s.data)
+    private fun sessaoRecency(s: Sessao): Long =
+        maxOf(parseBrazilianDate(s.data), parseIsoDate(s.modifiedAt))
 
     private fun mergeSessao(preferred: Sessao, fallback: Sessao) = preferred.copy(
         titulo = preferred.titulo.ifBlank { fallback.titulo },
         data = preferred.data.ifBlank { fallback.data },
         url = preferred.url.ifBlank { fallback.url },
+        slug = preferred.slug.ifBlank { fallback.slug },
         resumo = preferred.resumo.ifBlank { fallback.resumo },
+        modifiedAt = preferred.modifiedAt.ifBlank { fallback.modifiedAt },
     )
 
     private fun materiaKey(m: Materia): String {
@@ -167,7 +171,8 @@ object DataMerge {
         return if (t.isNotBlank()) "t:$t" else ""
     }
 
-    private fun materiaRecency(m: Materia): Long = parseBrazilianDate(m.dataPublicacao)
+    private fun materiaRecency(m: Materia): Long =
+        maxOf(parseBrazilianDate(m.dataPublicacao), parseIsoDate(m.modifiedAt))
 
     private fun mergeMateria(preferred: Materia, fallback: Materia) = preferred.copy(
         titulo = preferred.titulo.ifBlank { fallback.titulo },
@@ -178,6 +183,7 @@ object DataMerge {
         dataPublicacao = preferred.dataPublicacao.ifBlank { fallback.dataPublicacao },
         pdfUrl = preferred.pdfUrl.ifBlank { fallback.pdfUrl },
         resumo = preferred.resumo.ifBlank { fallback.resumo },
+        modifiedAt = preferred.modifiedAt.ifBlank { fallback.modifiedAt },
     )
 
     private fun parlamentarKey(p: Parlamentar): String {
@@ -186,11 +192,12 @@ object DataMerge {
     }
 
     private fun parlamentarRecency(p: Parlamentar): Long {
-        var score = 0L
+        var score = parseIsoDate(p.modifiedAt)
         if (p.biografia.isNotBlank()) score += 10_000
         if (p.contato.email.isNotBlank()) score += 1_000
         if (p.contato.whatsapp.isNotBlank()) score += 100
         if (p.foto.isNotBlank()) score += 10
+        score += (p.totalMaterias + p.totalSessoes).toLong()
         return score
     }
 
@@ -199,9 +206,24 @@ object DataMerge {
         nomeCompleto = preferred.nomeCompleto.ifBlank { fallback.nomeCompleto },
         partido = preferred.partido.ifBlank { fallback.partido },
         cargo = preferred.cargo.ifBlank { fallback.cargo },
+        vinculo = preferred.vinculo.ifBlank { fallback.vinculo },
+        legislatura = preferred.legislatura.ifBlank { fallback.legislatura },
         foto = preferred.foto.ifBlank { fallback.foto },
         slug = preferred.slug.ifBlank { fallback.slug },
         profileUrl = preferred.profileUrl.ifBlank { fallback.profileUrl },
+        totalMaterias = maxOf(preferred.totalMaterias, fallback.totalMaterias),
+        totalSessoes = maxOf(preferred.totalSessoes, fallback.totalSessoes),
+        mandatoInicio = preferred.mandatoInicio.ifBlank { fallback.mandatoInicio },
+        mandatoFim = preferred.mandatoFim.ifBlank { fallback.mandatoFim },
+        naturalidade = preferred.naturalidade.ifBlank { fallback.naturalidade },
+        dataNascimento = preferred.dataNascimento.ifBlank { fallback.dataNascimento },
+        estadoCivil = preferred.estadoCivil.ifBlank { fallback.estadoCivil },
+        sessoesPresentes = if (preferred.sessoesPresentes.isNotEmpty()) {
+            preferred.sessoesPresentes
+        } else {
+            fallback.sessoesPresentes
+        },
+        modifiedAt = preferred.modifiedAt.ifBlank { fallback.modifiedAt },
         biografia = preferred.biografia.ifBlank { fallback.biografia },
         contato = mergeContato(preferred.contato, fallback.contato),
     )
@@ -217,6 +239,16 @@ object DataMerge {
         val day = m.groupValues[1].toIntOrNull() ?: return 0L
         val month = m.groupValues[2].toIntOrNull() ?: return 0L
         val year = m.groupValues[3].toIntOrNull() ?: return 0L
+        if (month !in 1..12 || day !in 1..31 || year < 1900) return 0L
+        return year * 10_000L + month * 100L + day
+    }
+
+    private fun parseIsoDate(str: String): Long {
+        if (str.isBlank()) return 0L
+        val m = Regex("""(\d{4})-(\d{2})-(\d{2})""").find(str.trim()) ?: return 0L
+        val year = m.groupValues[1].toIntOrNull() ?: return 0L
+        val month = m.groupValues[2].toIntOrNull() ?: return 0L
+        val day = m.groupValues[3].toIntOrNull() ?: return 0L
         if (month !in 1..12 || day !in 1..31 || year < 1900) return 0L
         return year * 10_000L + month * 100L + day
     }

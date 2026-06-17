@@ -48,7 +48,6 @@ fun TransparenciaLinkRow(link: LinkExterno) {
     val icon = when (link.categoria) {
         "financeiro" -> Icons.Default.AccountBalance
         "compras" -> Icons.Default.ShoppingCart
-        "pessoal" -> Icons.Default.People
         "obras" -> Icons.Default.Construction
         "emendas" -> Icons.Default.HowToVote
         "dadosabertos" -> Icons.Default.CloudDownload

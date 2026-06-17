@@ -28,6 +28,19 @@ function slugifyNome(nome) {
     .replace(/^-|-$/g, '');
 }
 
+function parseBadgeCounts(block, $) {
+  let totalMaterias = 0;
+  let totalSessoes = 0;
+  block.find('.badge').each((_, badge) => {
+    const t = $(badge).text().replace(/\s+/g, ' ').trim();
+    const mMat = t.match(/(\d+)\s*Mat[eé]rias/i);
+    const mSess = t.match(/(\d+)\s*Sess[oõ]es/i);
+    if (mMat) totalMaterias = Math.max(totalMaterias, parseInt(mMat[1], 10) || 0);
+    if (mSess) totalSessoes = Math.max(totalSessoes, parseInt(mSess[1], 10) || 0);
+  });
+  return { totalMaterias, totalSessoes };
+}
+
 function parseParlamentarCard($, el) {
   const block = $(el);
   const nomeUrna = block.find('p strong').first().text().trim();
@@ -40,6 +53,8 @@ function parseParlamentarCard($, el) {
   });
   const cargoLine = block.find('p.cargo').not('.d-none').first().text().trim();
   const { cargo, partido } = parseCargoPartido(cargoLine);
+  const vinculo = block.find('p.vinculo').first().text().trim();
+  const { totalMaterias, totalSessoes } = parseBadgeCounts(block, $);
   const foto = block.find('img.img-fluid').attr('src') || '';
   const linkEl = block.find('a[href*="/vereadores/"]').first();
   const href = linkEl.attr('href') || block.closest('a[href*="/vereadores/"]').attr('href') || '';
@@ -52,9 +67,14 @@ function parseParlamentarCard($, el) {
     nomeCompleto: nomeCompleto || nomeUrna,
     partido,
     cargo,
+    vinculo,
+    legislatura: '',
     foto,
     slug,
     profileUrl,
+    totalMaterias,
+    totalSessoes,
+    modifiedAt: '',
     contato: { email: '', telefone: '', whatsapp: '', endereco: '', horarioFuncionamento: '' },
     biografia: '',
   };
@@ -106,23 +126,37 @@ function scrapeMesaDiretoraFromHtml(html, cheerio) {
 function scrapeSessoesFromHtml(html, cheerio) {
   const $ = cheerio.load(html);
   const sessoes = [];
-  $('h3.mb-0, article h2 a, .video a').each((i, el) => {
-    if (i >= 15) return false;
-    const block = $(el).closest('article, .card, li').length ? $(el).closest('article, .card, li') : $(el).parent();
-    const linkEl = block.find('a[href*="/video/"], a[href*="/sessao"]').first();
-    const titulo = (linkEl.text() || $(el).text()).trim();
-    const href = linkEl.attr('href') || block.find('a').first().attr('href') || '';
-    const data = block.find('p, small, time').first().text().trim().substring(0, 80);
-    if (titulo && titulo.length > 5) {
-      const url = href.startsWith('http') ? href : (href ? `${BASE}${href.startsWith('/') ? '' : '/'}${href}` : '');
-      sessoes.push({
-        titulo: titulo.substring(0, 120),
-        data,
-        url,
-        resumo: '',
-      });
-    }
+  const seen = new Set();
+
+  function pushSessao(titulo, href, data) {
+    const slug = href.match(/\/sessao\/([^/]+)\/?/i)?.[1] || '';
+    const key = slug || titulo.toLowerCase();
+    if (!titulo || titulo.length < 5 || seen.has(key)) return;
+    seen.add(key);
+    const url = href.startsWith('http') ? href : (href ? `${BASE}${href.startsWith('/') ? '' : '/'}${href}` : '');
+    sessoes.push({
+      titulo: titulo.substring(0, 120),
+      data: (data || '').substring(0, 80),
+      url,
+      slug,
+      resumo: '',
+      modifiedAt: '',
+    });
+  }
+
+  $('h3.mb-0 a.btn-link, article h2 a, .video a').each((i, el) => {
+    if (sessoes.length >= 25) return false;
+    const linkEl = $(el).is('a') ? $(el) : $(el).find('a').first();
+    const href = linkEl.attr('href') || '';
+    if (!/\/sessao\/|\/video\//i.test(href)) return;
+    const block = linkEl.closest('article, .card, li, .col').length
+      ? linkEl.closest('article, .card, li, .col')
+      : linkEl.parent();
+    const titulo = linkEl.text().trim();
+    const data = block.find('p, small, time').first().text().trim();
+    pushSessao(titulo, href, data);
   });
+
   return sessoes;
 }
 
@@ -149,10 +183,32 @@ function scrapeMateriasFromHtml(html, cheerio) {
         dataPublicacao: '',
         pdfUrl: '',
         resumo: '',
+        modifiedAt: '',
       });
     }
   });
   return materias;
+}
+
+async function scrapeCamaraHtml(http, cheerio) {
+  const { data: htmlParl } = await http.get(`${BASE}/parlamentares/`);
+  const parlamentares = scrapeParlamentaresFromHtml(htmlParl, cheerio);
+  const mesaDiretora = scrapeMesaDiretoraFromHtml(htmlParl, cheerio);
+
+  const { data: htmlSessoes } = await http.get(`${BASE}/sessoes/`);
+  const sessoes = scrapeSessoesFromHtml(htmlSessoes, cheerio);
+
+  const { data: htmlMat } = await http.get(`${BASE}/materias/`);
+  const materias = scrapeMateriasFromHtml(htmlMat, cheerio);
+
+  return {
+    parlamentares,
+    sessoes,
+    materias,
+    mesaDiretora,
+    fonte: `${BASE}/parlamentares/`,
+    fontesUtilizadas: ['html'],
+  };
 }
 
 module.exports = {
@@ -161,4 +217,6 @@ module.exports = {
   scrapeMesaDiretoraFromHtml,
   scrapeSessoesFromHtml,
   scrapeMateriasFromHtml,
+  scrapeCamaraHtml,
+  parseBadgeCounts,
 };

@@ -11,7 +11,6 @@ function buildLinksTransparenciaCamara() {
     { titulo: 'Receitas', url: `${GT_BASE}/transparencia/receitas/${id}?clean=false`, categoria: 'financeiro' },
     { titulo: 'Despesas', url: `${GT_BASE}/transparencia/despesas/opcoes/${id}?clean=false`, categoria: 'financeiro' },
     { titulo: 'Licitações e contratos', url: `${GT_BASE}/transparencia/${id}/consultarconvenio?clean=false`, categoria: 'compras' },
-    { titulo: 'Pessoal', url: `${GT_BASE}/acessoinfo/${id}/despesasportipo?tipo=5&clean=false`, categoria: 'pessoal' },
     { titulo: 'Leis e publicações', url: `${BASE}/caninde-transparente/`, categoria: 'legislativo' },
     { titulo: 'LRF — Contas públicas', url: `${BASE}/caninde-transparente/lei-de-responsabilidade-fiscal-e-contas-publicas`, categoria: 'fiscal' },
     { titulo: 'e-SIC', url: `${BASE}/caninde-transparente/`, categoria: 'cidadania' },

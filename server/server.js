@@ -24,6 +24,8 @@ const { createDetailHandler } = require('./lib/detail-handler');
 const dadosAbertos = require('./lib/scraper-prefeitura-dadosabertos');
 const camaraTransp = require('./lib/scraper-camara-transparencia');
 const mergeSources = require('./lib/merge-sources');
+const camaraWp = require('./lib/scraper-camara-wp');
+const mergeCamara = require('./lib/merge-camara-sources');
 
 const PORT = config.port;
 const PREF_INTERVAL = config.prefInterval;
@@ -38,7 +40,7 @@ const httpClient = axios.create({
   timeout: 15_000,
   httpsAgent: httpAgent,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (compatible; TransparenciaBot/1.0)',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'pt-BR,pt;q=0.9',
   }
@@ -144,24 +146,37 @@ async function scrapePrefeitura() {
 async function scrapeCamara() {
   console.log('[Câmara] iniciando scraping (Canindé/CE)...');
   try {
-    const { data: htmlParl } = await httpClient.get(`${scraperCamara.BASE}/parlamentares/`);
-    const parlamentares = scraperCamara.scrapeParlamentaresFromHtml(htmlParl, cheerio);
-    const mesaDiretora = scraperCamara.scrapeMesaDiretoraFromHtml(htmlParl, cheerio);
+    const [wpResult, htmlResult] = await Promise.allSettled([
+      camaraWp.scrapeCamaraWp(httpClient),
+      scraperCamara.scrapeCamaraHtml(httpClient, cheerio),
+    ]);
 
-    const { data: htmlSessoes } = await httpClient.get(`${scraperCamara.BASE}/sessoes/`);
-    const sessoes = scraperCamara.scrapeSessoesFromHtml(htmlSessoes, cheerio);
+    const wpBundle = wpResult.status === 'fulfilled' ? wpResult.value : null;
+    const htmlBundle = htmlResult.status === 'fulfilled' ? htmlResult.value : null;
 
-    const { data: htmlMat } = await httpClient.get(`${scraperCamara.BASE}/materias/`);
-    const materias = scraperCamara.scrapeMateriasFromHtml(htmlMat, cheerio);
+    if (wpResult.status === 'rejected') {
+      console.warn('[Câmara] WP REST indisponível:', wpResult.reason?.message || wpResult.reason);
+    }
+    if (htmlResult.status === 'rejected') {
+      console.warn('[Câmara] HTML indisponível:', htmlResult.reason?.message || htmlResult.reason);
+    }
+
+    const merged = mergeCamara.mergeCamaraSources(wpBundle || {}, htmlBundle || {});
+
+    console.log(
+      `[Câmara] merge — ${merged.parlamentares.length} vereadores, ${merged.sessoes.length} sessões`
+      + ` (fontes: ${merged.fontesUtilizadas.join('+') || 'nenhuma'})`,
+    );
 
     const result = {
       ...scrapeResult.buildCamaraPayload({
-        parlamentares,
-        sessoes,
-        materias,
-        mesaDiretora,
+        parlamentares: merged.parlamentares,
+        sessoes: merged.sessoes,
+        materias: merged.materias,
+        mesaDiretora: merged.mesaDiretora,
         linksTransparencia: camaraTransp.buildLinksTransparenciaCamara(),
-        fonte: `${scraperCamara.BASE}/parlamentares/`,
+        fonte: merged.fonte,
+        fontesUtilizadas: merged.fontesUtilizadas,
       }),
       scrapedAt: now(),
     };
@@ -169,10 +184,10 @@ async function scrapeCamara() {
 
     cache.camara = result;
     cache.lastUpdated.camara = now();
-    console.log(`[Câmara] OK — ${parlamentares.length} parlamentares, ${sessoes.length} sessões`);
+    console.log(`[Câmara] OK — ${merged.parlamentares.length} parlamentares, ${merged.sessoes.length} sessões`);
     if (result.error) console.warn(`[Câmara] aviso: ${result.error}`);
-    else if (parlamentares.length > 0) {
-      console.log(`[Câmara] vereadores: ${parlamentares.map((p) => p.nome).join(', ')}`);
+    else if (merged.parlamentares.length > 0) {
+      console.log(`[Câmara] vereadores: ${merged.parlamentares.map((p) => p.nome).join(', ')}`);
     }
     return result;
   } catch (err) {

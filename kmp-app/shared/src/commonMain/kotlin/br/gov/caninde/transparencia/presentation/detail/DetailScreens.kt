@@ -273,6 +273,47 @@ fun VereadorDetailScreen(viewModel: TransparenciaViewModel, slug: String, onBack
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Vereador, slug) }
         p?.let { vereador ->
             VereadorProfileHeader(vereador)
+            if (vereador.legislatura.isNotBlank()) {
+                DetailField("Legislatura", vereador.legislatura)
+            }
+            if (vereador.vinculo.isNotBlank()) {
+                DetailField("Vínculo", vereador.vinculo)
+            }
+            val mandato = listOfNotNull(
+                vereador.mandatoInicio.takeIf { it.isNotBlank() },
+                vereador.mandatoFim.takeIf { it.isNotBlank() },
+            ).joinToString(" — ")
+            if (mandato.isNotBlank()) {
+                DetailField("Mandato", mandato)
+            }
+            if (vereador.naturalidade.isNotBlank()) {
+                DetailField("Naturalidade", vereador.naturalidade)
+            }
+            if (vereador.totalMaterias > 0 || vereador.totalSessoes > 0) {
+                DetailSectionHeader("Produção legislativa")
+                if (vereador.totalMaterias > 0) {
+                    DetailField("Matérias", "${vereador.totalMaterias}")
+                }
+                if (vereador.totalSessoes > 0) {
+                    DetailField("Sessões presentes", "${vereador.totalSessoes}")
+                }
+            }
+            if (vereador.sessoesPresentes.isNotEmpty()) {
+                DetailSectionHeader("Sessões recentes")
+                vereador.sessoesPresentes.forEach { sessao ->
+                    if (sessao.url.isNotBlank()) {
+                        DetailLinkAction(
+                            label = sessao.titulo,
+                            url = sessao.url,
+                            baseUrl = CAMARA_PORTAL_BASE,
+                            actionText = sessao.titulo,
+                            usePdfIcon = false,
+                        )
+                    } else {
+                        DetailField(sessao.titulo, sessao.data.ifBlank { "—" })
+                    }
+                }
+            }
             DetailSectionHeader("Contato")
             ContatoSection(vereador.contato)
             val biografia = sanitizeBiography(vereador.biografia)

@@ -140,9 +140,20 @@ data class Parlamentar(
     val nomeCompleto: String = "",
     val partido: String = "",
     val cargo: String = "",
+    val vinculo: String = "",
+    val legislatura: String = "",
     val foto: String = "",
     val slug: String = "",
     val profileUrl: String = "",
+    val totalMaterias: Int = 0,
+    val totalSessoes: Int = 0,
+    val mandatoInicio: String = "",
+    val mandatoFim: String = "",
+    val naturalidade: String = "",
+    val dataNascimento: String = "",
+    val estadoCivil: String = "",
+    val sessoesPresentes: List<Sessao> = emptyList(),
+    val modifiedAt: String = "",
     val contato: Contato = Contato(),
     val biografia: String = "",
 )
@@ -152,7 +163,9 @@ data class Sessao(
     val titulo: String = "",
     val data: String = "",
     val url: String = "",
+    val slug: String = "",
     val resumo: String = "",
+    val modifiedAt: String = "",
 )
 
 @Serializable
@@ -165,6 +178,7 @@ data class Materia(
     val dataPublicacao: String = "",
     val pdfUrl: String = "",
     val resumo: String = "",
+    val modifiedAt: String = "",
 )
 
 @Serializable
@@ -178,6 +192,8 @@ data class ResumoCamara(
     val totalParlamentares: Int = 0,
     val totalSessoes2025: Int = 0,
     val totalMaterias: Int = 0,
+    val exercicio: Int = 2025,
+    val fontesUtilizadas: List<String> = emptyList(),
 )
 
 @Serializable
