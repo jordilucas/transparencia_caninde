@@ -306,6 +306,7 @@ fun LicitacoesRow(l: Licitacao, onClick: (() -> Unit)? = null) {
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 18.sp,
+                modifier = Modifier.fillMaxWidth(),
             )
             if (info.descricao.isNotBlank()) {
                 Text(
@@ -314,6 +315,7 @@ fun LicitacoesRow(l: Licitacao, onClick: (() -> Unit)? = null) {
                     color = AppColors.TextSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             if (info.meta.isNotBlank()) {
@@ -321,10 +323,15 @@ fun LicitacoesRow(l: Licitacao, onClick: (() -> Unit)? = null) {
                     text = "Abertura: ${info.meta}",
                     fontSize = 11.sp,
                     color = AppColors.TextTertiary,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
+            StatusBadge(
+                text = info.situacao,
+                maxLines = if (info.situacao.length > 28) 2 else 1,
+                modifier = Modifier.padding(top = 2.dp),
+            )
         }
-        StatusBadge(info.situacao)
     }
 }
 

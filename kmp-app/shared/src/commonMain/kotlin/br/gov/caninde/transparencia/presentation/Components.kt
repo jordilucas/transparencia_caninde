@@ -172,7 +172,11 @@ fun MetricCard(
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 @Composable
-fun StatusBadge(text: String) {
+fun StatusBadge(
+    text: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 1,
+) {
     val (bg, fg) = when {
         text.contains("Pago", ignoreCase = true)
             || text.contains("Homologado", ignoreCase = true)
@@ -184,12 +188,21 @@ fun StatusBadge(text: String) {
         else -> AppColors.Red100 to AppColors.Red700
     }
     Box(
-        Modifier
+        modifier
+            .wrapContentWidth(align = Alignment.Start)
             .clip(RoundedCornerShape(20.dp))
             .background(bg)
-            .padding(horizontal = 7.dp, vertical = 3.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
-        Text(text, fontSize = 10.sp, color = fg, fontWeight = FontWeight.Medium)
+        Text(
+            text = text,
+            fontSize = 10.sp,
+            color = fg,
+            fontWeight = FontWeight.Medium,
+            maxLines = maxLines,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 13.sp,
+        )
     }
 }
 
