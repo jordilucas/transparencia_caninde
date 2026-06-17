@@ -1,6 +1,7 @@
 'use strict';
 
 const BASE = 'https://www.caninde.ce.gov.br';
+const { parseContratoHtmlRow } = require('./contrato-html');
 
 function scrapeSecretariasFromHtml($m) {
   const secretarias = [];
@@ -28,17 +29,17 @@ function scrapeContratos($c, limit = 30) {
   $c('table tbody tr').each((i, row) => {
     if (i >= limit) return false;
     const cols = $c(row).find('td');
-    if (cols.length >= 3) {
-      const link = $c(row).find('a').attr('href') || '';
-      contratos.push({
-        numero: $c(cols[0]).text().trim(),
-        objeto: $c(cols[1]).text().trim().substring(0, 200),
-        valor: $c(cols[2]).text().trim(),
-        empresa: $c(cols[3])?.text().trim() || '',
-        data: $c(cols[4])?.text().trim() || '',
-        url: link.startsWith('http') ? link : (link ? `${BASE}/${link.replace(/^\//, '')}` : ''),
-      });
-    }
+    if (cols.length < 3) return;
+    const texts = cols.map((_, td) => $c(td).text().trim()).get();
+    const link = $c(row).find('a').attr('href') || '';
+    const parsed = parseContratoHtmlRow(texts, link);
+    if (!parsed || (!parsed.numero && !parsed.objeto)) return;
+    contratos.push({
+      ...parsed,
+      url: parsed.url.startsWith('http')
+        ? parsed.url
+        : (parsed.url ? `${BASE}/${parsed.url.replace(/^\//, '')}` : ''),
+    });
   });
   return contratos;
 }
