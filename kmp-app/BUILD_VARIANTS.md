@@ -8,7 +8,7 @@ Configuração ativa em [`androidApp/build.gradle.kts`](androidApp/build.gradle.
 |--------|-----------|-----------|-------------|-----------------|
 | **dev** | `10.0.2.2` | `8080` | `ws` | `…transparencia.dev` |
 | **staging** | `transparencia-caninde.onrender.com` | `443` | `wss` | `…transparencia.staging` |
-| **prod** | `transparencia.caninde.ce.gov.br` | `443` | `wss` | `…transparencia` |
+| **prod** | `transparencia-caninde.onrender.com` | `443` | `wss` | `…transparencia` |
 
 `WS_AUTH_TOKEN` fica vazio em dev; em staging/prod defina no Gradle se o servidor exigir `?token=` (ver `server/.env.example`).
 

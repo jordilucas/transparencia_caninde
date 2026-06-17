@@ -39,8 +39,8 @@ android {
         applicationId = "br.gov.caninde.transparencia"
         minSdk = libs.versions.androidMinSdk.get().toInt()
         targetSdk = libs.versions.androidTargetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
     }
 
     sourceSets["main"].apply {
@@ -81,7 +81,8 @@ android {
         }
         create("prod") {
             dimension = "environment"
-            buildConfigField("String", "WS_HOST", "\"transparencia.caninde.ce.gov.br\"")
+            // Backend em produção hoje: Render (domínio municipal reservado para fase futura).
+            buildConfigField("String", "WS_HOST", "\"transparencia-caninde.onrender.com\"")
             buildConfigField("int", "WS_PORT", "443")
             buildConfigField("String", "WS_SCHEME", "\"wss\"")
             buildConfigField("String", "WS_AUTH_TOKEN", "\"\"")
