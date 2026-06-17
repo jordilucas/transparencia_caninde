@@ -57,18 +57,7 @@ fun CamaraScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val isSessionActive = state.sessoes.isNotEmpty()
-                        if (isSessionActive) {
-                            Box(
-                                Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(AppColors.Green100)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text("Sessão ativa", fontSize = 10.sp, 
-                                    color = AppColors.Green700, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
+                        ConnectionStatusBadge(connectionState, onRefresh)
                         IconButton(onClick = onRefresh, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Refresh, contentDescription = "Atualizar",
                                 tint = AppColors.Blue300, modifier = Modifier.size(18.dp))
@@ -82,23 +71,15 @@ fun CamaraScreen(
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    FilterChip(
+                    CamaraAreaFilterChip(
+                        label = "Legislativo",
                         selected = areaLegislativo,
                         onClick = { areaLegislativo = true },
-                        label = { Text("Legislativo", fontSize = 11.sp) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AppColors.Blue500,
-                            selectedLabelColor = AppColors.Blue100,
-                        ),
                     )
-                    FilterChip(
+                    CamaraAreaFilterChip(
+                        label = "Transparência",
                         selected = !areaLegislativo,
                         onClick = { areaLegislativo = false },
-                        label = { Text("Transparência", fontSize = 11.sp) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AppColors.Blue500,
-                            selectedLabelColor = AppColors.Blue100,
-                        ),
                     )
                 }
 
@@ -217,6 +198,40 @@ fun CamaraScreen(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CamaraAreaFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                label,
+                fontSize = 11.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                color = if (selected) Color.White else AppColors.Blue100,
+            )
+        },
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = Color.Transparent,
+            labelColor = AppColors.Blue100,
+            iconColor = AppColors.Blue300,
+            selectedContainerColor = AppColors.Blue500,
+            selectedLabelColor = Color.White,
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = AppColors.Blue300,
+            selectedBorderColor = AppColors.Blue500,
+        ),
+    )
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────

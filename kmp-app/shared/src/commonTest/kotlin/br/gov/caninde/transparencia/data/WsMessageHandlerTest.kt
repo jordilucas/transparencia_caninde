@@ -141,6 +141,22 @@ class WsMessageHandlerTest {
     }
 
     @Test
+    fun parseRefreshingMarcaLoading() {
+        val raw = """
+            {"type":"REFRESHING","payload":{"source":"prefeitura"},"timestamp":"2025-06-04T12:00:00Z"}
+        """.trimIndent()
+        val reduced = handler.reduce(
+            WsHandlerState(
+                prefeitura = PrefeituraUiState(isLoading = false),
+                camara = CamaraUiState(isLoading = false),
+            ),
+            raw,
+        )
+        assertEquals(true, reduced.prefeitura.isLoading)
+        assertEquals(false, reduced.camara.isLoading)
+    }
+
+    @Test
     fun toCamaraUiStateMapeiaLinksTransparencia() {
         val state = handler.toCamaraUiState(
             WsPayload(linksTransparencia = listOf(LinkExterno(titulo = "Despesas", url = "https://gt.example"))),

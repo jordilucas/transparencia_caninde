@@ -59,7 +59,7 @@ fun PrefeituraScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        LiveBadge()
+                        ConnectionStatusBadge(connectionState, onRefresh)
                         IconButton(onClick = onRefresh, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Refresh, contentDescription = "Atualizar",
                                 tint = AppColors.Blue300, modifier = Modifier.size(18.dp))

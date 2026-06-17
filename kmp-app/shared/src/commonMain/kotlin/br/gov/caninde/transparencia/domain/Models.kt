@@ -131,6 +131,7 @@ data class ResumoPrefeitura(
     val totalLicitacoes: Int = 0,
     val totalPublicacoes: Int = 0,
     val exercicio: Int = 2025,
+    val fontesUtilizadas: List<String> = emptyList(),
 )
 
 @Serializable
@@ -222,7 +223,7 @@ sealed class ConnectionState {
     object Connecting : ConnectionState()
     object Connected : ConnectionState()
     object Reconnecting : ConnectionState()
-    data class Error(val message: String) : ConnectionState()
+    object Error : ConnectionState()
 }
 
 data class PrefeituraUiState(

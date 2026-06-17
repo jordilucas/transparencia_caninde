@@ -21,21 +21,22 @@ import br.gov.caninde.transparencia.domain.ConnectionState
 // ─── Live Badge ───────────────────────────────────────────────────────────────
 
 @Composable
-fun LiveBadge(label: String = "Tempo real") {
+fun LiveBadge(label: String = "Tempo real", onClick: (() -> Unit)? = null) {
     val infiniteTransition = rememberInfiniteTransition()
     val alpha by infiniteTransition.animateFloat(
         initialValue = 1f, targetValue = 0.2f,
         animationSpec = infiniteRepeatable(
             animation = tween(700, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        )
+            repeatMode = RepeatMode.Reverse,
+        ),
     )
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(AppColors.Green100)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Box(
             Modifier
@@ -76,18 +77,63 @@ fun DataStatusBanner(
 @Composable
 fun ConnectionBanner(state: ConnectionState) {
     val (bg, text) = when (state) {
-        is ConnectionState.Connecting   -> AppColors.Amber100 to "Conectando ao servidor…"
-        is ConnectionState.Reconnecting -> AppColors.Amber100 to "Reconectando…"
-        is ConnectionState.Error        -> AppColors.Red100   to "Sem conexão: ${state.message}"
-        is ConnectionState.Connected    -> return
+        ConnectionState.Connecting -> AppColors.Amber100 to "Conectando…"
+        ConnectionState.Reconnecting -> AppColors.Amber100 to "Reconectando…"
+        ConnectionState.Connected, ConnectionState.Error -> return
     }
     Box(
         Modifier
             .fillMaxWidth()
             .background(bg)
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
     ) {
         Text(text, fontSize = 11.sp, color = AppColors.TextSecondary)
+    }
+}
+
+@Composable
+fun ConnectionStatusBadge(
+    connectionState: ConnectionState,
+    onRefresh: () -> Unit,
+) {
+    when (connectionState) {
+        ConnectionState.Connected -> LiveBadge(onClick = onRefresh)
+        ConnectionState.Connecting, ConnectionState.Reconnecting -> {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(AppColors.Amber100)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(10.dp),
+                    strokeWidth = 1.5.dp,
+                    color = AppColors.Amber700,
+                )
+                Spacer(Modifier.width(5.dp))
+                Text("Conectando…", fontSize = 10.sp, color = AppColors.Amber700, fontWeight = FontWeight.SemiBold)
+            }
+        }
+        ConnectionState.Error -> {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(AppColors.Red100)
+                    .clickable(onClick = onRefresh)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(7.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.Red700),
+                )
+                Spacer(Modifier.width(5.dp))
+                Text("Offline", fontSize = 10.sp, color = AppColors.Red700, fontWeight = FontWeight.SemiBold)
+            }
+        }
     }
 }
 

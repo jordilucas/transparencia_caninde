@@ -23,15 +23,19 @@ class TransparenciaViewModel(
     }
 
     fun refreshPrefeitura() {
-        scope.launch { repository.requestRefresh("prefeitura") }
+        scope.launch { repository.refreshSource("prefeitura") }
     }
 
     fun refreshCamara() {
-        scope.launch { repository.requestRefresh("camara") }
+        scope.launch { repository.refreshSource("camara") }
     }
 
     fun refreshAll() {
-        scope.launch { repository.requestRefresh("all") }
+        scope.launch { repository.refreshSource("all") }
+    }
+
+    fun reconnect() {
+        repository.forceReconnect()
     }
 
     fun loadDetail(entity: DetailEntity, id: String) {

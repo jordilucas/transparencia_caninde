@@ -16,6 +16,7 @@ class TransparenciaRepository(
     companion object {
         const val RECONNECT_DELAY_MS = 5_000L
         const val MAX_RECONNECT_ATTEMPTS = 10
+        const val CONNECT_TIMEOUT_MS = 20_000L
     }
 
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Connecting)
@@ -33,17 +34,25 @@ class TransparenciaRepository(
     private val detailCache = mutableMapOf<String, DetailUiState>()
     private var wsSession: DefaultClientWebSocketSession? = null
     private var connectJob: Job? = null
+    private var ownerScope: CoroutineScope? = null
+    @Volatile private var resetReconnectAttempts = false
 
     fun connect(scope: CoroutineScope) {
+        ownerScope = scope
         connectJob?.cancel()
         connectJob = scope.launch {
             var attempt = 0
             while (isActive && attempt < MAX_RECONNECT_ATTEMPTS) {
+                if (resetReconnectAttempts) {
+                    attempt = 0
+                    resetReconnectAttempts = false
+                }
                 try {
-                    _connectionState.value = if (attempt == 0)
+                    _connectionState.value = if (attempt == 0) {
                         ConnectionState.Connecting
-                    else
+                    } else {
                         ConnectionState.Reconnecting
+                    }
 
                     client.webSocket(urlString = endpoint.url) {
                         val session = this
@@ -51,13 +60,13 @@ class TransparenciaRepository(
                         attempt = 0
                         _connectionState.value = ConnectionState.Connected
 
-                        sendMessage("""{"type":"REQUEST_PREFEITURA"}""")
-                        sendMessage("""{"type":"REQUEST_CAMARA"}""")
+                        sendFrame("""{"type":"REQUEST_PREFEITURA"}""")
+                        sendFrame("""{"type":"REQUEST_CAMARA"}""")
 
                         val pingJob = launch {
                             while (isActive) {
                                 delay(30_000)
-                                sendMessage("""{"type":"PING"}""")
+                                sendFrame("""{"type":"PING"}""")
                             }
                         }
 
@@ -75,12 +84,15 @@ class TransparenciaRepository(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    _connectionState.value = ConnectionState.Error(e.message ?: "Erro desconhecido")
+                    _connectionState.value = ConnectionState.Error
                     attempt++
                     if (attempt < MAX_RECONNECT_ATTEMPTS) {
                         delay(RECONNECT_DELAY_MS * attempt.coerceAtMost(3))
                     }
                 }
+            }
+            if (isActive) {
+                _connectionState.value = ConnectionState.Error
             }
         }
     }
@@ -91,8 +103,38 @@ class TransparenciaRepository(
         _connectionState.value = ConnectionState.Connecting
     }
 
-    suspend fun requestRefresh(source: String = "all") {
-        sendMessage("""{"type":"REQUEST_REFRESH","source":"$source"}""")
+    fun isConnected(): Boolean =
+        _connectionState.value is ConnectionState.Connected && wsSession != null
+
+    fun forceReconnect() {
+        val scope = ownerScope ?: return
+        resetReconnectAttempts = true
+        connectJob?.cancel()
+        wsSession = null
+        connect(scope)
+    }
+
+    suspend fun refreshSource(source: String) {
+        setLoadingForSource(source, loading = true)
+
+        if (!isConnected()) {
+            forceReconnect()
+            val connected = withTimeoutOrNull(CONNECT_TIMEOUT_MS) {
+                connectionState.first { it is ConnectionState.Connected }
+            } != null
+            if (!connected) {
+                setLoadingForSource(source, loading = false)
+                setConnectionErrorForSource(source)
+                return
+            }
+        }
+
+        val sent = sendFrame("""{"type":"REQUEST_REFRESH","source":"$source"}""")
+        if (!sent) {
+            forceReconnect()
+            setLoadingForSource(source, loading = false)
+            setConnectionErrorForSource(source)
+        }
     }
 
     suspend fun loadDetail(entity: DetailEntity, id: String) {
@@ -102,7 +144,37 @@ class TransparenciaRepository(
             return
         }
         _detailState.value = DetailUiState(isLoading = true, entity = entity, entityId = id, payload = null, error = null)
-        sendMessage(messageHandler.buildRequestDetail(entity, id))
+        if (!sendFrame(messageHandler.buildRequestDetail(entity, id))) {
+            _detailState.value = DetailUiState(
+                isLoading = false,
+                entity = entity,
+                entityId = id,
+                error = "Sem conexão com o servidor",
+            )
+        }
+    }
+
+    private fun setLoadingForSource(source: String, loading: Boolean) {
+        when (source) {
+            "prefeitura" -> _prefeituraState.update { it.copy(isLoading = loading) }
+            "camara" -> _camaraState.update { it.copy(isLoading = loading) }
+            else -> {
+                _prefeituraState.update { it.copy(isLoading = loading) }
+                _camaraState.update { it.copy(isLoading = loading) }
+            }
+        }
+    }
+
+    private fun setConnectionErrorForSource(source: String) {
+        val msg = "Sem conexão com o servidor"
+        when (source) {
+            "prefeitura" -> _prefeituraState.update { it.copy(error = msg) }
+            "camara" -> _camaraState.update { it.copy(error = msg) }
+            else -> {
+                _prefeituraState.update { it.copy(error = msg) }
+                _camaraState.update { it.copy(error = msg) }
+            }
+        }
     }
 
     private fun processMessage(raw: String) {
@@ -124,11 +196,18 @@ class TransparenciaRepository(
         }
     }
 
-    private suspend fun sendMessage(msg: String) {
-        try {
-            wsSession?.send(Frame.Text(msg))
+    private suspend fun sendFrame(msg: String): Boolean {
+        val session = wsSession ?: return false
+        return try {
+            session.send(Frame.Text(msg))
+            true
         } catch (e: Exception) {
             println("[WS] erro ao enviar: ${e.message}")
+            wsSession = null
+            if (_connectionState.value is ConnectionState.Connected) {
+                _connectionState.value = ConnectionState.Error
+            }
+            false
         }
     }
 }
