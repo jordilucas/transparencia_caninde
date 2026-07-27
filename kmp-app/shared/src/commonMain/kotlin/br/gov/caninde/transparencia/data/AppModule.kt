@@ -6,6 +6,7 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.milliseconds
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -14,7 +15,7 @@ expect fun createHttpClient(): HttpClient
 fun createConfiguredClient(engine: HttpClient): HttpClient {
     return HttpClient {
         install(WebSockets) {
-            pingInterval = 20_000
+            pingInterval = 20_000.milliseconds
         }
         install(ContentNegotiation) {
             json(Json {

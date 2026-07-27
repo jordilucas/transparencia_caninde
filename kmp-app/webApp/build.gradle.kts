@@ -5,7 +5,8 @@ plugins {
 }
 
 kotlin {
-    js(IR) {
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
         moduleName = "transparencia-caninde"
         browser {
             commonWebpackConfig {
@@ -16,7 +17,7 @@ kotlin {
     }
 
     sourceSets {
-        jsMain.dependencies {
+        wasmJsMain.dependencies {
             implementation(project(":shared"))
             implementation(compose.runtime)
             implementation(compose.foundation)

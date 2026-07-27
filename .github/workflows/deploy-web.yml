@@ -38,12 +38,12 @@ jobs:
         with:
           gradle-version: wrapper
 
-      - name: Build site (Kotlin/JS)
+      - name: Build site (Kotlin/Wasm)
         working-directory: kmp-app
-        run: ./gradlew :webApp:jsBrowserDistribution --no-daemon
+        run: ./gradlew :webApp:wasmJsBrowserDistribution --no-daemon
 
       - name: Prepare GitHub Pages artifact
-        working-directory: kmp-app/webApp/build/dist/js/productionExecutable
+        working-directory: kmp-app/webApp/build/dist/wasmJs/productionExecutable
         run: |
           cp index.html 404.html
           touch .nojekyll
@@ -53,7 +53,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: kmp-app/webApp/build/dist/js/productionExecutable
+          publish_dir: kmp-app/webApp/build/dist/wasmJs/productionExecutable
           publish_branch: gh-pages
 
       - name: Fix Pages config (remove custom domain)

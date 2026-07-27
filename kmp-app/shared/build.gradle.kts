@@ -22,7 +22,8 @@ kotlin {
         }
     }
 
-    js(IR) {
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
         browser()
     }
 
@@ -52,7 +53,7 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
-        jsMain.dependencies {
+        wasmJsMain.dependencies {
             implementation(libs.ktor.client.js)
         }
         commonTest.dependencies {

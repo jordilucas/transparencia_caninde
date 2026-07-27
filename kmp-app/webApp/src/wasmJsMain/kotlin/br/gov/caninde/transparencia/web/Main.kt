@@ -6,7 +6,6 @@ import br.gov.caninde.transparencia.data.TransparenciaViewModel
 import br.gov.caninde.transparencia.data.WebSocketEndpoint
 import br.gov.caninde.transparencia.data.createAppModule
 import br.gov.caninde.transparencia.presentation.TransparenciaApp
-import kotlinx.browser.document
 import kotlinx.browser.window
 import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
@@ -29,26 +28,15 @@ private fun webSocketEndpointForBrowser(): WebSocketEndpoint {
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
-private fun launchApp() {
-    ComposeViewport(viewportContainerId = "ComposeTarget") {
-        KoinContext {
-            val viewModel: TransparenciaViewModel = koinInject()
-            TransparenciaApp(viewModel)
-        }
-    }
-    window.setTimeout({
-        window.dispatchEvent(org.w3c.dom.events.Event("resize"))
-    }, 0)
-}
-
 fun main() {
     startKoin {
         modules(createAppModule(webSocketEndpointForBrowser()))
     }
 
-    if (document.readyState.toString() == "complete") {
-        launchApp()
-    } else {
-        window.onload = { launchApp() }
+    ComposeViewport(viewportContainerId = "ComposeTarget") {
+        KoinContext {
+            val viewModel: TransparenciaViewModel = koinInject()
+            TransparenciaApp(viewModel)
+        }
     }
 }
