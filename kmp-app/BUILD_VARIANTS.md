@@ -41,6 +41,8 @@ O endpoint é injetado no Koin em `MainActivity` via `WebSocketEndpoint` (sem re
 
 ## Site web (`webApp/`)
 
+**URL:** https://transparenciacaninde.com.br/
+
 | Ambiente | WebSocket |
 |----------|-----------|
 | **localhost** | `ws://localhost:8080` |
@@ -50,13 +52,13 @@ O endpoint é injetado no Koin em `MainActivity` via `WebSocketEndpoint` (sem re
 cd kmp-app
 
 # Dev (webpack + hot reload)
-./gradlew :webApp:jsBrowserDevelopmentRun
+./gradlew :webApp:wasmJsBrowserDevelopmentRun
 
 # Produção (pasta estática)
-./gradlew :webApp:jsBrowserDistribution
+./gradlew :webApp:wasmJsBrowserDistribution
 ```
 
-Deploy: publicar `webApp/build/dist/js/productionExecutable/`.
+Deploy: publicar `webApp/build/dist/wasmJs/productionExecutable/` (inclui `CNAME`).
 
 **Automático:** GitHub Pages via [`.github/workflows/deploy-web.yml`](../.github/workflows/deploy-web.yml) — ver [`docs/DEPLOY-WEB.md`](../docs/DEPLOY-WEB.md).
 

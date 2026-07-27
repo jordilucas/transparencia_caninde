@@ -4,41 +4,53 @@ O frontend (`kmp-app/webApp/`) é publicado na branch **`gh-pages`**. O backend 
 
 ## URL publicada
 
-`https://jordilucas.github.io/transparencia_caninde/`
+**https://transparenciacaninde.com.br/**
+
+Fallback (GitHub Pages): `https://jordilucas.github.io/transparencia_caninde/`
 
 ---
 
-## Redireciona para `mercadinhosantos.me`? (**causa raiz**)
+## DNS (obrigatório para o domínio próprio)
 
-O site **Transparência Canindé já está publicado** (branch `gh-pages` com `index.html`, JS, etc.).
+Configure no registrador de **`transparenciacaninde.com.br`**:
 
-O Safari não abre porque **todo** `jordilucas.github.io` redireciona para `mercadinhosantos.me` — domínio que **não existe mais** / não responde.
+### Domínio raiz (`transparenciacaninde.com.br`)
 
-Isso **não vem deste repositório**. Está configurado no repositório de **user pages**:
+Registros **A** apontando para os IPs do GitHub Pages:
 
-**`jordilucas/jordilucas.github.io`**
+| Tipo | Nome | Valor |
+|------|------|--------|
+| A | `@` | `185.199.108.153` |
+| A | `@` | `185.199.109.153` |
+| A | `@` | `185.199.110.153` |
+| A | `@` | `185.199.111.153` |
 
-### Correção (2 minutos)
+### Subdomínio `www` (opcional)
 
-1. Abra: **https://github.com/jordilucas/jordilucas.github.io/settings/pages**
-2. Em **Custom domain**, apague `mercadinhosantos.me` (deixe **vazio**).
-3. Clique **Save**.
-4. Aguarde 2–5 minutos.
-5. Teste: **https://jordilucas.github.io/transparencia_caninde/**
+| Tipo | Nome | Valor |
+|------|------|--------|
+| CNAME | `www` | `jordilucas.github.io` |
 
-### Confirmar branch deste repo
+No GitHub (**Settings → Pages → Custom domain**), informe `transparenciacaninde.com.br` e marque **Enforce HTTPS** após o certificado ser emitido (pode levar até 24 h após o DNS propagar).
+
+O arquivo `kmp-app/webApp/src/wasmJsMain/resources/CNAME` contém o mesmo domínio e é publicado automaticamente pelo workflow.
+
+---
+
+## GitHub Pages (Settings deste repo)
 
 Em **https://github.com/jordilucas/transparencia_caninde/settings/pages** :
 
 | Campo | Valor |
 |-------|--------|
-| Custom domain | *(vazio)* |
+| Custom domain | `transparenciacaninde.com.br` |
 | Source | Deploy from branch |
 | Branch | `gh-pages` / `(root)` |
+| Enforce HTTPS | ✅ (após DNS válido) |
 
-### Workflow auxiliar (opcional)
+### Workflow auxiliar
 
-[Actions → Fix GitHub Pages config](https://github.com/jordilucas/transparencia_caninde/actions/workflows/fix-pages.yml) — ajusta **este** repo via API; **não** altera `jordilucas.github.io`.
+[Actions → Fix GitHub Pages config](https://github.com/jordilucas/transparencia_caninde/actions/workflows/fix-pages.yml) — reaplica branch `gh-pages` + domínio via API.
 
 ---
 
@@ -47,7 +59,9 @@ Em **https://github.com/jordilucas/transparencia_caninde/settings/pages** :
 | Host do site | Backend |
 |--------------|---------|
 | `localhost` | `ws://localhost:8080` |
-| Produção | `wss://transparencia-caninde.onrender.com` |
+| Produção (`transparenciacaninde.com.br`, github.io, etc.) | `wss://transparencia-caninde.onrender.com` |
+
+O frontend web usa o backend Render; o domínio `.com.br` serve apenas o site estático.
 
 ---
 
@@ -58,19 +72,14 @@ Push em `main` (`kmp-app/**`) ou [Deploy web](https://github.com/jordilucas/tran
 Build local:
 
 ```bash
-cd kmp-app && ./gradlew :webApp:jsBrowserDistribution
+cd kmp-app && ./gradlew :webApp:wasmJsBrowserDistribution
+# Saída: webApp/build/dist/wasmJs/productionExecutable/
 ```
 
 ---
 
-## Domínio próprio (Canindé)
+## Redireciona para `mercadinhosantos.me`?
 
-1. Arquivo `kmp-app/webApp/src/jsMain/resources/CNAME` → `transparencia.caninde.ce.gov.br`
-2. DNS CNAME → `jordilucas.github.io`
-3. Custom domain em **Settings → Pages** deste repo
+Se **`jordilucas.github.io`** ainda redireciona para outro domínio, o problema está no repositório de user pages **`jordilucas/jordilucas.github.io`** (Custom domain em Settings → Pages). Remova o domínio antigo lá.
 
----
-
-## Alternativa se quiser manter `mercadinhosantos.me` no user site
-
-Use **Cloudflare Pages** ou **Netlify** com URL própria (ex. `transparencia-caninde.pages.dev`) — upload de `webApp/build/dist/js/productionExecutable/`.
+Com **`transparenciacaninde.com.br`** configurado, use o domínio próprio — não depende do redirect do github.io.

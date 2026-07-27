@@ -148,8 +148,8 @@ O frontend estático é publicado automaticamente pelo workflow [`.github/workfl
 
 | Item | Detalhe |
 |------|---------|
-| URL | `https://jordilucas.github.io/transparencia_caninde/` |
-| Ativação | **Settings → Pages → Branch `gh-pages` / (root)** |
+| URL | `https://transparenciacaninde.com.br/` |
+| Ativação | **Settings → Pages → Branch `gh-pages` / (root)** + Custom domain |
 | Backend WS | Continua neste serviço Render (`wss://…onrender.com`) |
 
 Guia: [`docs/DEPLOY-WEB.md`](DEPLOY-WEB.md).

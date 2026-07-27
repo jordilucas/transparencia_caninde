@@ -466,12 +466,14 @@ Artefatos copiados em `releases/android/v1.1.0/`. Assinatura release: `kmp-app/k
 
 ## Site web (Compose Multiplatform)
 
-O mesmo app roda no navegador via target **Kotlin/JS** (`webApp/`).
+O mesmo app roda no navegador via target **Kotlin/Wasm** (`webApp/`).
 
 | Ambiente | WebSocket |
 |----------|-----------|
 | **localhost** (dev) | `ws://localhost:8080` |
 | **produção** (qualquer outro host) | `wss://transparencia-caninde.onrender.com` |
+
+**URL:** https://transparenciacaninde.com.br/
 
 ### Comandos
 
@@ -479,11 +481,11 @@ O mesmo app roda no navegador via target **Kotlin/JS** (`webApp/`).
 cd kmp-app
 
 # Servidor de desenvolvimento (hot reload) — http://localhost:8080
-./gradlew :webApp:jsBrowserDevelopmentRun
+./gradlew :webApp:wasmJsBrowserDevelopmentRun
 
 # Bundle estático para deploy
-./gradlew :webApp:jsBrowserDistribution
-# Saída: webApp/build/dist/js/productionExecutable/
+./gradlew :webApp:wasmJsBrowserDistribution
+# Saída: webApp/build/dist/wasmJs/productionExecutable/
 ```
 
 ### Deploy estático
@@ -491,17 +493,16 @@ cd kmp-app
 **Recomendado: GitHub Pages** (workflow em [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml)).
 
 1. **Settings → Pages → Source:** Deploy from branch → **`gh-pages`** / **(root)**
-2. Apague **Custom domain** antigo se houver (ex. redirecionamento errado)
+2. **Custom domain:** `transparenciacaninde.com.br` (ver DNS em [`docs/DEPLOY-WEB.md`](docs/DEPLOY-WEB.md))
 3. **Actions → Deploy web → Run workflow**
-4. URL: `https://jordilucas.github.io/transparencia_caninde/`
 
 Guia completo: [`docs/DEPLOY-WEB.md`](docs/DEPLOY-WEB.md).
 
 Deploy manual (alternativa):
 
 ```bash
-./gradlew :webApp:jsBrowserDistribution
-# Publique webApp/build/dist/js/productionExecutable/ (+ 404.html e .nojekyll)
+./gradlew :webApp:wasmJsBrowserDistribution
+# Publique webApp/build/dist/wasmJs/productionExecutable/ (+ 404.html, .nojekyll, CNAME)
 ```
 
 Em telas largas (≥ 840 px), a navegação usa barra lateral; em mobile, barra inferior — igual ao app Android.

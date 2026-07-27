@@ -1,5 +1,5 @@
-# Corrige GitHub Pages: remove domínio customizado errado e aponta para gh-pages.
-# Rode manualmente se github.io redirecionar para outro domínio (ex. mercadinhosantos.me).
+# Configura GitHub Pages: branch gh-pages + domínio transparenciacaninde.com.br.
+# Rode manualmente se o site não abrir no domínio ou Pages estiver desalinhado.
 
 name: Fix GitHub Pages config
 
@@ -13,14 +13,16 @@ jobs:
   fix:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure Pages (gh-pages, sem custom domain)
+      - name: Configure Pages (gh-pages + custom domain)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          CUSTOM_DOMAIN: transparenciacaninde.com.br
         run: |
           set -euo pipefail
           API="https://api.github.com/repos/${REPO}/pages"
           AUTH=(-H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json")
+          PAYLOAD=$(printf '{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"},"cname":"%s","https_enforced":true}' "$CUSTOM_DOMAIN")
 
           echo "→ Consultando configuração atual…"
           STATUS=$(curl -sS -o /tmp/pages.json -w "%{http_code}" "${AUTH[@]}" "$API" || true)
@@ -30,13 +32,11 @@ jobs:
             echo ""
           fi
 
-          PAYLOAD='{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"},"cname":null,"https_enforced":true}'
-
           if [ "$STATUS" = "404" ]; then
             echo "→ Pages não existia; criando…"
             curl -sS -f -X POST "${AUTH[@]}" "$API" -d "$PAYLOAD" | tee /tmp/pages-result.json
           else
-            echo "→ Atualizando (remove custom domain + branch gh-pages)…"
+            echo "→ Atualizando (branch gh-pages + ${CUSTOM_DOMAIN})…"
             curl -sS -f -X PATCH "${AUTH[@]}" "$API" -d "$PAYLOAD" | tee /tmp/pages-result.json
           fi
 
@@ -45,10 +45,11 @@ jobs:
           curl -sS "${AUTH[@]}" "$API" | tee /tmp/pages-after.json
           CNAME=$(python3 -c "import json; print(json.load(open('/tmp/pages-after.json')).get('cname'))")
           echo ""
-          if [ "$CNAME" = "None" ] || [ -z "$CNAME" ]; then
-            echo "✅ Custom domain removido. Teste: https://jordilucas.github.io/transparencia_caninde/"
+          if [ "$CNAME" = "$CUSTOM_DOMAIN" ]; then
+            echo "✅ Domínio configurado. Teste: https://${CUSTOM_DOMAIN}/"
+            echo "   (DNS deve apontar para GitHub Pages — ver docs/DEPLOY-WEB.md)"
           else
-            echo "⚠️  cname ainda definido: ${CNAME}"
-            echo "   Remova manualmente em Settings → Pages → Custom domain"
+            echo "⚠️  cname esperado: ${CUSTOM_DOMAIN}, obtido: ${CNAME}"
+            echo "   Ajuste em Settings → Pages → Custom domain"
             exit 1
           fi

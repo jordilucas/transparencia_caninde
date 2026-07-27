@@ -1,5 +1,5 @@
 # Publica o site Compose (webApp) na branch gh-pages → GitHub Pages.
-# URL: https://jordilucas.github.io/transparencia_caninde/
+# URL: https://transparenciacaninde.com.br/
 
 name: Deploy web (GitHub Pages)
 
@@ -47,7 +47,7 @@ jobs:
         run: |
           cp index.html 404.html
           touch .nojekyll
-          rm -f CNAME
+          test -f CNAME || echo "transparenciacaninde.com.br" > CNAME
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
@@ -56,16 +56,17 @@ jobs:
           publish_dir: kmp-app/webApp/build/dist/wasmJs/productionExecutable
           publish_branch: gh-pages
 
-      - name: Fix Pages config (remove custom domain)
+      - name: Configure Pages (custom domain)
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          CUSTOM_DOMAIN: transparenciacaninde.com.br
         run: |
           set -euo pipefail
           API="https://api.github.com/repos/${REPO}/pages"
           AUTH=(-H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json")
-          PAYLOAD='{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"},"cname":null,"https_enforced":true}'
+          PAYLOAD=$(printf '{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"},"cname":"%s","https_enforced":true}' "$CUSTOM_DOMAIN")
 
           STATUS=$(curl -sS -o /dev/null -w "%{http_code}" "${AUTH[@]}" "$API")
           if [ "$STATUS" = "404" ]; then
@@ -73,4 +74,4 @@ jobs:
           else
             curl -sS -f -X PATCH "${AUTH[@]}" "$API" -d "$PAYLOAD"
           fi
-          echo "Pages configurado: gh-pages, sem custom domain."
+          echo "Pages configurado: gh-pages + https://${CUSTOM_DOMAIN}/"
