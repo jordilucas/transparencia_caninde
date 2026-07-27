@@ -10,6 +10,13 @@
 </head>
 <body>
     <div id="ComposeTarget"></div>
+    <script>
+        (function () {
+            var path = window.location.pathname || "/";
+            var base = path.indexOf("/transparencia_caninde") === 0 ? "/transparencia_caninde/" : "/";
+            window.__webpack_public_path__ = base;
+        })();
+    </script>
     <script src="transparencia-caninde.js"></script>
 </body>
 </html>
