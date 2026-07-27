@@ -18,14 +18,33 @@ O site detecta o host e conecta ao WebSocket:
 
 ---
 
-## Ativação (uma vez)
+## Ativação (uma vez) — **obrigatório**
 
-1. No GitHub, abra **Settings → Pages**.
-2. Em **Build and deployment**, escolha **Source: GitHub Actions**.
-3. Faça push para `main` (ou rode manualmente **Actions → Deploy web → Run workflow**).
-4. Aguarde o workflow terminar; a URL aparece no job **deploy** e em **Settings → Pages**.
+Sem estes passos a URL **não funciona** (erro 404 no deploy ou redirecionamento quebrado).
 
-> Se o primeiro deploy falhar com erro de ambiente `github-pages`, confirme o passo 2 (Source = GitHub Actions) e execute o workflow de novo.
+### 1. Remover domínio customizado errado
+
+Se `https://jordilucas.github.io/transparencia_caninde/` redireciona para outro site (ex. `mercadinhosantos.me`):
+
+1. Abra [Settings → Pages](https://github.com/jordilucas/transparencia_caninde/settings/pages).
+2. Em **Custom domain**, **apague** qualquer domínio listado.
+3. Clique em **Save** (pode demorar alguns minutos para parar o redirecionamento).
+
+### 2. Ativar GitHub Actions como fonte
+
+1. Na mesma página **Settings → Pages**.
+2. Em **Build and deployment → Source**, escolha **GitHub Actions** (não “Deploy from a branch”).
+3. Salve.
+
+### 3. Rodar o deploy
+
+1. Vá em [Actions → Deploy web](https://github.com/jordilucas/transparencia_caninde/actions/workflows/deploy-web.yml).
+2. **Run workflow** (ou faça push em `main`).
+3. Aguarde os jobs **build** e **deploy** ficarem verdes (~4 min).
+
+A URL correta será: `https://jordilucas.github.io/transparencia_caninde/`
+
+> Se o deploy falhar com *“Ensure GitHub Pages has been enabled”*, volte ao passo 2.
 
 ---
 

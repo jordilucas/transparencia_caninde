@@ -38,7 +38,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: wrapper
-          build-root-directory: kmp-app
 
       - name: Build site (Kotlin/JS)
         working-directory: kmp-app
