@@ -6,13 +6,14 @@ import br.gov.caninde.transparencia.data.TransparenciaViewModel
 import br.gov.caninde.transparencia.data.WebSocketEndpoint
 import br.gov.caninde.transparencia.data.createAppModule
 import br.gov.caninde.transparencia.presentation.TransparenciaApp
+import kotlinx.browser.document
+import kotlinx.browser.window
 import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
-import kotlinx.browser.document
 
 private fun webSocketEndpointForBrowser(): WebSocketEndpoint {
-    val hostname = kotlinx.browser.window.location.hostname
+    val hostname = window.location.hostname
     return when (hostname) {
         "localhost", "127.0.0.1" -> WebSocketEndpoint(
             scheme = "ws",
@@ -28,15 +29,24 @@ private fun webSocketEndpointForBrowser(): WebSocketEndpoint {
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
-fun main() {
-    startKoin {
-        modules(createAppModule(webSocketEndpointForBrowser()))
-    }
-
+private fun launchApp() {
     ComposeViewport(viewportContainer = document.body!!) {
         KoinContext {
             val viewModel: TransparenciaViewModel = koinInject()
             TransparenciaApp(viewModel)
         }
+    }
+    window.setTimeout({
+        window.dispatchEvent(org.w3c.dom.events.Event("resize"))
+    }, 0)
+}
+
+fun main() {
+    startKoin {
+        modules(createAppModule(webSocketEndpointForBrowser()))
+    }
+
+    window.onload = {
+        launchApp()
     }
 }
