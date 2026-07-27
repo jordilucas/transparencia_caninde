@@ -8,7 +8,6 @@ on:
 
 permissions:
   pages: write
-  administration: write
 
 jobs:
   fix:
