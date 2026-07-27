@@ -46,7 +46,9 @@ fun main() {
         modules(createAppModule(webSocketEndpointForBrowser()))
     }
 
-    window.onload = {
+    if (document.readyState.toString() == "complete") {
         launchApp()
+    } else {
+        window.onload = { launchApp() }
     }
 }
