@@ -30,7 +30,7 @@ private fun webSocketEndpointForBrowser(): WebSocketEndpoint {
 
 @OptIn(ExperimentalComposeUiApi::class)
 private fun launchApp() {
-    ComposeViewport(viewportContainer = document.body!!) {
+    ComposeViewport(viewportContainerId = "ComposeTarget") {
         KoinContext {
             val viewModel: TransparenciaViewModel = koinInject()
             TransparenciaApp(viewModel)

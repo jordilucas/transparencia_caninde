@@ -5,5 +5,11 @@ html, body {
     padding: 0;
     overflow: hidden;
     background: #f5f7fa;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+#ComposeTarget {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    display: block;
 }
