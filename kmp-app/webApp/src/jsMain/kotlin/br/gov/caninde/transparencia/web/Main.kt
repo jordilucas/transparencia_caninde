@@ -9,6 +9,7 @@ import br.gov.caninde.transparencia.presentation.TransparenciaApp
 import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
+import kotlinx.browser.document
 
 private fun webSocketEndpointForBrowser(): WebSocketEndpoint {
     val hostname = kotlinx.browser.window.location.hostname
@@ -32,7 +33,7 @@ fun main() {
         modules(createAppModule(webSocketEndpointForBrowser()))
     }
 
-    ComposeViewport(viewportContainerId = "ComposeTarget") {
+    ComposeViewport(viewportContainer = document.body!!) {
         KoinContext {
             val viewModel: TransparenciaViewModel = koinInject()
             TransparenciaApp(viewModel)

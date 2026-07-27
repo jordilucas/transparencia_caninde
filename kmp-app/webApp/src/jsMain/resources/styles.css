@@ -4,17 +4,6 @@ html, body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: #e2e8f0;
+    background: #f5f7fa;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-}
-
-#ComposeTarget {
-    width: 100%;
-    height: 100%;
-}
-
-@media (min-width: 840px) {
-    body {
-        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
-    }
 }
