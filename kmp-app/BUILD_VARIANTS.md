@@ -36,3 +36,28 @@ Sem `keystore.properties`, **release** assina com a chave **debug** (ok para tes
 - **staging/prod:** apenas `wss` (TLS).
 
 O endpoint é injetado no Koin em `MainActivity` via `WebSocketEndpoint` (sem reflexão em `BuildConfig` no módulo shared).
+
+---
+
+## Site web (`webApp/`)
+
+| Ambiente | WebSocket |
+|----------|-----------|
+| **localhost** | `ws://localhost:8080` |
+| **produção** | `wss://transparencia-caninde.onrender.com` |
+
+```bash
+cd kmp-app
+
+# Dev (webpack + hot reload)
+./gradlew :webApp:jsBrowserDevelopmentRun
+
+# Produção (pasta estática)
+./gradlew :webApp:jsBrowserDistribution
+```
+
+Deploy: publicar `webApp/build/dist/js/productionExecutable/`.
+
+**Automático:** GitHub Pages via [`.github/workflows/deploy-web.yml`](../.github/workflows/deploy-web.yml) — ver [`docs/DEPLOY-WEB.md`](../docs/DEPLOY-WEB.md).
+
+**Pré-requisito:** Node.js (baixado automaticamente pelo Gradle na primeira build JS).

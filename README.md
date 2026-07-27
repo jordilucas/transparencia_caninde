@@ -9,6 +9,7 @@ Aplicativo **Kotlin Multiplatform** (Compose Multiplatform) + **servidor Node.js
 | [`API.md`](API.md) | Contrato completo das mensagens WebSocket |
 | [`docs/ROADMAP-DADOS.md`](docs/ROADMAP-DADOS.md) | Roadmap de fontes e fases futuras |
 | [`docs/HOSPEDAGEM-GRATUITA.md`](docs/HOSPEDAGEM-GRATUITA.md) | Deploy no Render / Fly.io |
+| [`docs/DEPLOY-WEB.md`](docs/DEPLOY-WEB.md) | Deploy do site (GitHub Pages) |
 | [`server/TEST.md`](server/TEST.md) | Testes manuais do WebSocket |
 | [`kmp-app/BUILD_VARIANTS.md`](kmp-app/BUILD_VARIANTS.md) | Flavors `dev` / `staging` / `prod` |
 
@@ -460,6 +461,49 @@ cd kmp-app
 Artefatos copiados em `releases/android/v1.1.0/`. Assinatura release: `kmp-app/keystore.properties` + `release.jks` (gitignored). Ver [`keystore.properties.example`](kmp-app/keystore.properties.example).
 
 **Ordem:** subir o servidor (ou usar Render) antes de abrir o app.
+
+---
+
+## Site web (Compose Multiplatform)
+
+O mesmo app roda no navegador via target **Kotlin/JS** (`webApp/`).
+
+| Ambiente | WebSocket |
+|----------|-----------|
+| **localhost** (dev) | `ws://localhost:8080` |
+| **produção** (qualquer outro host) | `wss://transparencia-caninde.onrender.com` |
+
+### Comandos
+
+```bash
+cd kmp-app
+
+# Servidor de desenvolvimento (hot reload) — http://localhost:8080
+./gradlew :webApp:jsBrowserDevelopmentRun
+
+# Bundle estático para deploy
+./gradlew :webApp:jsBrowserDistribution
+# Saída: webApp/build/dist/js/productionExecutable/
+```
+
+### Deploy estático
+
+**Recomendado: GitHub Pages** (workflow automático em [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml)).
+
+1. **Settings → Pages → Source:** GitHub Actions
+2. Push em `main` ou **Actions → Deploy web → Run workflow**
+3. URL: `https://jordilucas.github.io/transparencia_caninde/`
+
+Guia completo: [`docs/DEPLOY-WEB.md`](docs/DEPLOY-WEB.md).
+
+Deploy manual (alternativa):
+
+```bash
+./gradlew :webApp:jsBrowserDistribution
+# Publique webApp/build/dist/js/productionExecutable/ (+ 404.html e .nojekyll)
+```
+
+Em telas largas (≥ 840 px), a navegação usa barra lateral; em mobile, barra inferior — igual ao app Android.
 
 ---
 

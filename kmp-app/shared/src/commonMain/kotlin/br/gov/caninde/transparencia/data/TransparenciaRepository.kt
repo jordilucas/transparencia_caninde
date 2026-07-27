@@ -6,6 +6,7 @@ import io.ktor.client.plugins.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlin.concurrent.Volatile
 
 class TransparenciaRepository(
     private val client: HttpClient,

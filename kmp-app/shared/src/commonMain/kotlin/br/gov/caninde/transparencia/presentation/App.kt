@@ -70,109 +70,206 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
     }
 
     TransparenciaTheme {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            contentWindowInsets = WindowInsets.safeDrawing,
-            bottomBar = {
-                if (showBottomBar) {
-                    NavigationBar(
-                        containerColor = AppColors.Card,
-                        contentColor = AppColors.TextPrimary,
-                        modifier = Modifier.navigationBarsPadding(),
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val useRail = maxWidth >= 840.dp && showBottomBar
+
+            if (useRail) {
+                Row(Modifier.fillMaxSize()) {
+                    MainNavigationRail(
+                        currentScreen = (currentRoute as AppRoute.Main).screen,
+                        onScreenSelected = { screen ->
+                            if (routeStack.size > 1) {
+                                routeStack.clear()
+                                routeStack.add(AppRoute.Main(screen))
+                            } else {
+                                routeStack[0] = AppRoute.Main(screen)
+                            }
+                        },
+                    )
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                     ) {
-                        val mainScreen = (currentRoute as AppRoute.Main).screen
-                        navItems.forEach { item ->
-                            NavigationBarItem(
-                                selected = mainScreen == item.screen,
-                                onClick = {
-                                    if (routeStack.size > 1) {
-                                        routeStack.clear()
-                                        routeStack.add(AppRoute.Main(item.screen))
-                                    } else {
-                                        routeStack[0] = AppRoute.Main(item.screen)
-                                    }
-                                },
-                                icon = {
-                                    Icon(item.icon, contentDescription = item.label)
-                                },
-                                label = {
-                                    Text(item.label, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                                },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = AppColors.Navy800,
-                                    selectedTextColor = AppColors.Navy800,
-                                    unselectedIconColor = AppColors.TextTertiary,
-                                    unselectedTextColor = AppColors.TextTertiary,
-                                    indicatorColor = AppColors.Blue100,
-                                ),
-                            )
-                        }
-                    }
-                }
-            },
-        ) { paddingValues ->
-            val layoutDirection = LocalLayoutDirection.current
-            // Detalhe: TopAppBar já aplica status bar — evitar padding superior duplicado do Scaffold
-            val contentPadding = if (showBottomBar) {
-                paddingValues
-            } else {
-                PaddingValues(
-                    start = paddingValues.calculateStartPadding(layoutDirection),
-                    end = paddingValues.calculateEndPadding(layoutDirection),
-                    bottom = paddingValues.calculateBottomPadding(),
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-            ) {
-                when (val route = currentRoute) {
-                    is AppRoute.Main -> when (route.screen) {
-                        Screen.Prefeitura -> PrefeituraScreen(
-                            state = prefeituraState,
+                        AppRouteContent(
+                            currentRoute = currentRoute,
+                            viewModel = viewModel,
                             connectionState = connectionState,
-                            onRefresh = { viewModel.refreshPrefeitura() },
-                            onContratoClick = { navigate(AppRoute.Contrato(it.numero)) },
-                            onLicitacaoClick = { navigate(AppRoute.Licitacao(it.numero)) },
-                            onSecretariaClick = { navigate(AppRoute.Secretaria(it.id.ifBlank { it.nome })) },
-                            onGestoresClick = { navigate(AppRoute.Gestores) },
-                            onInstitucionalClick = { navigate(AppRoute.Institucional(false)) },
-                        )
-                        Screen.Camara -> CamaraScreen(
-                            state = camaraState,
-                            connectionState = connectionState,
-                            onRefresh = { viewModel.refreshCamara() },
-                            onVereadorClick = { navigate(AppRoute.Vereador(it.slug.ifBlank { it.nome })) },
-                            onMateriaClick = { navigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
-                            onSessaoClick = { idx, s -> navigate(AppRoute.Sessao(idx.toString())) },
-                            onInstitucionalClick = { navigate(AppRoute.Institucional(true)) },
-                        )
-                        Screen.Graficos -> GraficosScreen(
                             prefeituraState = prefeituraState,
                             camaraState = camaraState,
-                        )
-                        Screen.Busca -> BuscaScreen(
-                            prefeitura = prefeituraState,
-                            camara = camaraState,
-                            onContratoClick = { navigate(AppRoute.Contrato(it.numero)) },
-                            onVereadorClick = { navigate(AppRoute.Vereador(it.slug.ifBlank { it.nome })) },
-                            onSecretariaClick = { navigate(AppRoute.Secretaria(it.id.ifBlank { it.nome })) },
-                            onLicitacaoClick = { navigate(AppRoute.Licitacao(it.numero)) },
-                            onMateriaClick = { navigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
+                            onNavigate = ::navigate,
+                            onNavigateBack = ::navigateBack,
                         )
                     }
-                    is AppRoute.Vereador -> VereadorDetailScreen(viewModel, route.slug, ::navigateBack)
-                    is AppRoute.Materia -> MateriaDetailScreen(viewModel, route.slug, ::navigateBack)
-                    is AppRoute.Secretaria -> SecretariaDetailScreen(viewModel, route.id, ::navigateBack)
-                    is AppRoute.Contrato -> ContratoDetailScreen(viewModel, route.numero, ::navigateBack)
-                    is AppRoute.Licitacao -> LicitacaoDetailScreen(viewModel, route.numero, ::navigateBack)
-                    is AppRoute.Sessao -> SessaoDetailScreen(viewModel, route.id, ::navigateBack)
-                    AppRoute.Gestores -> GestoresDetailScreen(viewModel, ::navigateBack)
-                    is AppRoute.Institucional -> InstitucionalDetailScreen(viewModel, route.camara, ::navigateBack)
+                }
+            } else {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    contentWindowInsets = WindowInsets.safeDrawing,
+                    bottomBar = {
+                        if (showBottomBar) {
+                            MainNavigationBar(
+                                currentScreen = (currentRoute as AppRoute.Main).screen,
+                                onScreenSelected = { screen ->
+                                    if (routeStack.size > 1) {
+                                        routeStack.clear()
+                                        routeStack.add(AppRoute.Main(screen))
+                                    } else {
+                                        routeStack[0] = AppRoute.Main(screen)
+                                    }
+                                },
+                            )
+                        }
+                    },
+                ) { paddingValues ->
+                    val layoutDirection = LocalLayoutDirection.current
+                    val contentPadding = if (showBottomBar) {
+                        paddingValues
+                    } else {
+                        PaddingValues(
+                            start = paddingValues.calculateStartPadding(layoutDirection),
+                            end = paddingValues.calculateEndPadding(layoutDirection),
+                            bottom = paddingValues.calculateBottomPadding(),
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(contentPadding),
+                    ) {
+                        AppRouteContent(
+                            currentRoute = currentRoute,
+                            viewModel = viewModel,
+                            connectionState = connectionState,
+                            prefeituraState = prefeituraState,
+                            camaraState = camaraState,
+                            onNavigate = ::navigate,
+                            onNavigateBack = ::navigateBack,
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MainNavigationBar(
+    currentScreen: Screen,
+    onScreenSelected: (Screen) -> Unit,
+) {
+    NavigationBar(
+        containerColor = AppColors.Card,
+        contentColor = AppColors.TextPrimary,
+        modifier = Modifier.navigationBarsPadding(),
+    ) {
+        navItems.forEach { item ->
+            NavigationBarItem(
+                selected = currentScreen == item.screen,
+                onClick = { onScreenSelected(item.screen) },
+                icon = { Icon(item.icon, contentDescription = item.label) },
+                label = { Text(item.label, fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = AppColors.Navy800,
+                    selectedTextColor = AppColors.Navy800,
+                    unselectedIconColor = AppColors.TextTertiary,
+                    unselectedTextColor = AppColors.TextTertiary,
+                    indicatorColor = AppColors.Blue100,
+                ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MainNavigationRail(
+    currentScreen: Screen,
+    onScreenSelected: (Screen) -> Unit,
+) {
+    NavigationRail(
+        containerColor = AppColors.Card,
+        contentColor = AppColors.TextPrimary,
+        modifier = Modifier.fillMaxHeight().width(88.dp),
+    ) {
+        Spacer(Modifier.height(16.dp))
+        Text(
+            "Canindé",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = AppColors.Navy800,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        navItems.forEach { item ->
+            NavigationRailItem(
+                selected = currentScreen == item.screen,
+                onClick = { onScreenSelected(item.screen) },
+                icon = { Icon(item.icon, contentDescription = item.label) },
+                label = { Text(item.label, fontSize = 10.sp) },
+                colors = NavigationRailItemDefaults.colors(
+                    selectedIconColor = AppColors.Navy800,
+                    selectedTextColor = AppColors.Navy800,
+                    unselectedIconColor = AppColors.TextTertiary,
+                    unselectedTextColor = AppColors.TextTertiary,
+                    indicatorColor = AppColors.Blue100,
+                ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppRouteContent(
+    currentRoute: AppRoute,
+    viewModel: TransparenciaViewModel,
+    connectionState: ConnectionState,
+    prefeituraState: PrefeituraUiState,
+    camaraState: CamaraUiState,
+    onNavigate: (AppRoute) -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    when (val route = currentRoute) {
+        is AppRoute.Main -> when (route.screen) {
+            Screen.Prefeitura -> PrefeituraScreen(
+                state = prefeituraState,
+                connectionState = connectionState,
+                onRefresh = { viewModel.refreshPrefeitura() },
+                onContratoClick = { onNavigate(AppRoute.Contrato(it.numero)) },
+                onLicitacaoClick = { onNavigate(AppRoute.Licitacao(it.numero)) },
+                onSecretariaClick = { onNavigate(AppRoute.Secretaria(it.id.ifBlank { it.nome })) },
+                onGestoresClick = { onNavigate(AppRoute.Gestores) },
+                onInstitucionalClick = { onNavigate(AppRoute.Institucional(false)) },
+            )
+            Screen.Camara -> CamaraScreen(
+                state = camaraState,
+                connectionState = connectionState,
+                onRefresh = { viewModel.refreshCamara() },
+                onVereadorClick = { onNavigate(AppRoute.Vereador(it.slug.ifBlank { it.nome })) },
+                onMateriaClick = { onNavigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
+                onSessaoClick = { idx, _ -> onNavigate(AppRoute.Sessao(idx.toString())) },
+                onInstitucionalClick = { onNavigate(AppRoute.Institucional(true)) },
+            )
+            Screen.Graficos -> GraficosScreen(
+                prefeituraState = prefeituraState,
+                camaraState = camaraState,
+            )
+            Screen.Busca -> BuscaScreen(
+                prefeitura = prefeituraState,
+                camara = camaraState,
+                onContratoClick = { onNavigate(AppRoute.Contrato(it.numero)) },
+                onVereadorClick = { onNavigate(AppRoute.Vereador(it.slug.ifBlank { it.nome })) },
+                onSecretariaClick = { onNavigate(AppRoute.Secretaria(it.id.ifBlank { it.nome })) },
+                onLicitacaoClick = { onNavigate(AppRoute.Licitacao(it.numero)) },
+                onMateriaClick = { onNavigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
+            )
+        }
+        is AppRoute.Vereador -> VereadorDetailScreen(viewModel, route.slug, onNavigateBack)
+        is AppRoute.Materia -> MateriaDetailScreen(viewModel, route.slug, onNavigateBack)
+        is AppRoute.Secretaria -> SecretariaDetailScreen(viewModel, route.id, onNavigateBack)
+        is AppRoute.Contrato -> ContratoDetailScreen(viewModel, route.numero, onNavigateBack)
+        is AppRoute.Licitacao -> LicitacaoDetailScreen(viewModel, route.numero, onNavigateBack)
+        is AppRoute.Sessao -> SessaoDetailScreen(viewModel, route.id, onNavigateBack)
+        AppRoute.Gestores -> GestoresDetailScreen(viewModel, onNavigateBack)
+        is AppRoute.Institucional -> InstitucionalDetailScreen(viewModel, route.camara, onNavigateBack)
     }
 }
 

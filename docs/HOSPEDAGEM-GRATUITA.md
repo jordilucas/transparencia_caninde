@@ -139,3 +139,17 @@ docker compose up --build
 - **GitHub Actions** como servidor — apenas CI, não hospedagem do WS.
 
 Para evolução (domínio `transparencia.caninde.ce.gov.br`, TLS próprio), use o flavor **prod** com DNS apontando para um VPS ou serviço pago.
+
+---
+
+## Site web (GitHub Pages)
+
+O frontend estático é publicado automaticamente pelo workflow [`.github/workflows/deploy-web.yml`](../.github/workflows/deploy-web.yml).
+
+| Item | Detalhe |
+|------|---------|
+| URL | `https://jordilucas.github.io/transparencia_caninde/` |
+| Ativação | **Settings → Pages → Source: GitHub Actions** |
+| Backend WS | Continua neste serviço Render (`wss://…onrender.com`) |
+
+Guia: [`docs/DEPLOY-WEB.md`](DEPLOY-WEB.md).
