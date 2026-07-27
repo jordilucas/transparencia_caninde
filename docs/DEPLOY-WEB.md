@@ -1,6 +1,6 @@
 # Deploy do site web — GitHub Pages
 
-O frontend (`kmp-app/webApp/`) é publicado automaticamente via GitHub Actions. O backend WebSocket continua no [Render](HOSPEDAGEM-GRATUITA.md).
+O frontend (`kmp-app/webApp/`) é publicado automaticamente via GitHub Actions na branch **`gh-pages`**. O backend WebSocket continua no [Render](HOSPEDAGEM-GRATUITA.md).
 
 ## URL publicada
 
@@ -20,31 +20,29 @@ O site detecta o host e conecta ao WebSocket:
 
 ## Ativação (uma vez) — **obrigatório**
 
-Sem estes passos a URL **não funciona** (erro 404 no deploy ou redirecionamento quebrado).
-
 ### 1. Remover domínio customizado errado
 
 Se `https://jordilucas.github.io/transparencia_caninde/` redireciona para outro site (ex. `mercadinhosantos.me`):
 
 1. Abra [Settings → Pages](https://github.com/jordilucas/transparencia_caninde/settings/pages).
 2. Em **Custom domain**, **apague** qualquer domínio listado.
-3. Clique em **Save** (pode demorar alguns minutos para parar o redirecionamento).
+3. Clique em **Save**.
 
-### 2. Ativar GitHub Actions como fonte
+### 2. Publicar a partir da branch `gh-pages`
 
 1. Na mesma página **Settings → Pages**.
-2. Em **Build and deployment → Source**, escolha **GitHub Actions** (não “Deploy from a branch”).
-3. Salve.
+2. **Build and deployment → Source:** escolha **Deploy from a branch**.
+3. **Branch:** `gh-pages` · pasta **`/ (root)`** → **Save**.
+
+> Não use “GitHub Actions” como source — o workflow publica na branch `gh-pages` com `peaceiris/actions-gh-pages`.
 
 ### 3. Rodar o deploy
 
-1. Vá em [Actions → Deploy web](https://github.com/jordilucas/transparencia_caninde/actions/workflows/deploy-web.yml).
-2. **Run workflow** (ou faça push em `main`).
-3. Aguarde os jobs **build** e **deploy** ficarem verdes (~4 min).
+1. [Actions → Deploy web](https://github.com/jordilucas/transparencia_caninde/actions/workflows/deploy-web.yml) → **Run workflow**.
+2. Aguarde o job **deploy** ficar verde (~4 min).
+3. Confirme que a branch **`gh-pages`** foi criada no repositório.
 
-A URL correta será: `https://jordilucas.github.io/transparencia_caninde/`
-
-> Se o deploy falhar com *“Ensure GitHub Pages has been enabled”*, volte ao passo 2.
+URL: `https://jordilucas.github.io/transparencia_caninde/`
 
 ---
 
@@ -54,62 +52,45 @@ Arquivo: [`.github/workflows/deploy-web.yml`](../.github/workflows/deploy-web.ym
 
 | Etapa | O que faz |
 |-------|-----------|
-| Trigger | Push em `main` alterando `kmp-app/**`, ou manual |
+| Trigger | Push em `main` (`kmp-app/**`) ou manual |
 | Build | `./gradlew :webApp:jsBrowserDistribution` |
-| SPA | Copia `index.html` → `404.html` (rotas futuras no cliente) |
-| Jekyll | Cria `.nojekyll` (evita ignorar assets do Skiko/Compose) |
-| Deploy | `actions/deploy-pages` → GitHub Pages |
+| SPA | `index.html` → `404.html` |
+| Jekyll | `.nojekyll` |
+| Deploy | Push para branch **`gh-pages`** |
 
-Build local equivalente:
+---
+
+## Erros comuns
+
+| Erro / sintoma | Solução |
+|----------------|---------|
+| *Ensure GitHub Pages has been enabled* (workflow antigo) | Atualize o workflow; use **Deploy from branch → gh-pages** |
+| *Creating Pages deployment failed / 404* | Source deve ser **branch gh-pages**, não “GitHub Actions” |
+| Redireciona para `mercadinhosantos.me` | Apague **Custom domain** em Settings → Pages |
+| Aviso *Node 20 is deprecated* | Aviso das actions; não impede o deploy |
+| Site 404 após deploy verde | Confirme branch `gh-pages` + source Pages apontando para ela; aguarde ~2 min |
+
+---
+
+## Domínio customizado (Prefeitura / Câmara)
+
+1. Crie `kmp-app/webApp/src/jsMain/resources/CNAME` com uma linha, ex. `transparencia.caninde.ce.gov.br`.
+2. DNS: **CNAME** → `jordilucas.github.io`.
+3. **Settings → Pages → Custom domain** → mesmo host.
+4. Push → novo deploy inclui o `CNAME`.
+
+---
+
+## Manter o backend responsivo
+
+Render free **dorme** após inatividade. [UptimeRobot](https://uptimerobot.com) em `/health` a cada 5 min — ver [HOSPEDAGEM-GRATUITA.md](HOSPEDAGEM-GRATUITA.md).
+
+---
+
+## Build local
 
 ```bash
 cd kmp-app
 ./gradlew :webApp:jsBrowserDistribution
 ls webApp/build/dist/js/productionExecutable/
 ```
-
----
-
-## Domínio customizado (Prefeitura / Câmara)
-
-1. Crie `kmp-app/webApp/src/jsMain/resources/CNAME` com uma linha, ex.:
-   ```
-   transparencia.caninde.ce.gov.br
-   ```
-2. No DNS do domínio, adicione registro **CNAME** apontando para `jordilucas.github.io`.
-3. Em **Settings → Pages → Custom domain**, informe o mesmo host.
-4. Faça push; o próximo deploy incluirá o `CNAME` na raiz do site.
-
----
-
-## Manter o backend responsivo
-
-No plano gratuito do Render, o WebSocket **dorme** após inatividade. O site abre rápido, mas os dados podem demorar ~1 min na primeira carga.
-
-Configure [UptimeRobot](https://uptimerobot.com) em `https://transparencia-caninde.onrender.com/health` (intervalo 5 min) — ver [HOSPEDAGEM-GRATUITA.md](HOSPEDAGEM-GRATUITA.md).
-
----
-
-## Solução de problemas
-
-| Sintoma | Ação |
-|---------|------|
-| `github.io/...` redireciona para outro domínio | **Settings → Pages → Custom domain** → apague o domínio (ex. domínio de outro projeto) e salve |
-| URL retorna 404 / site antigo | Confirme push do workflow e **Source: GitHub Actions** |
-| Workflow falha no Gradle | Veja logs; confirme Java 17 e `./gradlew` em `kmp-app/` |
-| Página em branco | Abra DevTools → Console; confirme URL com barra final `/transparencia_caninde/` |
-| “Conectando…” eterno | Backend Render dormindo; aguarde ou use UptimeRobot |
-| 404 em rota futura | Confirme que `404.html` existe no artifact (gerado pelo workflow) |
-| Assets 404 | Confirme `.nojekyll` no deploy |
-
----
-
-## Alternativas
-
-| Serviço | Quando usar |
-|---------|-------------|
-| **Cloudflare Pages** | CDN mais agressivo; upload da pasta `productionExecutable/` |
-| **Render Static Site** | Mesmo painel do backend WS |
-| **Firebase Hosting** | Se integrar outros serviços Google |
-
-Para este projeto, **GitHub Pages + Actions** é a opção mais simples: grátis, no mesmo repositório e com HTTPS automático.

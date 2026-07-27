@@ -488,11 +488,12 @@ cd kmp-app
 
 ### Deploy estático
 
-**Recomendado: GitHub Pages** (workflow automático em [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml)).
+**Recomendado: GitHub Pages** (workflow em [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml)).
 
-1. **Settings → Pages → Source:** GitHub Actions
-2. Push em `main` ou **Actions → Deploy web → Run workflow**
-3. URL: `https://jordilucas.github.io/transparencia_caninde/`
+1. **Settings → Pages → Source:** Deploy from branch → **`gh-pages`** / **(root)**
+2. Apague **Custom domain** antigo se houver (ex. redirecionamento errado)
+3. **Actions → Deploy web → Run workflow**
+4. URL: `https://jordilucas.github.io/transparencia_caninde/`
 
 Guia completo: [`docs/DEPLOY-WEB.md`](docs/DEPLOY-WEB.md).
 
