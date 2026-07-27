@@ -1,5 +1,4 @@
 # Publica o site Compose (webApp) na branch gh-pages → GitHub Pages.
-# Ative em: Settings → Pages → Deploy from branch → gh-pages / (root)
 # URL: https://jordilucas.github.io/transparencia_caninde/
 
 name: Deploy web (GitHub Pages)
@@ -10,10 +9,13 @@ on:
     paths:
       - 'kmp-app/**'
       - '.github/workflows/deploy-web.yml'
+      - '.github/workflows/fix-pages.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  administration: write
 
 concurrency:
   group: pages
@@ -46,6 +48,7 @@ jobs:
         run: |
           cp index.html 404.html
           touch .nojekyll
+          rm -f CNAME
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
@@ -53,3 +56,21 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: kmp-app/webApp/build/dist/js/productionExecutable
           publish_branch: gh-pages
+
+      - name: Fix Pages config (remove custom domain)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          API="https://api.github.com/repos/${REPO}/pages"
+          AUTH=(-H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json")
+          PAYLOAD='{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"},"cname":null,"https_enforced":true}'
+
+          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" "${AUTH[@]}" "$API")
+          if [ "$STATUS" = "404" ]; then
+            curl -sS -f -X POST "${AUTH[@]}" "$API" -d "$PAYLOAD"
+          else
+            curl -sS -f -X PATCH "${AUTH[@]}" "$API" -d "$PAYLOAD"
+          fi
+          echo "Pages configurado: gh-pages, sem custom domain."

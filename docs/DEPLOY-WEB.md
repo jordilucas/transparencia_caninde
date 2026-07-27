@@ -20,15 +20,23 @@ O site detecta o host e conecta ao WebSocket:
 
 ## Ativação (uma vez) — **obrigatório**
 
-### 1. Remover domínio customizado errado
+### 1. Remover redirecionamento para `mercadinhosantos.me` (**urgente**)
 
-Se `https://jordilucas.github.io/transparencia_caninde/` redireciona para outro site (ex. `mercadinhosantos.me`):
+O site **já está publicado** na branch `gh-pages`, mas o GitHub redireciona para um domínio antigo que não existe.
 
-1. Abra [Settings → Pages](https://github.com/jordilucas/transparencia_caninde/settings/pages).
-2. Em **Custom domain**, **apague** qualquer domínio listado.
-3. Clique em **Save**.
+**Opção A — workflow automático (recomendado)**
 
-### 2. Publicar a partir da branch `gh-pages`
+1. [Actions → Fix GitHub Pages config](https://github.com/jordilucas/transparencia_caninde/actions/workflows/fix-pages.yml) → **Run workflow**.
+2. Aguarde ficar verde (~30 s).
+3. Teste: `https://jordilucas.github.io/transparencia_caninde/` (pode levar 1–2 min).
+
+**Opção B — manual no GitHub**
+
+1. [Settings → Pages](https://github.com/jordilucas/transparencia_caninde/settings/pages).
+2. **Custom domain:** apague `mercadinhosantos.me` (deixe **vazio**) → **Save**.
+3. **Source:** Deploy from branch → **`gh-pages`** / **`/ (root)`** → **Save**.
+
+### 2. Confirmar branch `gh-pages` (se ainda não fez)
 
 1. Na mesma página **Settings → Pages**.
 2. **Build and deployment → Source:** escolha **Deploy from a branch**.
