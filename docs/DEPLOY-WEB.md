@@ -12,28 +12,84 @@ Fallback (GitHub Pages): `https://jordilucas.github.io/transparencia_caninde/`
 
 ## DNS (obrigatório para o domínio próprio)
 
-Configure no registrador de **`transparenciacaninde.com.br`**:
+**Diagnóstico atual:** o domínio usa DNS do Registro.br (`a.auto.dns.br`), mas **não possui registros A** apontando para o GitHub Pages. Por isso o GitHub exibe:
 
-### Domínio raiz (`transparenciacaninde.com.br`)
+> *Domain does not resolve to the GitHub Pages server (NotServedByPagesError)*
 
-Registros **A** apontando para os IPs do GitHub Pages:
+O site na branch `gh-pages` e o arquivo `CNAME` já estão corretos. Falta **só configurar o DNS** no Registro.br.
 
-| Tipo | Nome | Valor |
-|------|------|--------|
-| A | `@` | `185.199.108.153` |
-| A | `@` | `185.199.109.153` |
-| A | `@` | `185.199.110.153` |
-| A | `@` | `185.199.111.153` |
+### Passo a passo — Registro.br
 
-### Subdomínio `www` (opcional)
+1. Acesse **https://registro.br** → **Meus domínios** → `transparenciacaninde.com.br`
+2. Clique em **DNS** (ou **Configurar endereçamento**)
+3. Use **Modo avançado** (editar zona) e adicione **todos** estes registros:
 
-| Tipo | Nome | Valor |
-|------|------|--------|
+```
+transparenciacaninde.com.br.     IN  A      185.199.108.153
+transparenciacaninde.com.br.     IN  A      185.199.109.153
+transparenciacaninde.com.br.     IN  A      185.199.110.153
+transparenciacaninde.com.br.     IN  A      185.199.111.153
+www.transparenciacaninde.com.br. IN  CNAME  jordilucas.github.io.
+```
+
+4. **Remova** registros A/AAAA conflitantes no apex (se existirem apontando para outro lugar)
+5. Salve e aguarde propagação (15 min – 24 h)
+
+> O subdomínio **`www`** não é opcional: o GitHub trata `www.transparenciacaninde.com.br` como *alternate name* e exige que ele também aponte para o Pages.
+
+### Formulário simples (se não usar modo avançado)
+
+| Tipo | Nome / Host | Valor / Destino |
+|------|-------------|-----------------|
+| A | `@` ou vazio | `185.199.108.153` |
+| A | `@` ou vazio | `185.199.109.153` |
+| A | `@` ou vazio | `185.199.110.153` |
+| A | `@` ou vazio | `185.199.111.153` |
 | CNAME | `www` | `jordilucas.github.io` |
 
-No GitHub (**Settings → Pages → Custom domain**), informe `transparenciacaninde.com.br` e marque **Enforce HTTPS** após o certificado ser emitido (pode levar até 24 h após o DNS propagar).
+**Importante:** o CNAME do `www` deve apontar para `jordilucas.github.io` — **sem** `/transparencia_caninde` no final.
+
+### Verificar se funcionou
+
+No terminal (Mac/Linux):
+
+```bash
+dig transparenciacaninde.com.br A +short
+dig www.transparenciacaninde.com.br CNAME +short
+```
+
+Resultado esperado:
+
+```
+185.199.108.153
+185.199.109.153
+185.199.110.153
+185.199.111.153
+jordilucas.github.io.
+```
+
+Depois, no GitHub (**Settings → Pages**):
+
+1. Custom domain: `transparenciacaninde.com.br` → **Save**
+2. Aguarde o check verde **DNS check successful**
+3. Ative **Enforce HTTPS** (pode demorar até 24 h após o DNS)
 
 O arquivo `kmp-app/webApp/src/wasmJsMain/resources/CNAME` contém o mesmo domínio e é publicado automaticamente pelo workflow.
+
+---
+
+## Erro NotServedByPagesError
+
+| Causa | Solução |
+|-------|---------|
+| Sem registros A no apex | Adicionar os 4 IPs do GitHub (tabela acima) |
+| `www` sem CNAME | CNAME `www` → `jordilucas.github.io` |
+| DNS ainda propagando | Aguardar e clicar **Recheck** em Settings → Pages |
+| Custom domain em outro repo | Remover o domínio do outro repositório GitHub |
+| Branch errada | Source deve ser `gh-pages` / `(root)` |
+
+Enquanto o DNS não propagar, o site continua acessível em:  
+**https://jordilucas.github.io/transparencia_caninde/**
 
 ---
 
