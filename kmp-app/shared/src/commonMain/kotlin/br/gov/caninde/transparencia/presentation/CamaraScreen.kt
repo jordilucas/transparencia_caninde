@@ -28,6 +28,7 @@ fun CamaraScreen(
     onMateriaClick: (Materia) -> Unit = {},
     onSessaoClick: (Int, Sessao) -> Unit = { _, _ -> },
     onInstitucionalClick: () -> Unit = {},
+    onTransparenciaLinkClick: (LinkExterno) -> Unit = {},
 ) {
     var areaLegislativo by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -123,6 +124,7 @@ fun CamaraScreen(
                     transparenciaLinksItems(
                         state.linksTransparencia.filter { it.categoria != "pessoal" },
                         "Canindé Transparente",
+                        onClick = onTransparenciaLinkClick,
                     )
                     item { Spacer(Modifier.height(80.dp)) }
                 } else item {

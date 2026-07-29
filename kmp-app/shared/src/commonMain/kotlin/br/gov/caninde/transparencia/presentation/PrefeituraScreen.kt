@@ -17,9 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.domain.*
-import br.gov.caninde.transparencia.platform.openExternalUrl
 import br.gov.caninde.transparencia.domain.PREFEITURA_PORTAL_BASE
-import br.gov.caninde.transparencia.domain.resolveAbsoluteUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +30,8 @@ fun PrefeituraScreen(
     onSecretariaClick: (Secretaria) -> Unit = {},
     onGestoresClick: () -> Unit = {},
     onInstitucionalClick: () -> Unit = {},
+    onPublicacaoClick: (Publicacao) -> Unit = {},
+    onTransparenciaLinkClick: (LinkExterno) -> Unit = {},
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Contratos", "Licitações", "Publicações", "Secretarias", "Transparência")
@@ -167,11 +167,11 @@ fun PrefeituraScreen(
                 when (selectedTab) {
                     0 -> contratosItems(state.contratos, onContratoClick)
                     1 -> licitacoesItems(state.licitacoes, onLicitacaoClick)
-                    2 -> publicacoesItems(state.publicacoes, state.diariosOficiais)
+                    2 -> publicacoesItems(state.publicacoes, state.diariosOficiais, onPublicacaoClick)
                     3 -> secretariasItems(state.secretarias, onSecretariaClick)
                     4 -> {
                         item { TransparenciaLinksIntro("a Prefeitura") }
-                        transparenciaLinksItems(state.linksTransparencia)
+                        transparenciaLinksItems(state.linksTransparencia, onClick = onTransparenciaLinkClick)
                     }
                 }
 
@@ -337,7 +337,11 @@ fun LicitacoesRow(l: Licitacao, onClick: (() -> Unit)? = null) {
 
 // ─── Publicações / Diário ─────────────────────────────────────────────────────
 
-fun LazyListScope.publicacoesItems(publicacoes: List<Publicacao>, diariosFallback: List<String>) {
+fun LazyListScope.publicacoesItems(
+    publicacoes: List<Publicacao>,
+    diariosFallback: List<String>,
+    onClick: (Publicacao) -> Unit = {},
+) {
     item { SectionHeader(title = "Publicações oficiais", action = "") }
     if (publicacoes.isNotEmpty()) {
         items(publicacoes) { p ->
@@ -354,13 +358,11 @@ fun LazyListScope.publicacoesItems(publicacoes: List<Publicacao>, diariosFallbac
                     p.data.takeIf { it.isNotBlank() },
                 ).joinToString(" · "),
                 trailing = {
-                    Icon(Icons.Default.OpenInNew, contentDescription = null,
+                    Icon(Icons.Default.ChevronRight, contentDescription = null,
                         tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
                 },
                 onClick = {
-                    if (p.url.isNotBlank()) {
-                        openExternalUrl(resolveAbsoluteUrl(p.url, PREFEITURA_PORTAL_BASE))
-                    }
+                    if (p.id.isNotBlank() || p.url.isNotBlank()) onClick(p)
                 },
             )
             HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,

@@ -328,6 +328,8 @@ function scrapeInstitucionalPrefeitura(html, cheerio) {
 module.exports = {
   BASE,
   resolvePrefUrl,
+  extractColStrongFields,
+  extractPdfLinks,
   scrapeContratoDetail,
   scrapeLicitacaoDetail,
   mergeContratoDetail,

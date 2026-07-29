@@ -3,6 +3,7 @@
 const scraperCamara = require('./scraper-camara');
 const detailCamara = require('./scraper-detail-camara');
 const detailPref = require('./scraper-detail-prefeitura');
+const portalPage = require('./scraper-portal-page');
 const { mergeParlamentar } = require('./merge-camara-sources');
 const { createDetailCache } = require('./detail-cache');
 
@@ -29,6 +30,11 @@ function createDetailHandler({ http, cheerio, getCache }) {
     const idx = parseInt(id, 10);
     if (!Number.isNaN(idx) && list[idx]) return list[idx];
     return list.find((s) => s.slug === id || s.titulo === id) || null;
+  }
+
+  function findPublicacao(cache, id) {
+    const list = cache?.prefeitura?.publicacoes || [];
+    return list.find((p) => String(p.id) === String(id)) || null;
   }
 
   async function loadDetail(entity, id) {
@@ -169,6 +175,53 @@ function createDetailHandler({ http, cheerio, getCache }) {
           }
         } else {
           result = { entity: 'sessao', entityId: id, sessao: s };
+        }
+        break;
+      }
+      case 'publicacao': {
+        const p = findPublicacao(cache, id);
+        const detailUrl = p?.url || `${detailPref.BASE}/publicacoes.php?id=${id}`;
+        try {
+          const html = await fetchHtml(detailUrl);
+          const scraped = portalPage.scrapePublicacaoDetail(html, cheerio, id);
+          result = {
+            entity: 'publicacao',
+            entityId: id,
+            publicacao: portalPage.mergePublicacaoDetail(
+              p || { id, url: detailUrl },
+              scraped,
+            ),
+          };
+        } catch {
+          result = {
+            entity: 'publicacao',
+            entityId: id,
+            publicacao: p || { id, url: detailUrl },
+          };
+        }
+        break;
+      }
+      case 'pagina_portal': {
+        const url = portalPage.decodePortalPageId(id);
+        if (!url) {
+          result = { entity: 'pagina_portal', entityId: id, error: 'URL inválida.' };
+          break;
+        }
+        const meta = portalPage.findLinkMeta(cache, url);
+        try {
+          const html = await fetchHtml(url);
+          const scraped = portalPage.scrapePortalPage(html, cheerio, url);
+          result = {
+            entity: 'pagina_portal',
+            entityId: id,
+            paginaPortal: portalPage.mergePortalPageMeta(scraped, meta, url),
+          };
+        } catch (err) {
+          result = {
+            entity: 'pagina_portal',
+            entityId: id,
+            paginaPortal: portalPage.fallbackPortalPage(url, meta, err),
+          };
         }
         break;
       }

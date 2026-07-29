@@ -384,7 +384,12 @@ fun MateriaDetailScreen(viewModel: TransparenciaViewModel, slug: String, onBack:
 }
 
 @Composable
-fun SecretariaDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack: () -> Unit) {
+fun SecretariaDetailScreen(
+    viewModel: TransparenciaViewModel,
+    id: String,
+    onBack: () -> Unit,
+    onNavigate: (AppRoute) -> Unit = {},
+) {
     val state by viewModel.detailState.collectAsState()
     LaunchedEffect(id) { viewModel.loadDetail(DetailEntity.Secretaria, id) }
     val s = state.payload?.secretaria
@@ -414,7 +419,15 @@ fun SecretariaDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
                 secretaria.projetosAndamento.forEach { projeto ->
                     Card(
                         colors = CardDefaults.cardColors(containerColor = AppColors.Card),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (projeto.url.isNotBlank() || projeto.numero.isNotBlank()) {
+                                    Modifier.clickable { onNavigate(routeFromExternalUrl(projeto.url)) }
+                                } else {
+                                    Modifier
+                                },
+                            ),
                     ) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
@@ -434,14 +447,6 @@ fun SecretariaDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
                                 fontSize = 11.sp,
                                 color = AppColors.TextSecondary,
                             )
-                            if (projeto.url.isNotBlank()) {
-                                DetailLinkAction(
-                                    label = "Abrir",
-                                    url = projeto.url,
-                                    baseUrl = PREFEITURA_PORTAL_BASE,
-                                    actionText = "Ver no portal",
-                                )
-                            }
                         }
                     }
                 }
@@ -452,15 +457,14 @@ fun SecretariaDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
                     val info = lic.displayInfo()
                     Card(
                         colors = CardDefaults.cardColors(containerColor = AppColors.Card),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigate(routeFromLicitacao(lic)) },
                     ) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(info.titulo, fontWeight = FontWeight.Medium, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             if (info.descricao.isNotBlank()) {
                                 Text(info.descricao, fontSize = 11.sp, color = AppColors.TextSecondary)
-                            }
-                            if (lic.url.isNotBlank()) {
-                                DetailLinkAction(label = "Portal", url = lic.url, baseUrl = PREFEITURA_PORTAL_BASE)
                             }
                         }
                     }
@@ -472,7 +476,9 @@ fun SecretariaDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
                     val info = contrato.normalized().displayInfo()
                     Card(
                         colors = CardDefaults.cardColors(containerColor = AppColors.Card),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigate(routeFromContrato(contrato)) },
                     ) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(info.titulo, fontWeight = FontWeight.Medium, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -482,17 +488,68 @@ fun SecretariaDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
                             if (info.descricao.isNotBlank()) {
                                 Text(info.descricao, fontSize = 11.sp, color = AppColors.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             }
-                            val docUrl = contrato.pdfUrl.ifBlank { contrato.url }
-                            if (docUrl.isNotBlank()) {
-                                DetailLinkAction(label = "Documento", url = docUrl, baseUrl = PREFEITURA_PORTAL_BASE)
-                            }
                         }
                     }
                 }
             }
             DetailSectionHeader("Contato")
             ContatoSection(secretaria.contato)
-            if (secretaria.url.isNotBlank()) DetailPortalLink(secretaria.url, PREFEITURA_PORTAL_BASE)
+            if (secretaria.url.isNotBlank()) {
+                DetailPortalLink(secretaria.url, PREFEITURA_PORTAL_BASE)
+            }
+        }
+    }
+}
+
+@Composable
+fun PublicacaoDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack: () -> Unit) {
+    val state by viewModel.detailState.collectAsState()
+    LaunchedEffect(id) { viewModel.loadDetail(DetailEntity.Publicacao, id) }
+    val p = state.payload?.publicacao
+    DetailScaffold(title = p?.titulo?.ifBlank { "Publicação" } ?: "Publicação", onBack = onBack) {
+        DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Publicacao, id) }
+        p?.let { pub ->
+            if (pub.tipo.isNotBlank()) DetailField("Tipo", pub.tipo)
+            if (pub.data.isNotBlank()) DetailField("Data", pub.data)
+            if (pub.resumo.isNotBlank()) {
+                DetailSectionHeader("Descrição")
+                DetailBodyText(pub.resumo)
+            }
+            DetailCamposExtras(pub.camposExtras)
+            val anexos = pub.anexos.ifEmpty {
+                val doc = pub.linkArquivo.ifBlank { pub.url }
+                if (doc.isNotBlank() && isPdfLink(doc)) {
+                    listOf(DetalheAnexo(titulo = "Documento", url = doc, extensao = "PDF"))
+                } else {
+                    emptyList()
+                }
+            }
+            DetailAnexos(anexos, PREFEITURA_PORTAL_BASE)
+            if (pub.url.isNotBlank()) DetailPortalLink(pub.url, PREFEITURA_PORTAL_BASE)
+        }
+    }
+}
+
+@Composable
+fun PaginaPortalDetailScreen(viewModel: TransparenciaViewModel, pageId: String, onBack: () -> Unit) {
+    val state by viewModel.detailState.collectAsState()
+    LaunchedEffect(pageId) { viewModel.loadDetail(DetailEntity.PaginaPortal, pageId) }
+    val page = state.payload?.paginaPortal
+    val toolbarTitle = truncateToolbarTitle(page?.titulo?.ifBlank { "Transparência" } ?: "Transparência")
+    DetailScaffold(title = toolbarTitle, onBack = onBack) {
+        DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.PaginaPortal, pageId) }
+        page?.let { pg ->
+            if (pg.categoria.isNotBlank()) DetailField("Categoria", pg.categoria.replaceFirstChar { it.uppercase() })
+            if (pg.aviso.isNotBlank()) {
+                DataStatusBanner(error = pg.aviso)
+            }
+            if (pg.resumo.isNotBlank()) {
+                DetailSectionHeader("Resumo")
+                DetailBodyText(pg.resumo)
+            }
+            DetailCamposExtras(pg.camposExtras)
+            DetailAnexos(pg.anexos, portalBaseUrl(pg.origem))
+            if (pg.url.isNotBlank()) DetailPortalLink(pg.url, portalBaseUrl(pg.origem))
         }
     }
 }

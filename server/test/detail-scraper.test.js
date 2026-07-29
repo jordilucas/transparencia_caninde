@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { scrapeVereadorDetail } = require('../lib/scraper-detail-camara');
 const { scrapeSecretariaDetail, scrapeContratoDetail, scrapeLicitacaoDetail, mergeContratoDetail } = require('../lib/scraper-detail-prefeitura');
+const { scrapePublicacaoDetail, scrapePortalPage, mergePublicacaoDetail } = require('../lib/scraper-portal-page');
 
 describe('scraper-detail-camara', () => {
   it('extrai contato do HTML de vereador', () => {
@@ -74,5 +75,34 @@ describe('scraper-detail-prefeitura', () => {
     assert.ok(scraped.valorEstimado.includes('2.488'));
     assert.ok(scraped.andamentos.length >= 1);
     assert.ok(scraped.anexos.length >= 1);
+  });
+
+  it('extrai detalhe de publicação do portal', () => {
+    const html = fs.readFileSync(path.join(__dirname, 'fixtures/publicacao-detail-snippet.html'), 'utf8');
+    const scraped = scrapePublicacaoDetail(html, cheerio, '1187');
+    assert.ok(scraped.titulo.includes('001/2026'));
+    assert.ok(scraped.resumo.includes('CONTRATAÇÕES'));
+    assert.equal(scraped.data, '01/01/2026');
+    assert.ok(scraped.anexos[0].url.includes('.pdf'));
+    const merged = mergePublicacaoDetail({ id: '1187', titulo: 'Plano' }, scraped);
+    assert.ok(merged.anexos.length >= 1);
+  });
+});
+
+describe('scraper-portal-page', () => {
+  it('extrai título de página WordPress da Câmara', () => {
+    const html = `
+      <html><head>
+        <meta property="og:title" content="Canindé Transparente - Câmara" />
+      </head><body>
+        <article><h1 class="entry-title">Canindé Transparente</h1>
+        <div class="entry-content"><p>Portal de transparência legislativa com acesso a contas públicas.</p>
+        <a href="/wp-content/uploads/doc.pdf">Baixar PDF</a></div></article>
+      </body></html>
+    `;
+    const scraped = scrapePortalPage(html, cheerio, 'https://www.cmcaninde.ce.gov.br/caninde-transparente/');
+    assert.ok(scraped.titulo.includes('Transparente'));
+    assert.ok(scraped.resumo.includes('transparência'));
+    assert.ok(scraped.anexos.some((a) => a.url.includes('.pdf')));
   });
 });

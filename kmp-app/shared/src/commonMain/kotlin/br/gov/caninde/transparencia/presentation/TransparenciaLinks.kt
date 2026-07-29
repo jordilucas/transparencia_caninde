@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import br.gov.caninde.transparencia.domain.LinkExterno
-import br.gov.caninde.transparencia.platform.openExternalUrl
 
 @Composable
 fun TransparenciaLinksIntro(
@@ -17,7 +16,7 @@ fun TransparenciaLinksIntro(
     modifier: Modifier = Modifier,
 ) {
     Text(
-        text = "Acesse $orgao no portal oficial de transparência. Os dados financeiros detalhados abrem no navegador.",
+        text = "Consulte $orgao nos portais oficiais de transparência. Toque em um item para ver o resumo e documentos disponíveis.",
         style = MaterialTheme.typography.bodySmall,
         color = AppColors.TextSecondary,
         modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -27,6 +26,7 @@ fun TransparenciaLinksIntro(
 fun LazyListScope.transparenciaLinksItems(
     links: List<LinkExterno>,
     sectionTitle: String = "Portal de transparência",
+    onClick: (LinkExterno) -> Unit = {},
 ) {
     item { SectionHeader(title = sectionTitle, action = "") }
     if (links.isEmpty()) {
@@ -34,7 +34,7 @@ fun LazyListScope.transparenciaLinksItems(
         return
     }
     items(links) { link ->
-        TransparenciaLinkRow(link)
+        TransparenciaLinkRow(link, onClick)
         HorizontalDivider(
             color = AppColors.Divider,
             thickness = 0.5.dp,
@@ -44,7 +44,7 @@ fun LazyListScope.transparenciaLinksItems(
 }
 
 @Composable
-fun TransparenciaLinkRow(link: LinkExterno) {
+fun TransparenciaLinkRow(link: LinkExterno, onClick: (LinkExterno) -> Unit = {}) {
     val icon = when (link.categoria) {
         "financeiro" -> Icons.Default.AccountBalance
         "compras" -> Icons.Default.ShoppingCart
@@ -63,11 +63,11 @@ fun TransparenciaLinkRow(link: LinkExterno) {
         title = link.titulo,
         subtitle = link.categoria.replaceFirstChar { it.uppercase() },
         trailing = {
-            Icon(Icons.Default.OpenInNew, contentDescription = null,
+            Icon(Icons.Default.ChevronRight, contentDescription = null,
                 tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
         },
         onClick = {
-            if (link.url.isNotBlank()) openExternalUrl(link.url)
+            if (link.url.isNotBlank()) onClick(link)
         },
     )
 }

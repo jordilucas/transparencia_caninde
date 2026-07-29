@@ -1,5 +1,8 @@
 package br.gov.caninde.transparencia.domain
 
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+
 const val CAMARA_PORTAL_BASE = "https://www.cmcaninde.ce.gov.br"
 const val PREFEITURA_PORTAL_BASE = "https://www.caninde.ce.gov.br"
 
@@ -25,3 +28,7 @@ fun pdfLinkLabel(url: String): String {
     val name = url.substringBefore('?').substringAfterLast('/')
     return if (name.endsWith(".pdf", ignoreCase = true) && name.length < 80) name else "Abrir documento PDF"
 }
+
+@OptIn(ExperimentalEncodingApi::class)
+fun encodePortalPageId(url: String): String =
+    Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT).encode(url.encodeToByteArray())

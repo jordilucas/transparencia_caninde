@@ -17,7 +17,7 @@ import br.gov.caninde.transparencia.domain.*
 import br.gov.caninde.transparencia.presentation.detail.*
 
 enum class Screen {
-    Prefeitura, Camara, Graficos, Busca
+    Prefeitura, Camara, Graficos, Busca, Sobre
 }
 
 sealed class AppRoute {
@@ -28,6 +28,8 @@ sealed class AppRoute {
     data class Contrato(val numero: String) : AppRoute()
     data class Licitacao(val numero: String) : AppRoute()
     data class Sessao(val id: String) : AppRoute()
+    data class Publicacao(val id: String) : AppRoute()
+    data class PaginaPortal(val pageId: String) : AppRoute()
     data object Gestores : AppRoute()
     data class Institucional(val camara: Boolean) : AppRoute()
 }
@@ -40,6 +42,7 @@ val navItems: List<NavItem> by lazy {
         NavItem(Screen.Camara, "Câmara", Icons.Default.Groups),
         NavItem(Screen.Graficos, "Gráficos", Icons.Default.BarChart),
         NavItem(Screen.Busca, "Busca", Icons.Default.Search),
+        NavItem(Screen.Sobre, "Sobre", Icons.Default.Info),
     )
 }
 
@@ -238,6 +241,8 @@ private fun AppRouteContent(
                 onSecretariaClick = { onNavigate(AppRoute.Secretaria(it.id.ifBlank { it.nome })) },
                 onGestoresClick = { onNavigate(AppRoute.Gestores) },
                 onInstitucionalClick = { onNavigate(AppRoute.Institucional(false)) },
+                onPublicacaoClick = { onNavigate(routeFromPublicacao(it)) },
+                onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
             )
             Screen.Camara -> CamaraScreen(
                 state = camaraState,
@@ -247,6 +252,7 @@ private fun AppRouteContent(
                 onMateriaClick = { onNavigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
                 onSessaoClick = { idx, _ -> onNavigate(AppRoute.Sessao(idx.toString())) },
                 onInstitucionalClick = { onNavigate(AppRoute.Institucional(true)) },
+                onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
             )
             Screen.Graficos -> GraficosScreen(
                 prefeituraState = prefeituraState,
@@ -261,13 +267,24 @@ private fun AppRouteContent(
                 onLicitacaoClick = { onNavigate(AppRoute.Licitacao(it.numero)) },
                 onMateriaClick = { onNavigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
             )
+            Screen.Sobre -> SobreScreen(
+                prefeituraState = prefeituraState,
+                camaraState = camaraState,
+            )
         }
         is AppRoute.Vereador -> VereadorDetailScreen(viewModel, route.slug, onNavigateBack)
         is AppRoute.Materia -> MateriaDetailScreen(viewModel, route.slug, onNavigateBack)
-        is AppRoute.Secretaria -> SecretariaDetailScreen(viewModel, route.id, onNavigateBack)
+        is AppRoute.Secretaria -> SecretariaDetailScreen(
+            viewModel,
+            route.id,
+            onNavigateBack,
+            onNavigate = onNavigate,
+        )
         is AppRoute.Contrato -> ContratoDetailScreen(viewModel, route.numero, onNavigateBack)
         is AppRoute.Licitacao -> LicitacaoDetailScreen(viewModel, route.numero, onNavigateBack)
         is AppRoute.Sessao -> SessaoDetailScreen(viewModel, route.id, onNavigateBack)
+        is AppRoute.Publicacao -> PublicacaoDetailScreen(viewModel, route.id, onNavigateBack)
+        is AppRoute.PaginaPortal -> PaginaPortalDetailScreen(viewModel, route.pageId, onNavigateBack)
         AppRoute.Gestores -> GestoresDetailScreen(viewModel, onNavigateBack)
         is AppRoute.Institucional -> InstitucionalDetailScreen(viewModel, route.camara, onNavigateBack)
     }

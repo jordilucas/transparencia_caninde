@@ -41,6 +41,8 @@ data class WsPayload(
     val contrato: Contrato? = null,
     val licitacao: Licitacao? = null,
     val sessao: Sessao? = null,
+    val publicacao: Publicacao? = null,
+    val paginaPortal: PaginaPortal? = null,
     val version: String? = null,
     val sources: List<String>? = null,
     val intervals: Intervals? = null,
@@ -133,6 +135,22 @@ data class Publicacao(
     val tipo: String = "",
     val data: String = "",
     val url: String = "",
+    val resumo: String = "",
+    val linkArquivo: String = "",
+    val camposExtras: List<DetalheCampo> = emptyList(),
+    val anexos: List<DetalheAnexo> = emptyList(),
+)
+
+@Serializable
+data class PaginaPortal(
+    val titulo: String = "",
+    val url: String = "",
+    val categoria: String = "",
+    val resumo: String = "",
+    val origem: String = "",
+    val camposExtras: List<DetalheCampo> = emptyList(),
+    val anexos: List<DetalheAnexo> = emptyList(),
+    val aviso: String = "",
 )
 
 @Serializable
@@ -275,7 +293,8 @@ data class LastUpdated(
 // ─── Detalhe (UI) ───────────────────────────────────────────────────────────
 
 enum class DetailEntity {
-    Vereador, Materia, Secretaria, Contrato, Licitacao, Sessao, Gestores, InstitucionalCamara, InstitucionalPrefeitura,
+    Vereador, Materia, Secretaria, Contrato, Licitacao, Sessao, Gestores,
+    InstitucionalCamara, InstitucionalPrefeitura, Publicacao, PaginaPortal,
 }
 
 data class DetailUiState(
