@@ -32,6 +32,7 @@ fun PrefeituraScreen(
     onInstitucionalClick: () -> Unit = {},
     onPublicacaoClick: (Publicacao) -> Unit = {},
     onTransparenciaLinkClick: (LinkExterno) -> Unit = {},
+    onSobreClick: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Contratos", "Licitações", "Publicações", "Secretarias", "Transparência")
@@ -61,6 +62,10 @@ fun PrefeituraScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ConnectionStatusBadge(connectionState, onRefresh)
+                        IconButton(onClick = onSobreClick, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Info, contentDescription = "Sobre",
+                                tint = AppColors.Blue300, modifier = Modifier.size(18.dp))
+                        }
                         IconButton(onClick = onRefresh, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Refresh, contentDescription = "Atualizar",
                                 tint = AppColors.Blue300, modifier = Modifier.size(18.dp))

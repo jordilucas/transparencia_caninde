@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +61,15 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
         if (routeStack.size > 1) routeStack.removeAt(routeStack.lastIndex)
     }
 
+    fun selectMainScreen(screen: Screen) {
+        if (routeStack.size > 1) {
+            routeStack.clear()
+            routeStack.add(AppRoute.Main(screen))
+        } else {
+            routeStack[0] = AppRoute.Main(screen)
+        }
+    }
+
     val connectionState by viewModel.connectionState.collectAsState()
     val prefeituraState by viewModel.prefeituraState.collectAsState()
     val camaraState by viewModel.camaraState.collectAsState()
@@ -80,14 +90,7 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
                 Row(Modifier.fillMaxSize()) {
                     MainNavigationRail(
                         currentScreen = (currentRoute as AppRoute.Main).screen,
-                        onScreenSelected = { screen ->
-                            if (routeStack.size > 1) {
-                                routeStack.clear()
-                                routeStack.add(AppRoute.Main(screen))
-                            } else {
-                                routeStack[0] = AppRoute.Main(screen)
-                            }
-                        },
+                        onScreenSelected = ::selectMainScreen,
                     )
                     Box(
                         Modifier
@@ -102,6 +105,7 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
                             camaraState = camaraState,
                             onNavigate = ::navigate,
                             onNavigateBack = ::navigateBack,
+                            onMainScreenSelect = ::selectMainScreen,
                         )
                     }
                 }
@@ -113,14 +117,7 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
                         if (showBottomBar) {
                             MainNavigationBar(
                                 currentScreen = (currentRoute as AppRoute.Main).screen,
-                                onScreenSelected = { screen ->
-                                    if (routeStack.size > 1) {
-                                        routeStack.clear()
-                                        routeStack.add(AppRoute.Main(screen))
-                                    } else {
-                                        routeStack[0] = AppRoute.Main(screen)
-                                    }
-                                },
+                                onScreenSelected = ::selectMainScreen,
                             )
                         }
                     },
@@ -148,6 +145,7 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
                             camaraState = camaraState,
                             onNavigate = ::navigate,
                             onNavigateBack = ::navigateBack,
+                            onMainScreenSelect = ::selectMainScreen,
                         )
                     }
                 }
@@ -229,7 +227,9 @@ private fun AppRouteContent(
     camaraState: CamaraUiState,
     onNavigate: (AppRoute) -> Unit,
     onNavigateBack: () -> Unit,
+    onMainScreenSelect: (Screen) -> Unit,
 ) {
+    val onSobreClick = { onMainScreenSelect(Screen.Sobre) }
     when (val route = currentRoute) {
         is AppRoute.Main -> when (route.screen) {
             Screen.Prefeitura -> PrefeituraScreen(
@@ -243,6 +243,7 @@ private fun AppRouteContent(
                 onInstitucionalClick = { onNavigate(AppRoute.Institucional(false)) },
                 onPublicacaoClick = { onNavigate(routeFromPublicacao(it)) },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
+                onSobreClick = onSobreClick,
             )
             Screen.Camara -> CamaraScreen(
                 state = camaraState,
@@ -253,10 +254,12 @@ private fun AppRouteContent(
                 onSessaoClick = { idx, _ -> onNavigate(AppRoute.Sessao(idx.toString())) },
                 onInstitucionalClick = { onNavigate(AppRoute.Institucional(true)) },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
+                onSobreClick = onSobreClick,
             )
             Screen.Graficos -> GraficosScreen(
                 prefeituraState = prefeituraState,
                 camaraState = camaraState,
+                onSobreClick = onSobreClick,
             )
             Screen.Busca -> BuscaScreen(
                 prefeitura = prefeituraState,
@@ -266,6 +269,7 @@ private fun AppRouteContent(
                 onSecretariaClick = { onNavigate(AppRoute.Secretaria(it.id.ifBlank { it.nome })) },
                 onLicitacaoClick = { onNavigate(AppRoute.Licitacao(it.numero)) },
                 onMateriaClick = { onNavigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
+                onSobreClick = onSobreClick,
             )
             Screen.Sobre -> SobreScreen(
                 prefeituraState = prefeituraState,
@@ -294,6 +298,7 @@ private fun AppRouteContent(
 fun GraficosScreen(
     prefeituraState: PrefeituraUiState,
     camaraState: CamaraUiState,
+    onSobreClick: () -> Unit = {},
 ) {
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Prefeitura", "Câmara")
@@ -302,13 +307,22 @@ fun GraficosScreen(
         Box(Modifier.fillMaxWidth().background(AppColors.Navy800)) {
             Column {
                 DataStatusBanner(error = prefeituraState.error ?: camaraState.error)
-                Text(
-                    "Gráficos — dados reais",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.Blue100,
-                    modifier = Modifier.padding(16.dp),
-                )
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Gráficos — dados reais",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Blue100,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                    IconButton(onClick = onSobreClick, modifier = Modifier.padding(end = 8.dp)) {
+                        Icon(Icons.Default.Info, contentDescription = "Sobre", tint = AppColors.Blue100)
+                    }
+                }
                 TabRow(
                     selectedTabIndex = tab,
                     containerColor = AppColors.Navy800,
@@ -381,6 +395,7 @@ fun BuscaScreen(
     onSecretariaClick: (Secretaria) -> Unit,
     onLicitacaoClick: (Licitacao) -> Unit,
     onMateriaClick: (Materia) -> Unit,
+    onSobreClick: () -> Unit = {},
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
@@ -391,14 +406,22 @@ fun BuscaScreen(
                 .background(AppColors.Navy800)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            Column {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     "Buscar",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = AppColors.Blue100,
-                    modifier = Modifier.padding(bottom = 12.dp),
                 )
+                IconButton(onClick = onSobreClick) {
+                    Icon(Icons.Default.Info, contentDescription = "Sobre", tint = AppColors.Blue100)
+                }
+            }
+            Column(Modifier.padding(top = 40.dp)) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },

@@ -48,6 +48,8 @@ jobs:
           cp index.html 404.html
           touch .nojekyll
           test -f CNAME || echo "transparenciacaninde.com.br" > CNAME
+          HASH=$(sha256sum transparencia-caninde.js | cut -c1-12)
+          sed -i "s|transparencia-caninde.js|transparencia-caninde.js?v=${HASH}|g" index.html 404.html
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
