@@ -99,32 +99,77 @@ function createDetailHandler({ http, cheerio, getCache }) {
       }
       case 'contrato': {
         const c = findContrato(cache, id);
-        result = {
-          entity: 'contrato',
-          entityId: id,
-          contrato: c || { numero: id, objeto: '', valor: '', empresa: '', data: '', url: '' },
-          error: c ? null : 'Contrato não encontrado na listagem atual.',
-        };
+        if (!c) {
+          result = {
+            entity: 'contrato',
+            entityId: id,
+            error: 'Contrato não encontrado na listagem atual.',
+          };
+          break;
+        }
+        const detailUrl = c.url || `${detailPref.BASE}/contratos.php?id=${c.id || id}`;
+        try {
+          const html = await fetchHtml(detailUrl);
+          const scraped = detailPref.scrapeContratoDetail(html, cheerio, id);
+          result = {
+            entity: 'contrato',
+            entityId: id,
+            contrato: detailPref.mergeContratoDetail(c, scraped),
+          };
+        } catch {
+          result = { entity: 'contrato', entityId: id, contrato: c };
+        }
         break;
       }
       case 'licitacao': {
         const l = findLicitacao(cache, id);
-        result = {
-          entity: 'licitacao',
-          entityId: id,
-          licitacao: l || { numero: id, modalidade: '', objeto: '', situacao: '', url: '' },
-          error: l ? null : 'Licitação não encontrada na listagem atual.',
-        };
+        if (!l) {
+          result = {
+            entity: 'licitacao',
+            entityId: id,
+            error: 'Licitação não encontrada na listagem atual.',
+          };
+          break;
+        }
+        const detailUrl = l.url || `${detailPref.BASE}/licitacaolista.php?id=${l.id || id}`;
+        try {
+          const html = await fetchHtml(detailUrl);
+          const scraped = detailPref.scrapeLicitacaoDetail(html, cheerio, id);
+          result = {
+            entity: 'licitacao',
+            entityId: id,
+            licitacao: detailPref.mergeLicitacaoDetail(l, scraped),
+          };
+        } catch {
+          result = { entity: 'licitacao', entityId: id, licitacao: l };
+        }
         break;
       }
       case 'sessao': {
         const s = findSessao(cache, id);
-        result = {
-          entity: 'sessao',
-          entityId: id,
-          sessao: s || { titulo: id, data: '', url: '', resumo: '' },
-          error: s ? null : 'Sessão não encontrada na listagem atual.',
-        };
+        if (!s) {
+          result = {
+            entity: 'sessao',
+            entityId: id,
+            error: 'Sessão não encontrada na listagem atual.',
+          };
+          break;
+        }
+        if (s.url && /\/sessao\//i.test(s.url)) {
+          try {
+            const html = await fetchHtml(s.url);
+            const scraped = detailCamara.scrapeSessaoDetail(html, cheerio, s.slug || id);
+            result = {
+              entity: 'sessao',
+              entityId: id,
+              sessao: detailCamara.mergeSessaoDetail(s, scraped),
+            };
+          } catch {
+            result = { entity: 'sessao', entityId: id, sessao: s };
+          }
+        } else {
+          result = { entity: 'sessao', entityId: id, sessao: s };
+        }
         break;
       }
       default:

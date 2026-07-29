@@ -6,7 +6,7 @@ const cheerio = require('cheerio');
 const fs = require('fs');
 const path = require('path');
 const { scrapeVereadorDetail } = require('../lib/scraper-detail-camara');
-const { scrapeSecretariaDetail } = require('../lib/scraper-detail-prefeitura');
+const { scrapeSecretariaDetail, scrapeContratoDetail, scrapeLicitacaoDetail, mergeContratoDetail } = require('../lib/scraper-detail-prefeitura');
 
 describe('scraper-detail-camara', () => {
   it('extrai contato do HTML de vereador', () => {
@@ -54,5 +54,25 @@ describe('scraper-detail-prefeitura', () => {
     const r = scrapeSecretariaDetail(html, cheerio, '3');
     assert.equal(r.secretaria.nome, 'Secretaria de Educação');
     assert.ok(r.secretaria.secretario.includes('João'));
+  });
+
+  it('extrai detalhe de contrato do portal', () => {
+    const html = fs.readFileSync(path.join(__dirname, 'fixtures/contrato-detail-snippet.html'), 'utf8');
+    const scraped = scrapeContratoDetail(html, cheerio, '1117');
+    assert.ok(scraped.objeto.includes('TRANSPORTE ESCOLAR'));
+    assert.equal(scraped.empresa, 'DOMINGOS DENES DOS SANTOS LOPES');
+    assert.ok(scraped.pdfUrl.includes('.PDF'));
+    const merged = mergeContratoDetail({ numero: '10072026-001', objeto: 'curto' }, scraped);
+    assert.ok(merged.objeto.length > scraped.objeto.length / 2);
+    assert.ok(merged.anexos.length >= 1);
+  });
+
+  it('extrai detalhe de licitação do portal', () => {
+    const html = fs.readFileSync(path.join(__dirname, 'fixtures/licitacao-detail-snippet.html'), 'utf8');
+    const scraped = scrapeLicitacaoDetail(html, cheerio, '521');
+    assert.ok(scraped.objeto.includes('GALPÃO'));
+    assert.ok(scraped.valorEstimado.includes('2.488'));
+    assert.ok(scraped.andamentos.length >= 1);
+    assert.ok(scraped.anexos.length >= 1);
   });
 });

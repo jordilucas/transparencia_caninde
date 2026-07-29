@@ -92,6 +92,36 @@ fun DetailBodyText(text: String) {
 }
 
 @Composable
+fun DetailCamposExtras(campos: List<DetalheCampo>) {
+    campos.filter { it.rotulo.isNotBlank() && it.valor.isNotBlank() }.forEach { campo ->
+        DetailField(campo.rotulo, campo.valor)
+    }
+}
+
+@Composable
+fun DetailAnexos(anexos: List<DetalheAnexo>, baseUrl: String) {
+    if (anexos.isEmpty()) return
+    DetailSectionHeader("Documentos")
+    anexos.forEach { anexo ->
+        DetailLinkAction(
+            label = anexo.titulo.ifBlank { "Documento" },
+            url = anexo.url,
+            baseUrl = baseUrl,
+            usePdfIcon = anexo.extensao.equals("PDF", ignoreCase = true) || isPdfLink(anexo.url),
+        )
+    }
+}
+
+@Composable
+fun DetailAndamentos(andamentos: List<String>) {
+    if (andamentos.isEmpty()) return
+    DetailSectionHeader("Andamentos")
+    andamentos.forEach { item ->
+        DetailBodyText(item)
+    }
+}
+
+@Composable
 fun DetailPortalLink(url: String, baseUrl: String = CAMARA_PORTAL_BASE) {
     DetailLinkAction(
         label = "Portal",
@@ -480,18 +510,26 @@ fun ContratoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onBa
             if (it.objeto.isNotBlank()) DetailField("Descrição", it.objeto)
             if (it.empresa.isNotBlank()) DetailField("Empresa", it.empresa)
             if (it.cnpjCredor.isNotBlank()) DetailField("CNPJ/CPF", it.cnpjCredor)
+            if (it.secretaria.isNotBlank()) DetailField("Secretaria", it.secretaria)
             DetailField("Número", it.numero.replace("CONTRATO ORIGINAL", "", ignoreCase = true).trim().ifBlank { "—" })
             if (it.modalidade.isNotBlank()) DetailField("Modalidade", it.modalidade)
-            DetailField("Vigência", it.data.ifBlank { "—" })
-            val docUrl = it.pdfUrl.ifBlank { it.url }
-            if (docUrl.isNotBlank()) {
-                val resolved = resolveAbsoluteUrl(docUrl, PREFEITURA_PORTAL_BASE)
-                DetailLinkAction(
-                    label = if (isPdfLink(resolved)) "Documento PDF" else "Ver no portal",
-                    url = docUrl,
-                    baseUrl = PREFEITURA_PORTAL_BASE,
+            if (it.dataPublicacao.isNotBlank()) DetailField("Publicação", it.dataPublicacao)
+            if (it.vigenciaInicio.isNotBlank() || it.vigenciaFim.isNotBlank()) {
+                DetailField(
+                    "Vigência",
+                    listOf(it.vigenciaInicio, it.vigenciaFim).filter { p -> p.isNotBlank() }.joinToString(" — "),
                 )
+            } else if (it.data.isNotBlank()) {
+                DetailField("Vigência", it.data)
             }
+            if (it.vigenciaStatus.isNotBlank()) DetailField("Situação", it.vigenciaStatus)
+            DetailCamposExtras(it.camposExtras)
+            val anexos = it.anexos.ifEmpty {
+                val docUrl = it.pdfUrl.ifBlank { it.url }
+                if (docUrl.isNotBlank()) listOf(DetalheAnexo(titulo = "Documento original", url = docUrl, extensao = "PDF"))
+                else emptyList()
+            }
+            DetailAnexos(anexos, PREFEITURA_PORTAL_BASE)
         }
     }
 }
@@ -510,14 +548,16 @@ fun LicitacaoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onB
             DetailField("Número", it.numero.ifBlank { "—" })
             DetailField("Situação", display.situacao)
             if (display.meta.isNotBlank()) DetailField("Abertura", display.meta)
+            if (it.horaAbertura.isNotBlank()) DetailField("Horário", it.horaAbertura)
+            if (it.valorEstimado.isNotBlank()) DetailField("Valor estimado", it.valorEstimado)
+            if (it.tipoJulgamento.isNotBlank()) DetailField("Tipo de julgamento", it.tipoJulgamento)
+            if (it.plataformaEletronica.isNotBlank()) DetailField("Plataforma eletrônica", it.plataformaEletronica)
             if (it.objeto.isNotBlank() && it.objeto != display.titulo) DetailField("Objeto", it.objeto)
-            if (it.url.isNotBlank()) {
-                val resolved = resolveAbsoluteUrl(it.url, PREFEITURA_PORTAL_BASE)
-                DetailLinkAction(
-                    label = if (isPdfLink(resolved)) "Documento PDF" else "Link",
-                    url = it.url,
-                    baseUrl = PREFEITURA_PORTAL_BASE,
-                )
+            DetailCamposExtras(it.camposExtras)
+            DetailAndamentos(it.andamentos)
+            DetailAnexos(it.anexos, PREFEITURA_PORTAL_BASE)
+            if (it.anexos.isEmpty() && it.url.isNotBlank()) {
+                DetailPortalLink(it.url, PREFEITURA_PORTAL_BASE)
             }
         }
     }
@@ -532,8 +572,13 @@ fun SessaoDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack: ()
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Sessao, id) }
         s?.let {
             if (it.data.isNotBlank()) DetailField("Data", it.data)
-            if (it.resumo.isNotBlank()) DetailField("Resumo", it.resumo)
-            if (it.url.isNotBlank()) DetailPortalLink(it.url, CAMARA_PORTAL_BASE)
+            if (it.resumo.isNotBlank()) {
+                DetailSectionHeader("Resumo")
+                DetailBodyText(it.resumo)
+            }
+            DetailCamposExtras(it.camposExtras)
+            DetailAnexos(it.anexos, CAMARA_PORTAL_BASE)
+            if (it.anexos.isEmpty() && it.url.isNotBlank()) DetailPortalLink(it.url, CAMARA_PORTAL_BASE)
         }
     }
 }

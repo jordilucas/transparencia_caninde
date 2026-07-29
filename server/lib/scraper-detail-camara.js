@@ -195,6 +195,60 @@ function scrapeMateriaDetail(html, cheerio, slug) {
   };
 }
 
+function scrapeSessaoDetail(html, cheerio, slug) {
+  const $ = cheerio.load(html);
+  const titulo = $('h1, h2').first().text().replace(/\s+/g, ' ').trim();
+  const resumo = $('.entry-content, article .entry-content, article p')
+    .map((_, el) => $(el).text().replace(/\s+/g, ' ').trim())
+    .get()
+    .filter((t) => t.length > 30)
+    .slice(0, 3)
+    .join('\n\n')
+    .substring(0, 2000);
+  const camposExtras = [];
+  $('.entry-content p, article p').each((_, el) => {
+    const t = $(el).text().replace(/\s+/g, ' ').trim();
+    const m = t.match(/^([^:]{3,40}):\s*(.+)$/);
+    if (m && m[2].length > 2) {
+      camposExtras.push({ rotulo: m[1].trim(), valor: m[2].trim().substring(0, 400) });
+    }
+  });
+  const anexos = [];
+  $('a[href]').each((_, el) => {
+    const href = $(el).attr('href') || '';
+    if (!/\.pdf/i.test(href)) return;
+    const url = resolveHref(href);
+    if (!url || anexos.some((a) => a.url === url)) return;
+    anexos.push({
+      titulo: $(el).text().replace(/\s+/g, ' ').trim() || 'Documento PDF',
+      url,
+      extensao: 'PDF',
+    });
+  });
+  let data = '';
+  const dateM = $('body').text().match(/\d{2}\/\d{2}\/\d{4}/);
+  if (dateM) data = dateM[0];
+  return {
+    titulo,
+    resumo,
+    data,
+    camposExtras: camposExtras.slice(0, 10),
+    anexos,
+  };
+}
+
+function mergeSessaoDetail(listItem, scraped) {
+  if (!scraped) return listItem;
+  return {
+    ...listItem,
+    titulo: scraped.titulo || listItem.titulo,
+    resumo: scraped.resumo || listItem.resumo,
+    data: scraped.data || listItem.data,
+    camposExtras: scraped.camposExtras?.length ? scraped.camposExtras : (listItem.camposExtras || []),
+    anexos: scraped.anexos?.length ? scraped.anexos : (listItem.anexos || []),
+  };
+}
+
 function scrapeInstitucionalCamara(html, cheerio) {
   const $ = cheerio.load(html);
   const contato = emptyContato();
@@ -224,5 +278,7 @@ module.exports = {
   normalizeWhatsapp,
   scrapeVereadorDetail,
   scrapeMateriaDetail,
+  scrapeSessaoDetail,
+  mergeSessaoDetail,
   scrapeInstitucionalCamara,
 };

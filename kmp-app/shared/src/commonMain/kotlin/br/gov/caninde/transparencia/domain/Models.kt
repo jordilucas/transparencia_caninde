@@ -75,6 +75,19 @@ data class Gestor(
 )
 
 @Serializable
+data class DetalheCampo(
+    val rotulo: String = "",
+    val valor: String = "",
+)
+
+@Serializable
+data class DetalheAnexo(
+    val titulo: String = "",
+    val url: String = "",
+    val extensao: String = "",
+)
+
+@Serializable
 data class Contrato(
     val id: String = "",
     val numero: String = "",
@@ -87,6 +100,12 @@ data class Contrato(
     val secretaria: String = "",
     val modalidade: String = "",
     val pdfUrl: String = "",
+    val dataPublicacao: String = "",
+    val vigenciaInicio: String = "",
+    val vigenciaFim: String = "",
+    val vigenciaStatus: String = "",
+    val camposExtras: List<DetalheCampo> = emptyList(),
+    val anexos: List<DetalheAnexo> = emptyList(),
 )
 
 @Serializable
@@ -98,6 +117,13 @@ data class Licitacao(
     val situacao: String = "",
     val url: String = "",
     val dataAbertura: String = "",
+    val horaAbertura: String = "",
+    val valorEstimado: String = "",
+    val tipoJulgamento: String = "",
+    val plataformaEletronica: String = "",
+    val camposExtras: List<DetalheCampo> = emptyList(),
+    val anexos: List<DetalheAnexo> = emptyList(),
+    val andamentos: List<String> = emptyList(),
 )
 
 @Serializable
@@ -189,6 +215,8 @@ data class Sessao(
     val slug: String = "",
     val resumo: String = "",
     val modifiedAt: String = "",
+    val camposExtras: List<DetalheCampo> = emptyList(),
+    val anexos: List<DetalheAnexo> = emptyList(),
 )
 
 @Serializable

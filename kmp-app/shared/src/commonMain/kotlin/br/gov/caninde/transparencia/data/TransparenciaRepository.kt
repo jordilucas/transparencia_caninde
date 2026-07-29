@@ -139,7 +139,7 @@ class TransparenciaRepository(
     }
 
     suspend fun loadDetail(entity: DetailEntity, id: String) {
-        val cacheKey = "${entity.name}:$id"
+        val cacheKey = detailCacheKey(entity, id)
         detailCache[cacheKey]?.let {
             _detailState.value = it
             return
@@ -178,6 +178,16 @@ class TransparenciaRepository(
         }
     }
 
+    private fun detailCacheKey(entity: DetailEntity, id: String): String {
+        val resolvedId = when (entity) {
+            DetailEntity.InstitucionalCamara -> "camara"
+            DetailEntity.InstitucionalPrefeitura -> "prefeitura"
+            DetailEntity.Gestores -> "all"
+            else -> id
+        }
+        return "${messageHandler.entityToWs(entity)}:$resolvedId"
+    }
+
     private fun processMessage(raw: String) {
         try {
             val reduced = messageHandler.reduce(
@@ -189,7 +199,8 @@ class TransparenciaRepository(
             _detailState.value = reduced.detail
             val msg = messageHandler.parse(raw)
             if (msg.type == "DETAIL_DATA" && msg.payload != null && reduced.detail.error.isNullOrBlank()) {
-                val key = "${msg.payload.entity}:${msg.payload.entityId}"
+                val entity = reduced.detail.entity ?: return
+                val key = detailCacheKey(entity, reduced.detail.entityId)
                 detailCache[key] = reduced.detail
             }
         } catch (e: Exception) {
