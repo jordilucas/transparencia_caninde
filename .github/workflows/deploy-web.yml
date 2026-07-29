@@ -1,8 +1,5 @@
-# Publica o site na branch gh-pages → GitHub Pages.
+# Publica o site Compose (webApp) na branch gh-pages → GitHub Pages.
 # URL: https://transparenciacaninde.com.br/
-#
-# MODO ATUAL: manutenção (pasta kmp-app/webApp/maintenance/)
-# Para voltar ao app Compose/Wasm, restaure o build Gradle no job deploy.
 
 name: Deploy web (GitHub Pages)
 
@@ -30,17 +27,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare maintenance page
-        working-directory: kmp-app/webApp/maintenance
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+
+      - name: Build site (Kotlin/Wasm)
+        working-directory: kmp-app
+        run: ./gradlew :webApp:wasmJsBrowserDistribution --no-daemon
+
+      - name: Prepare GitHub Pages artifact
+        working-directory: kmp-app/webApp/build/dist/wasmJs/productionExecutable
         run: |
           cp index.html 404.html
           touch .nojekyll
+          test -f CNAME || echo "transparenciacaninde.com.br" > CNAME
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: kmp-app/webApp/maintenance
+          publish_dir: kmp-app/webApp/build/dist/wasmJs/productionExecutable
           publish_branch: gh-pages
           force_orphan: true
 
