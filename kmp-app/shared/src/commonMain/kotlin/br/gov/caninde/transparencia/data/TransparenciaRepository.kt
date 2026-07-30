@@ -3,6 +3,7 @@ package br.gov.caninde.transparencia.data
 import br.gov.caninde.transparencia.domain.*
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
+import io.ktor.client.request.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -15,9 +16,10 @@ class TransparenciaRepository(
 ) {
 
     companion object {
-        const val RECONNECT_DELAY_MS = 5_000L
-        const val MAX_RECONNECT_ATTEMPTS = 10
-        const val CONNECT_TIMEOUT_MS = 20_000L
+        const val RECONNECT_DELAY_MS = 3_000L
+        const val MAX_RECONNECT_ATTEMPTS = 40
+        const val CONNECT_TIMEOUT_MS = 90_000L
+        const val WAKE_SERVER_TIMEOUT_MS = 90_000L
     }
 
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Connecting)
@@ -55,6 +57,10 @@ class TransparenciaRepository(
                         ConnectionState.Reconnecting
                     }
 
+                    if (attempt == 0 || attempt % 3 == 0) {
+                        wakeServer()
+                    }
+
                     client.webSocket(urlString = endpoint.url) {
                         val session = this
                         wsSession = session
@@ -85,10 +91,14 @@ class TransparenciaRepository(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    _connectionState.value = ConnectionState.Error
                     attempt++
+                    _connectionState.value = if (attempt >= MAX_RECONNECT_ATTEMPTS) {
+                        ConnectionState.Error
+                    } else {
+                        ConnectionState.Reconnecting
+                    }
                     if (attempt < MAX_RECONNECT_ATTEMPTS) {
-                        delay(RECONNECT_DELAY_MS * attempt.coerceAtMost(3))
+                        delay(RECONNECT_DELAY_MS * attempt.coerceAtMost(10))
                     }
                 }
             }
@@ -205,6 +215,12 @@ class TransparenciaRepository(
             }
         } catch (e: Exception) {
             println("[WS] erro ao parsear mensagem: ${e.message}")
+        }
+    }
+
+    private suspend fun wakeServer() {
+        withTimeoutOrNull(WAKE_SERVER_TIMEOUT_MS) {
+            runCatching { client.get(endpoint.healthCheckUrl) }
         }
     }
 

@@ -78,7 +78,7 @@ fun DataStatusBanner(
 fun ConnectionBanner(state: ConnectionState) {
     val (bg, text) = when (state) {
         ConnectionState.Connecting -> AppColors.Amber100 to "Conectando…"
-        ConnectionState.Reconnecting -> AppColors.Amber100 to "Reconectando…"
+        ConnectionState.Reconnecting -> AppColors.Amber100 to "Reconectando… (servidor pode levar até 1 min)"
         ConnectionState.Connected, ConnectionState.Error -> return
     }
     Box(

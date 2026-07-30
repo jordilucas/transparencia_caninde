@@ -14,6 +14,12 @@ class WebSocketEndpointTest {
     @Test
     fun urlComToken() {
         val e = WebSocketEndpoint("wss", "example.com", 443, authToken = "abc")
-        assertEquals("wss://example.com:443?token=abc", e.url)
+        assertEquals("wss://example.com?token=abc", e.url)
+    }
+
+    @Test
+    fun healthCheckUrlProducao() {
+        val e = WebSocketEndpoint("wss", "transparencia-caninde.onrender.com", 443)
+        assertEquals("https://transparencia-caninde.onrender.com/health", e.healthCheckUrl)
     }
 }
