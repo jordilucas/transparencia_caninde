@@ -10,6 +10,13 @@
     <title>Transparência Canindé</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRKC3S7WK7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag("js", new Date());
+        gtag("config", "G-JRKC3S7WK7", { send_page_view: false, anonymize_ip: true });
+    </script>
     <script>
         (function () {
             var path = window.location.pathname || "/";
@@ -39,6 +46,22 @@
         window.transparenciaHideLoading = function () {
             var el = document.getElementById("app-loading");
             if (el) el.style.display = "none";
+        };
+        window.transparenciaLogScreen = function (screenName) {
+            if (typeof gtag === "function" && screenName) {
+                gtag("event", "screen_view", {
+                    screen_name: screenName,
+                    firebase_screen: screenName,
+                });
+            }
+        };
+        window.transparenciaLogEvent = function (name, paramsJson) {
+            if (typeof gtag !== "function" || !name) return;
+            var params = {};
+            try {
+                if (paramsJson) params = JSON.parse(paramsJson);
+            } catch (e) { /* ignore */ }
+            gtag("event", name, params);
         };
     </script>
 </head>

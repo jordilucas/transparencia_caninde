@@ -88,6 +88,14 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
         hideAppLoadingScreen()
     }
 
+    LaunchedEffect(currentRoute) {
+        AppAnalytics.logScreen(currentRoute)
+    }
+
+    LaunchedEffect(showConnectionError) {
+        if (showConnectionError) AppAnalytics.logConnectionError()
+    }
+
     DisposableEffect(Unit) {
         onDispose { viewModel.onStop() }
     }
@@ -245,7 +253,10 @@ private fun MainAppContent(
     if (showConnectionError && currentRoute is AppRoute.Main) {
         ConnectionErrorScreen(
             connectionState = connectionState,
-            onRetry = { viewModel.reconnect() },
+            onRetry = {
+                AppAnalytics.logRetryConnection()
+                viewModel.reconnect()
+            },
             onSobreClick = { onMainScreenSelect(Screen.Sobre) },
         )
     } else {

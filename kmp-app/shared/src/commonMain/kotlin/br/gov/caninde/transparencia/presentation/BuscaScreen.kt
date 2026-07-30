@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.domain.*
+import kotlinx.coroutines.delay
 
 @Composable
 fun BuscaScreen(
@@ -136,6 +137,21 @@ fun BuscaScreen(
 
             val total = contratos.size + licitacoes.size + secretarias.size + publicacoes.size +
                 gestores.size + parlamentares.size + materias.size + sessoes.size
+
+            LaunchedEffect(searchQuery, scope, total) {
+                if (searchQuery.length < 2) return@LaunchedEffect
+                val queryLength = searchQuery.length
+                val scopeName = scope.name.lowercase()
+                val resultCount = total
+                delay(600)
+                if (searchQuery.length >= 2) {
+                    AppAnalytics.logSearch(
+                        queryLength = queryLength,
+                        resultsCount = resultCount,
+                        scope = scopeName,
+                    )
+                }
+            }
 
             Column(Modifier.fillMaxSize().padding(top = 8.dp)) {
                 if (total > 0) {

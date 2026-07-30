@@ -54,7 +54,10 @@ fun DetailScaffold(
             },
             actions = {
                 if (!shareText.isNullOrBlank()) {
-                    IconButton(onClick = { shareContent(shareTitle ?: title, shareText) }) {
+                    IconButton(onClick = {
+                        AppAnalytics.logShare(shareTitle ?: title)
+                        shareContent(shareTitle ?: title, shareText)
+                    }) {
                         Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = AppColors.Blue100)
                     }
                 }
