@@ -2,6 +2,7 @@ package br.gov.caninde.transparencia.presentation
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +36,8 @@ fun PrefeituraScreen(
     onSobreClick: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var contratoFilter by remember { mutableStateOf(ContratoListFilter.Todos) }
+    var licitacaoFilter by remember { mutableStateOf(LicitacaoListFilter.Todas) }
     val tabs = listOf("Contratos", "Licitações", "Publicações", "Secretarias", "Transparência")
 
     Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
@@ -170,8 +173,20 @@ fun PrefeituraScreen(
 
                 // Conteúdo por tab
                 when (selectedTab) {
-                    0 -> contratosItems(state.contratos, onContratoClick)
-                    1 -> licitacoesItems(state.licitacoes, onLicitacaoClick)
+                    0 -> {
+                        contratosFilterItems(contratoFilter) { contratoFilter = it }
+                        contratosItems(
+                            state.contratos.filter { it.matchesListFilter(contratoFilter) },
+                            onContratoClick,
+                        )
+                    }
+                    1 -> {
+                        licitacoesFilterItems(licitacaoFilter) { licitacaoFilter = it }
+                        licitacoesItems(
+                            state.licitacoes.filter { it.matchesListFilter(licitacaoFilter) },
+                            onLicitacaoClick,
+                        )
+                    }
                     2 -> publicacoesItems(state.publicacoes, state.diariosOficiais, onPublicacaoClick)
                     3 -> secretariasItems(state.secretarias, onSecretariaClick)
                     4 -> {
@@ -187,6 +202,52 @@ fun PrefeituraScreen(
 }
 
 // ─── Lista de Contratos ───────────────────────────────────────────────────────
+
+fun LazyListScope.contratosFilterItems(
+    selected: ContratoListFilter,
+    onSelected: (ContratoListFilter) -> Unit,
+) {
+    item {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ContratoListFilter.entries.forEach { filter ->
+                FilterChip(
+                    selected = selected == filter,
+                    onClick = { onSelected(filter) },
+                    label = { Text(filter.label, fontSize = 11.sp) },
+                )
+            }
+        }
+    }
+}
+
+fun LazyListScope.licitacoesFilterItems(
+    selected: LicitacaoListFilter,
+    onSelected: (LicitacaoListFilter) -> Unit,
+) {
+    item {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            LicitacaoListFilter.entries.forEach { filter ->
+                FilterChip(
+                    selected = selected == filter,
+                    onClick = { onSelected(filter) },
+                    label = { Text(filter.label, fontSize = 11.sp) },
+                )
+            }
+        }
+    }
+}
 
 fun LazyListScope.contratosItems(contratos: List<Contrato>, onClick: (Contrato) -> Unit) {
     item { SectionHeader(title = "Contratos Recentes") }

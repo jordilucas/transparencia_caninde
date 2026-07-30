@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import br.gov.caninde.transparencia.data.TransparenciaViewModel
 import br.gov.caninde.transparencia.domain.*
 import br.gov.caninde.transparencia.platform.openExternalUrl
+import br.gov.caninde.transparencia.platform.shareContent
 import br.gov.caninde.transparencia.presentation.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,6 +30,8 @@ import br.gov.caninde.transparencia.presentation.*
 fun DetailScaffold(
     title: String,
     onBack: () -> Unit,
+    shareTitle: String? = null,
+    shareText: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
@@ -47,6 +50,13 @@ fun DetailScaffold(
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                }
+            },
+            actions = {
+                if (!shareText.isNullOrBlank()) {
+                    IconButton(onClick = { shareContent(shareTitle ?: title, shareText) }) {
+                        Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = AppColors.Blue100)
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
@@ -299,7 +309,12 @@ fun VereadorDetailScreen(viewModel: TransparenciaViewModel, slug: String, onBack
     LaunchedEffect(slug) { viewModel.loadDetail(DetailEntity.Vereador, slug) }
     val p = state.payload?.parlamentar
     val toolbarTitle = truncateToolbarTitle(p?.nome?.ifBlank { "Vereador" } ?: "Vereador")
-    DetailScaffold(title = toolbarTitle, onBack = onBack) {
+    DetailScaffold(
+        title = toolbarTitle,
+        onBack = onBack,
+        shareTitle = p?.nome?.ifBlank { "Vereador" } ?: "Vereador",
+        shareText = p?.let { ShareTexts.vereador(it) },
+    ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Vereador, slug) }
         p?.let { vereador ->
             VereadorProfileHeader(vereador)
@@ -363,7 +378,12 @@ fun MateriaDetailScreen(viewModel: TransparenciaViewModel, slug: String, onBack:
     val state by viewModel.detailState.collectAsState()
     LaunchedEffect(slug) { viewModel.loadDetail(DetailEntity.Materia, slug) }
     val m = state.payload?.materia
-    DetailScaffold(title = truncateToolbarTitle(m?.titulo ?: "Matéria"), onBack = onBack) {
+    DetailScaffold(
+        title = truncateToolbarTitle(m?.titulo ?: "Matéria"),
+        onBack = onBack,
+        shareTitle = m?.titulo ?: "Matéria",
+        shareText = m?.let { ShareTexts.materia(it) },
+    ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Materia, slug) }
         m?.let {
             if (it.tipo.isNotBlank()) DetailField("Tipo", it.tipo)
@@ -393,7 +413,12 @@ fun SecretariaDetailScreen(
     val state by viewModel.detailState.collectAsState()
     LaunchedEffect(id) { viewModel.loadDetail(DetailEntity.Secretaria, id) }
     val s = state.payload?.secretaria
-    DetailScaffold(title = s?.nome ?: "Secretaria", onBack = onBack) {
+    DetailScaffold(
+        title = s?.nome ?: "Secretaria",
+        onBack = onBack,
+        shareTitle = s?.nome ?: "Secretaria",
+        shareText = s?.let { ShareTexts.secretaria(it) },
+    ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Secretaria, id) }
         s?.let { secretaria ->
             if (secretaria.secretario.isNotBlank()) {
@@ -506,7 +531,12 @@ fun PublicacaoDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
     val state by viewModel.detailState.collectAsState()
     LaunchedEffect(id) { viewModel.loadDetail(DetailEntity.Publicacao, id) }
     val p = state.payload?.publicacao
-    DetailScaffold(title = p?.titulo?.ifBlank { "Publicação" } ?: "Publicação", onBack = onBack) {
+    DetailScaffold(
+        title = p?.titulo?.ifBlank { "Publicação" } ?: "Publicação",
+        onBack = onBack,
+        shareTitle = p?.titulo ?: "Publicação",
+        shareText = p?.let { ShareTexts.publicacao(it) },
+    ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Publicacao, id) }
         p?.let { pub ->
             if (pub.tipo.isNotBlank()) DetailField("Tipo", pub.tipo)
@@ -536,7 +566,12 @@ fun PaginaPortalDetailScreen(viewModel: TransparenciaViewModel, pageId: String, 
     LaunchedEffect(pageId) { viewModel.loadDetail(DetailEntity.PaginaPortal, pageId) }
     val page = state.payload?.paginaPortal
     val toolbarTitle = truncateToolbarTitle(page?.titulo?.ifBlank { "Transparência" } ?: "Transparência")
-    DetailScaffold(title = toolbarTitle, onBack = onBack) {
+    DetailScaffold(
+        title = toolbarTitle,
+        onBack = onBack,
+        shareTitle = page?.titulo ?: "Transparência",
+        shareText = page?.titulo?.let { ShareTexts.paginaPortal(it) },
+    ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.PaginaPortal, pageId) }
         page?.let { pg ->
             if (pg.categoria.isNotBlank()) DetailField("Categoria", pg.categoria.replaceFirstChar { it.uppercase() })
@@ -560,7 +595,12 @@ fun ContratoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onBa
     LaunchedEffect(numero) { viewModel.loadDetail(DetailEntity.Contrato, numero) }
     val c = state.payload?.contrato?.normalized()
     val info = c?.displayInfo()
-    DetailScaffold(title = info?.titulo ?: "Contrato $numero", onBack = onBack) {
+    DetailScaffold(
+        title = info?.titulo ?: "Contrato $numero",
+        onBack = onBack,
+        shareTitle = info?.titulo ?: "Contrato",
+        shareText = c?.let { ShareTexts.contrato(it) },
+    ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Contrato, numero) }
         c?.let {
             if (it.valor.isNotBlank()) DetailField("Valor", it.valor)
@@ -597,7 +637,12 @@ fun LicitacaoDetailScreen(viewModel: TransparenciaViewModel, numero: String, onB
     LaunchedEffect(numero) { viewModel.loadDetail(DetailEntity.Licitacao, numero) }
     val l = state.payload?.licitacao
     val info = l?.displayInfo()
-    DetailScaffold(title = info?.titulo?.take(48) ?: "Licitação $numero", onBack = onBack) {
+    DetailScaffold(
+        title = info?.titulo?.take(48) ?: "Licitação $numero",
+        onBack = onBack,
+        shareTitle = info?.titulo ?: "Licitação",
+        shareText = l?.let { ShareTexts.licitacao(it) },
+    ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Licitacao, numero) }
         l?.let {
             val display = it.displayInfo()
@@ -625,7 +670,12 @@ fun SessaoDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack: ()
     val state by viewModel.detailState.collectAsState()
     LaunchedEffect(id) { viewModel.loadDetail(DetailEntity.Sessao, id) }
     val s = state.payload?.sessao
-    DetailScaffold(title = truncateToolbarTitle(s?.titulo ?: "Sessão"), onBack = onBack) {
+    DetailScaffold(
+        title = truncateToolbarTitle(s?.titulo ?: "Sessão"),
+        onBack = onBack,
+        shareTitle = s?.titulo ?: "Sessão",
+        shareText = s?.let { ShareTexts.sessao(it) },
+    ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Sessao, id) }
         s?.let {
             if (it.data.isNotBlank()) DetailField("Data", it.data)

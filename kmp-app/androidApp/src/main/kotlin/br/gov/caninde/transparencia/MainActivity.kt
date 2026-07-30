@@ -8,6 +8,7 @@ import br.gov.caninde.transparencia.data.TransparenciaViewModel
 import br.gov.caninde.transparencia.data.WebSocketEndpoint
 import br.gov.caninde.transparencia.data.createAppModule
 import br.gov.caninde.transparencia.platform.initExternalLinks
+import br.gov.caninde.transparencia.platform.initShareContent
 import br.gov.caninde.transparencia.presentation.TransparenciaApp
 import org.koin.android.ext.android.inject
 import org.koin.core.context.startKoin
@@ -17,6 +18,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         initExternalLinks(this)
+        initShareContent(this)
 
         if (!Koin.isStarted()) {
             val endpoint = WebSocketEndpoint(

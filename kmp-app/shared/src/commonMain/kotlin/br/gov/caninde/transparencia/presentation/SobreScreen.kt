@@ -62,6 +62,31 @@ fun SobreScreen(
             }
 
             item {
+                SobreSectionTitle("Novidades")
+                SobreCard {
+                    DataSourcesInfo.changelog.forEach { entry ->
+                        Text(
+                            "${entry.titulo} · ${entry.data}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.Navy800,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                        entry.itens.forEach { item ->
+                            Text(
+                                "• $item",
+                                fontSize = 12.sp,
+                                lineHeight = 18.sp,
+                                color = AppColors.TextSecondary,
+                                modifier = Modifier.padding(start = 4.dp, bottom = 2.dp),
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+
+            item {
                 SobreSectionTitle("Como capturamos os dados")
                 SobreCard {
                     SobreParagraph(

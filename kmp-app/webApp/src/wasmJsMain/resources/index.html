@@ -19,9 +19,38 @@
                 document.head.appendChild(tag);
             }
         })();
+        window.transparenciaShareContent = function (title, text) {
+            if (navigator.share) {
+                navigator.share({ title: title, text: text }).catch(function () {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text);
+                    } else {
+                        alert(title + "\n\n" + text);
+                    }
+                });
+            } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function () {
+                    alert(title + "\n\n" + text);
+                });
+            } else {
+                alert(title + "\n\n" + text);
+            }
+        };
+        window.transparenciaHideLoading = function () {
+            var el = document.getElementById("app-loading");
+            if (el) el.style.display = "none";
+        };
     </script>
 </head>
 <body>
+    <div id="app-loading" role="status" aria-live="polite">
+        <div class="loader-card">
+            <div class="loader-spinner" aria-hidden="true"></div>
+            <p class="loader-title">Transparência Canindé</p>
+            <p class="loader-subtitle">Carregando dados públicos…</p>
+            <p class="loader-hint">Prefeitura e Câmara Municipal de Canindé/CE</p>
+        </div>
+    </div>
     <div id="ComposeTarget"></div>
     <script src="transparencia-caninde.js"></script>
 </body>

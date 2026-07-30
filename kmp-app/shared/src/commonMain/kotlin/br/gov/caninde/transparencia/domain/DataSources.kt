@@ -203,7 +203,44 @@ object DataSourcesInfo {
             url = "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/L14129.htm",
         ),
     )
+
+    val changelog: List<ChangelogEntry> = listOf(
+        ChangelogEntry(
+            titulo = "Julho 2026",
+            data = "30/07/2026",
+            itens = listOf(
+                "Busca com ignorar acentos e filtros Prefeitura/Câmara",
+                "Filtros vigentes (contratos) e abertas (licitações)",
+                "Botão compartilhar nos detalhes",
+                "Tela de carregamento na web",
+                "Changelog na página Sobre",
+            ),
+        ),
+        ChangelogEntry(
+            titulo = "Julho 2026",
+            data = "29/07/2026",
+            itens = listOf(
+                "Página Sobre com fontes oficiais e base legal",
+                "Detalhes inline: publicações, transparência e páginas externas",
+                "Detalhes enriquecidos de contrato, licitação e sessão",
+            ),
+        ),
+        ChangelogEntry(
+            titulo = "Julho 2026",
+            data = "27/07/2026",
+            itens = listOf(
+                "Site publicado em transparenciacaninde.com.br",
+                "App web Kotlin/Wasm + dados em tempo real",
+            ),
+        ),
+    )
 }
+
+data class ChangelogEntry(
+    val titulo: String,
+    val data: String,
+    val itens: List<String>,
+)
 
 fun FonteCaptura.urlParaAbrir(): String {
     if (!url.contains('{')) return url

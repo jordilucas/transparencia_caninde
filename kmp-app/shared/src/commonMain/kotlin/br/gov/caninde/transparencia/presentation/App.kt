@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.data.TransparenciaViewModel
 import br.gov.caninde.transparencia.domain.*
 import br.gov.caninde.transparencia.presentation.detail.*
+import br.gov.caninde.transparencia.platform.hideAppLoadingScreen
 
 enum class Screen {
     Prefeitura, Camara, Graficos, Busca, Sobre
@@ -76,6 +77,7 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
 
     LaunchedEffect(Unit) {
         viewModel.onStart()
+        hideAppLoadingScreen()
     }
 
     DisposableEffect(Unit) {
@@ -269,6 +271,8 @@ private fun AppRouteContent(
                 onSecretariaClick = { onNavigate(AppRoute.Secretaria(it.id.ifBlank { it.nome })) },
                 onLicitacaoClick = { onNavigate(AppRoute.Licitacao(it.numero)) },
                 onMateriaClick = { onNavigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
+                onPublicacaoClick = { onNavigate(routeFromPublicacao(it)) },
+                onSessaoClick = { idx, _ -> onNavigate(AppRoute.Sessao(idx.toString())) },
                 onSobreClick = onSobreClick,
             )
             Screen.Sobre -> SobreScreen(
@@ -382,150 +386,6 @@ fun GraficosScreen(
             }
             series.forEach { br.gov.caninde.transparencia.presentation.detail.ChartBarSection(it) }
             LastUpdatedText(if (tab == 0) prefeituraState.lastUpdated else camaraState.lastUpdated)
-        }
-    }
-}
-
-@Composable
-fun BuscaScreen(
-    prefeitura: PrefeituraUiState,
-    camara: CamaraUiState,
-    onContratoClick: (Contrato) -> Unit,
-    onVereadorClick: (Parlamentar) -> Unit,
-    onSecretariaClick: (Secretaria) -> Unit,
-    onLicitacaoClick: (Licitacao) -> Unit,
-    onMateriaClick: (Materia) -> Unit,
-    onSobreClick: () -> Unit = {},
-) {
-    var searchQuery by remember { mutableStateOf("") }
-
-    Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .background(AppColors.Navy800)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "Buscar",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.Blue100,
-                )
-                IconButton(onClick = onSobreClick) {
-                    Icon(Icons.Default.Info, contentDescription = "Sobre", tint = AppColors.Blue100)
-                }
-            }
-            Column(Modifier.padding(top = 40.dp)) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    placeholder = { Text("Procurar contratos, vereadores...", fontSize = 12.sp) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = AppColors.TextTertiary, modifier = Modifier.size(18.dp))
-                    },
-                    singleLine = true,
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AppColors.Blue500,
-                        unfocusedBorderColor = AppColors.Divider,
-                        cursorColor = AppColors.Blue500,
-                        focusedContainerColor = AppColors.Surface,
-                        unfocusedContainerColor = AppColors.Surface,
-                    ),
-                    textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
-                )
-            }
-        }
-
-        if (searchQuery.isEmpty()) {
-            Column(
-                Modifier.fillMaxSize().padding(32.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-            ) {
-                Icon(Icons.Default.SearchOff, contentDescription = null, tint = AppColors.TextTertiary, modifier = Modifier.size(48.dp))
-                Spacer(Modifier.height(16.dp))
-                Text("Digite para buscar", fontSize = 14.sp, color = AppColors.TextSecondary)
-            }
-        } else {
-            val query = searchQuery.lowercase()
-            val contratos = prefeitura.contratos.filter {
-                it.objeto.lowercase().contains(query) || it.empresa.lowercase().contains(query) || it.numero.lowercase().contains(query)
-            }
-            val licitacoes = prefeitura.licitacoes.filter {
-                it.objeto.lowercase().contains(query) || it.numero.lowercase().contains(query)
-            }
-            val secretarias = prefeitura.secretarias.filter { it.nome.lowercase().contains(query) }
-            val parlamentares = camara.parlamentares.filter {
-                it.nome.lowercase().contains(query) || it.partido.lowercase().contains(query)
-            }
-            val materias = camara.materias.filter { it.titulo.lowercase().contains(query) }
-
-            Column(Modifier.fillMaxSize().padding(top = 12.dp)) {
-                if (contratos.isNotEmpty()) {
-                    SectionHeader("Contratos (${contratos.size})")
-                    contratos.take(5).forEach { c ->
-                        ContratosRow(c, onClick = { onContratoClick(c) })
-                        HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    }
-                }
-                if (licitacoes.isNotEmpty()) {
-                    SectionHeader("Licitações (${licitacoes.size})")
-                    licitacoes.take(5).forEach { l ->
-                        LicitacoesRow(l, onClick = { onLicitacaoClick(l) })
-                        HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    }
-                }
-                if (secretarias.isNotEmpty()) {
-                    SectionHeader("Secretarias (${secretarias.size})")
-                    secretarias.take(5).forEach { s ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Blue100) {
-                                    Icon(Icons.Default.AccountBalance, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = s.nome,
-                            subtitle = s.secretario,
-                            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
-                            onClick = { onSecretariaClick(s) },
-                        )
-                    }
-                }
-                if (parlamentares.isNotEmpty()) {
-                    SectionHeader("Vereadores (${parlamentares.size})")
-                    parlamentares.take(5).forEach { p ->
-                        ParlamentarRow(p, onClick = { onVereadorClick(p) })
-                        HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    }
-                }
-                if (materias.isNotEmpty()) {
-                    SectionHeader("Matérias (${materias.size})")
-                    materias.take(5).forEach { m ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Purple100) {
-                                    Icon(Icons.Default.FilePresent, null, tint = AppColors.Purple700, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = m.titulo,
-                            subtitle = m.tipo,
-                            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
-                            onClick = { onMateriaClick(m) },
-                        )
-                    }
-                }
-                if (contratos.isEmpty() && licitacoes.isEmpty() && secretarias.isEmpty() && parlamentares.isEmpty() && materias.isEmpty()) {
-                    EmptyState("Nenhum resultado encontrado")
-                }
-            }
         }
     }
 }
