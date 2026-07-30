@@ -69,9 +69,35 @@
         window.transparenciaCacheLoad = function (key) {
             try { return localStorage.getItem("tc_" + key); } catch (e) { return null; }
         };
-        window.addEventListener("popstate", function () {
-            if (typeof transparenciaHistoryPop === "function") transparenciaHistoryPop();
-        });
+        window.transparenciaEncodeUri = function (value) {
+            return encodeURIComponent(value || "");
+        };
+        window.transparenciaDecodeUri = function (value) {
+            try { return decodeURIComponent(value || ""); } catch (e) { return value || ""; }
+        };
+        window.transparenciaCurrentAppPath = function () {
+            var hash = window.location.hash || "";
+            if (hash.charAt(0) === "#") hash = hash.substring(1);
+            if (hash && hash !== "/") {
+                return hash.charAt(0) === "/" ? hash : ("/" + hash);
+            }
+            var path = window.location.pathname || "/";
+            if (path !== "/" && path.indexOf(".") === -1) return path;
+            return "/";
+        };
+        window.transparenciaUpdatePath = function (path, replace) {
+            var normalized = (!path || path === "/") ? "/" : path;
+            var hash = normalized === "/" ? "#/" : ("#" + normalized);
+            var url = window.location.pathname + window.location.search + hash;
+            if (replace) {
+                window.history.replaceState({ tcPath: normalized }, "", url);
+            } else {
+                window.history.pushState({ tcPath: normalized }, "", url);
+            }
+        };
+        window.transparenciaHistoryBack = function () {
+            window.history.back();
+        };
     </script>
 </head>
 <body>

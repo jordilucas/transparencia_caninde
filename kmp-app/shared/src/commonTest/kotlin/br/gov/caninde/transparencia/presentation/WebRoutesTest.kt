@@ -15,7 +15,20 @@ class WebRoutesTest {
     }
 
     @Test
+    fun readWebLocation_prefereHash() {
+        assertEquals("/contrato/1073", readWebLocation("/", "#/contrato/1073"))
+        assertEquals("/camara", readWebLocation("/camara", ""))
+    }
+
+    @Test
+    fun shareUrl_usaHash() {
+        val url = AppRoute.Contrato("1073").shareUrl()
+        assertTrue(url.contains("#/contrato/"))
+        assertTrue(url.contains("1073"))
+    }
+
+    @Test
     fun toWebPath_detalheContrato() {
-        assertTrue(AppRoute.Contrato("1073").toWebPath().contains("1073"))
+        assertEquals("/contrato/1073", AppRoute.Contrato("1073").toWebPath())
     }
 }

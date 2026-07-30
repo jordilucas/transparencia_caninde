@@ -573,7 +573,7 @@ fun PaginaPortalDetailScreen(viewModel: TransparenciaViewModel, pageId: String, 
         title = toolbarTitle,
         onBack = onBack,
         shareTitle = page?.titulo ?: "Transparência",
-        shareText = page?.titulo?.let { ShareTexts.paginaPortal(it) },
+        shareText = page?.titulo?.let { ShareTexts.paginaPortal(it, pageId) },
     ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.PaginaPortal, pageId) }
         page?.let { pg ->
@@ -677,7 +677,7 @@ fun SessaoDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack: ()
         title = truncateToolbarTitle(s?.titulo ?: "Sessão"),
         onBack = onBack,
         shareTitle = s?.titulo ?: "Sessão",
-        shareText = s?.let { ShareTexts.sessao(it) },
+        shareText = s?.let { ShareTexts.sessao(it, id) },
     ) {
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Sessao, id) }
         s?.let {

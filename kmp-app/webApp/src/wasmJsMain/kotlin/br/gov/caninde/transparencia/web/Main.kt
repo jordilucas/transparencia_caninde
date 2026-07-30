@@ -6,7 +6,7 @@ import br.gov.caninde.transparencia.data.TransparenciaViewModel
 import br.gov.caninde.transparencia.data.WebSocketEndpoint
 import br.gov.caninde.transparencia.data.createAppModule
 import br.gov.caninde.transparencia.presentation.TransparenciaApp
-import br.gov.caninde.transparencia.presentation.currentWebPath
+import br.gov.caninde.transparencia.presentation.currentWebLocation
 import kotlinx.browser.window
 import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
@@ -39,7 +39,7 @@ fun main() {
             val viewModel: TransparenciaViewModel = koinInject()
             TransparenciaApp(
                 viewModel = viewModel,
-                initialWebPath = currentWebPath(),
+                initialWebPath = currentWebLocation(),
             )
         }
     }

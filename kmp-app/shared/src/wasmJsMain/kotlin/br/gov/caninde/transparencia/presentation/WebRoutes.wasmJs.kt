@@ -1,27 +1,46 @@
 package br.gov.caninde.transparencia.presentation
 
-import kotlin.js.JsName
 import kotlinx.browser.window
+import org.w3c.dom.events.Event
 
-private object WebHistoryBridge {
-    var onPop: (() -> Unit)? = null
-}
+private external fun encodeURIComponent(value: String): String
 
-@JsName("transparenciaHistoryPop")
-fun transparenciaHistoryPop() {
-    WebHistoryBridge.onPop?.invoke()
-}
+private external fun decodeURIComponent(value: String): String
 
-actual fun installWebHistoryListener(onPathChange: (String) -> Unit): () -> Unit {
-    WebHistoryBridge.onPop = { onPathChange(currentWebPath()) }
-    return { WebHistoryBridge.onPop = null }
-}
+actual fun encodeUriSegment(value: String): String = encodeURIComponent(value)
 
-actual fun updateWebPath(path: String) {
-    val target = if (path.isBlank() || path == "/") "/" else path
-    if (window.location.pathname != target) {
-        window.history.pushState(null, "", target)
+actual fun decodeUriSegment(value: String): String = runCatching {
+    decodeURIComponent(value)
+}.getOrDefault(value)
+
+actual fun currentWebLocation(): String = readWebLocation(
+    pathname = window.location.pathname,
+    hash = window.location.hash,
+)
+
+actual fun updateWebPath(path: String, replace: Boolean) {
+    val normalized = path.trim().ifBlank { "/" }
+    val hash = if (normalized == "/") "#/" else "#$normalized"
+    val url = window.location.pathname + window.location.search + hash
+    if (replace) {
+        window.history.replaceState(null, "", url)
+    } else {
+        window.history.pushState(null, "", url)
     }
 }
 
-actual fun currentWebPath(): String = window.location.pathname.ifBlank { "/" }
+actual fun webHistoryBack() {
+    window.history.back()
+}
+
+actual fun installWebHistoryListener(onPathChange: (String) -> Unit): () -> Unit {
+    val handler: (Event) -> Unit = {
+        onPathChange(currentWebLocation())
+    }
+    window.addEventListener("popstate", handler)
+    window.addEventListener("hashchange", handler)
+    return {
+        window.removeEventListener("popstate", handler)
+        window.removeEventListener("hashchange", handler)
+    }
+}

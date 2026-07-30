@@ -59,33 +59,43 @@ fun TransparenciaApp(
     }
     val currentRoute = routeStack.last()
     val showBottomBar = currentRoute is AppRoute.Main
+    var skipNextWebPush by remember { mutableStateOf(false) }
+    var isInitialWebSync by remember { mutableStateOf(true) }
+
+    fun syncFromWebPath(path: String) {
+        parseWebPath(path)?.let { route ->
+            skipNextWebPush = true
+            routeStack.clear()
+            routeStack.add(route)
+        }
+    }
 
     fun navigate(route: AppRoute) {
         routeStack.add(route)
     }
 
     fun navigateBack() {
-        if (routeStack.size > 1) routeStack.removeAt(routeStack.lastIndex)
+        if (routeStack.size > 1) {
+            webHistoryBack()
+            return
+        }
+        if (routeStack.size == 1 && routeStack[0] !is AppRoute.Main) {
+            skipNextWebPush = true
+            routeStack.clear()
+            routeStack.add(AppRoute.Main(Screen.Prefeitura))
+            updateWebPath("/", replace = true)
+        }
     }
 
     fun selectMainScreen(screen: Screen) {
+        skipNextWebPush = true
         if (routeStack.size > 1) {
             routeStack.clear()
             routeStack.add(AppRoute.Main(screen))
         } else {
             routeStack[0] = AppRoute.Main(screen)
         }
-    }
-
-    fun replaceRouteFromWeb(path: String) {
-        parseWebPath(path)?.let { route ->
-            if (routeStack.size == 1 && routeStack[0] is AppRoute.Main && route is AppRoute.Main) {
-                routeStack[0] = route
-            } else {
-                routeStack.clear()
-                routeStack.add(route)
-            }
-        }
+        updateWebPath(AppRoute.Main(screen).toWebPath(), replace = true)
     }
 
     val connectionState by viewModel.connectionState.collectAsState()
@@ -107,11 +117,18 @@ fun TransparenciaApp(
 
     LaunchedEffect(currentRoute) {
         AppAnalytics.logScreen(currentRoute)
-        updateWebPath(currentRoute.toWebPath())
+        when {
+            isInitialWebSync -> {
+                isInitialWebSync = false
+                updateWebPath(currentRoute.toWebPath(), replace = true)
+            }
+            skipNextWebPush -> skipNextWebPush = false
+            else -> updateWebPath(currentRoute.toWebPath(), replace = false)
+        }
     }
 
     DisposableEffect(Unit) {
-        val removeListener = installWebHistoryListener(::replaceRouteFromWeb)
+        val removeListener = installWebHistoryListener(::syncFromWebPath)
         onDispose { removeListener() }
     }
 
