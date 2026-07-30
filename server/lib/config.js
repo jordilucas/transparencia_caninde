@@ -11,6 +11,9 @@ const config = {
   wsAuthToken: process.env.WS_AUTH_TOKEN || '',
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
   rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '120', 10),
+  refreshCooldownMs: parseInt(process.env.REFRESH_COOLDOWN_MS || '120000', 10),
+  fetchMinDelayMs: parseInt(process.env.FETCH_MIN_DELAY_MS || '200', 10),
+  wpPageDelayMs: parseInt(process.env.WP_PAGE_DELAY_MS || '150', 10),
   isProduction,
 };
 

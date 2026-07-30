@@ -206,6 +206,17 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Câmara — melhorias",
+            data = "30/07/2026",
+            itens = listOf(
+                "Fotos dos vereadores na lista e no perfil",
+                "Mesa diretora abre o perfil do vereador",
+                "Filtro por tipo de matéria legislativa",
+                "Botão Assistir sessão quando há vídeo",
+                "Links corrigidos de licitações e contratos da Câmara",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Navegação e links",
             data = "30/07/2026",
             itens = listOf(

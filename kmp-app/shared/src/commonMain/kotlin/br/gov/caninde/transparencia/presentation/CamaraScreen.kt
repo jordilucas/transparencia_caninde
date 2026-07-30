@@ -33,7 +33,15 @@ fun CamaraScreen(
 ) {
     var areaLegislativo by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
+    var materiaFilter by remember { mutableStateOf(MATERIA_FILTER_TODAS) }
     val tabs = listOf("Parlamentares", "Sessões", "Matérias", "Mesa Diretora")
+    val materiaFilters = remember(state.materias) { materiaFilterOptions(state.materias) }
+    val filteredMaterias = remember(state.materias, materiaFilter) {
+        state.materias.filter { it.matchesMateriaFilter(materiaFilter) }
+    }
+    LaunchedEffect(materiaFilters) {
+        if (materiaFilter !in materiaFilters) materiaFilter = MATERIA_FILTER_TODAS
+    }
 
     Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
 
@@ -199,8 +207,11 @@ fun CamaraScreen(
                     when (selectedTab) {
                         0 -> parlamentaresItems(state.parlamentares, onVereadorClick)
                         1 -> sessoesItems(state.sessoes, onSessaoClick)
-                        2 -> materiasItems(state.materias, onMateriaClick)
-                        3 -> mesaDiretoraItems(state.mesaDiretora)
+                        2 -> {
+                            materiasFilterItems(materiaFilters, materiaFilter) { materiaFilter = it }
+                            materiasItems(filteredMaterias, onMateriaClick)
+                        }
+                        3 -> mesaDiretoraItems(state.mesaDiretora, state.parlamentares, onVereadorClick)
                     }
 
                     item { Spacer(Modifier.height(80.dp)) }
@@ -290,7 +301,7 @@ fun ParlamentarRow(p: Parlamentar, onClick: (() -> Unit)? = null) {
         if (p.totalSessoes > 0) add("${p.totalSessoes} sessões")
     }
     ListRow(
-        icon = { InitialAvatar(p.nome, size = 36) },
+        icon = { PersonAvatar(name = p.nome, fotoUrl = p.foto, size = 36) },
         title = p.nome,
         subtitle = listOfNotNull(
             p.partido.takeIf { it.isNotBlank() },
@@ -341,9 +352,12 @@ fun LazyListScope.sessoesItems(sessoes: List<Sessao>, onClick: (Int, Sessao) -> 
                 s.modifiedAt.takeIf { it.isNotBlank() }?.substringBefore('T')?.let { "Atualizado $it" },
             ).joinToString(" · ").ifBlank { "Sessão legislativa" },
             trailing = {
-                if (s.url.isNotBlank()) {
-                    Icon(Icons.Default.PlayCircle, contentDescription = null,
+                if (s.isVideoSession()) {
+                    Icon(Icons.Default.PlayCircle, contentDescription = "Vídeo",
                         tint = AppColors.Green700, modifier = Modifier.size(18.dp))
+                } else if (s.url.isNotBlank()) {
+                    Icon(Icons.Default.ChevronRight, contentDescription = null,
+                        tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
                 } else {
                     Icon(Icons.Default.ChevronRight, contentDescription = null,
                         tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
@@ -357,6 +371,41 @@ fun LazyListScope.sessoesItems(sessoes: List<Sessao>, onClick: (Int, Sessao) -> 
 }
 
 // ─── Lista de Matérias ────────────────────────────────────────────────────────
+
+fun LazyListScope.materiasFilterItems(
+    filters: List<String>,
+    selected: String,
+    onSelected: (String) -> Unit,
+) {
+    if (filters.size <= 1) return
+    item {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            filters.forEach { filter ->
+                FilterChip(
+                    selected = selected == filter,
+                    onClick = { onSelected(filter) },
+                    label = {
+                        Text(
+                            filter,
+                            fontSize = 11.sp,
+                            fontWeight = if (selected == filter) FontWeight.SemiBold else FontWeight.Medium,
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = AppColors.Blue500,
+                        selectedLabelColor = Color.White,
+                    ),
+                )
+            }
+        }
+    }
+}
 
 fun LazyListScope.materiasItems(materias: List<Materia>, onClick: (Materia) -> Unit) {
     item { SectionHeader(title = "Matérias em Votação") }
@@ -401,15 +450,26 @@ fun LazyListScope.materiasItems(materias: List<Materia>, onClick: (Materia) -> U
 
 // ─── Mesa Diretora ────────────────────────────────────────────────────────────
 
-fun LazyListScope.mesaDiretoraItems(mesa: List<MembroMesa>) {
+fun LazyListScope.mesaDiretoraItems(
+    mesa: List<MembroMesa>,
+    parlamentares: List<Parlamentar>,
+    onVereadorClick: (Parlamentar) -> Unit,
+) {
     item { SectionHeader(title = "Mesa Diretora") }
     if (mesa.isEmpty()) {
         item { EmptyState("Nenhum membro encontrado") }
         return
     }
     items(mesa) { m ->
+        val parlamentar = parlamentares.find { it.matchesMembroMesa(m) }
         ListRow(
-            icon = { InitialAvatar(m.nome, size = 36) },
+            icon = {
+                PersonAvatar(
+                    name = m.nome,
+                    fotoUrl = parlamentar?.foto.orEmpty(),
+                    size = 36,
+                )
+            },
             title = m.nome,
             subtitle = m.cargo,
             trailing = {
@@ -422,7 +482,8 @@ fun LazyListScope.mesaDiretoraItems(mesa: List<MembroMesa>) {
                     Text(m.cargo.split(" ").first(), fontSize = 9.sp,
                         color = AppColors.Navy800, fontWeight = FontWeight.SemiBold)
                 }
-            }
+            },
+            onClick = parlamentar?.let { { onVereadorClick(it) } },
         )
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))

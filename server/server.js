@@ -25,7 +25,7 @@ const dadosAbertos = require('./lib/scraper-prefeitura-dadosabertos');
 const camaraTransp = require('./lib/scraper-camara-transparencia');
 const mergeSources = require('./lib/merge-sources');
 const camaraWp = require('./lib/scraper-camara-wp');
-const mergeCamara = require('./lib/merge-camara-sources');
+const { createGuardedHttp, createRefreshGuard, createScrapeLock } = require('./lib/scrape-guard');
 
 const PORT = config.port;
 const PREF_INTERVAL = config.prefInterval;
@@ -46,6 +46,10 @@ const httpClient = axios.create({
   }
 });
 
+const http = createGuardedHttp(httpClient, { minDelayMs: config.fetchMinDelayMs });
+const refreshGuard = createRefreshGuard(config.refreshCooldownMs);
+const scrapeLock = createScrapeLock();
+
 // ─── estado em memória ───────────────────────────────────────────────────────
 let cache = {
   prefeitura: null,
@@ -54,7 +58,7 @@ let cache = {
 };
 
 const detailHandler = createDetailHandler({
-  http: httpClient,
+  http,
   cheerio,
   getCache: () => cache,
 });
@@ -76,13 +80,17 @@ function broadcast(wss, type, payload) {
 
 // ─── scraper: Prefeitura ─────────────────────────────────────────────────────
 async function scrapePrefeitura() {
+  return scrapeLock.run('prefeitura', scrapePrefeituraInner);
+}
+
+async function scrapePrefeituraInner() {
   console.log('[Prefeitura] iniciando scraping...');
   try {
     const year = new Date().getFullYear();
 
     const [jsonResult, htmlResult] = await Promise.allSettled([
-      dadosAbertos.scrapePrefeituraDadosAbertos(httpClient, year),
-      scraperPrefeitura.scrapePrefeituraHtml(httpClient, cheerio),
+      dadosAbertos.scrapePrefeituraDadosAbertos(http, year),
+      scraperPrefeitura.scrapePrefeituraHtml(http, cheerio),
     ]);
 
     const jsonBundle = jsonResult.status === 'fulfilled' ? jsonResult.value : null;
@@ -149,11 +157,15 @@ async function scrapePrefeitura() {
 
 // ─── scraper: Câmara Municipal de Canindé/CE (cmcaninde.ce.gov.br) ───────────
 async function scrapeCamara() {
+  return scrapeLock.run('camara', scrapeCamaraInner);
+}
+
+async function scrapeCamaraInner() {
   console.log('[Câmara] iniciando scraping (Canindé/CE)...');
   try {
     const [wpResult, htmlResult] = await Promise.allSettled([
-      camaraWp.scrapeCamaraWp(httpClient),
-      scraperCamara.scrapeCamaraHtml(httpClient, cheerio),
+      camaraWp.scrapeCamaraWp(http, { pageDelayMs: config.wpPageDelayMs }),
+      scraperCamara.scrapeCamaraHtml(http, cheerio),
     ]);
 
     const wpBundle = wpResult.status === 'fulfilled' ? wpResult.value : null;
@@ -203,12 +215,23 @@ async function scrapeCamara() {
 }
 
 async function payloadForSource(source, forceScrape) {
+  if (forceScrape && !refreshGuard.canRefresh(source)) {
+    const waitSec = Math.ceil(refreshGuard.remainingMs(source) / 1000);
+    console.warn(`[WS] refresh ignorado (${source}): aguarde ${waitSec}s (cooldown)`);
+    forceScrape = false;
+  }
   if (source === 'prefeitura') {
-    if (forceScrape || !cache.prefeitura) return scrapePrefeitura();
+    if (forceScrape || !cache.prefeitura) {
+      if (forceScrape) refreshGuard.markRefreshed('prefeitura');
+      return scrapePrefeitura();
+    }
     return cache.prefeitura;
   }
   if (source === 'camara') {
-    if (forceScrape || !cache.camara) return scrapeCamara();
+    if (forceScrape || !cache.camara) {
+      if (forceScrape) refreshGuard.markRefreshed('camara');
+      return scrapeCamara();
+    }
     return cache.camara;
   }
   return null;

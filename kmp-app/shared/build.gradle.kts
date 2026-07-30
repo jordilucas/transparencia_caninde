@@ -49,6 +49,8 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.koin.android)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

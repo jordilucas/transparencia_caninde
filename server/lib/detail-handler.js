@@ -6,6 +6,7 @@ const detailPref = require('./scraper-detail-prefeitura');
 const portalPage = require('./scraper-portal-page');
 const { mergeParlamentar } = require('./merge-camara-sources');
 const { createDetailCache } = require('./detail-cache');
+const { assertAllowedOutboundUrl } = require('./allowed-hosts');
 
 function idFromPortalUrl(url, page) {
   const m = String(url || '').match(new RegExp(`${page}\\?id=(\\d+)`, 'i'));
@@ -16,6 +17,7 @@ function createDetailHandler({ http, cheerio, getCache }) {
   const detailCache = createDetailCache();
 
   async function fetchHtml(url) {
+    assertAllowedOutboundUrl(url);
     const { data } = await http.get(url);
     return data;
   }
@@ -236,6 +238,14 @@ function createDetailHandler({ http, cheerio, getCache }) {
         const url = portalPage.decodePortalPageId(id);
         if (!url) {
           result = { entity: 'pagina_portal', entityId: id, error: 'URL inválida.' };
+          break;
+        }
+        if (!portalPage.isAllowedPortalUrl(url)) {
+          result = {
+            entity: 'pagina_portal',
+            entityId: id,
+            error: 'URL fora dos portais oficiais permitidos.',
+          };
           break;
         }
         const meta = portalPage.findLinkMeta(cache, url);

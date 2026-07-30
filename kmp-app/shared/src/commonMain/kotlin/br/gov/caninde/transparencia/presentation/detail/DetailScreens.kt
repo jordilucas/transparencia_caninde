@@ -202,7 +202,7 @@ fun VereadorProfileHeader(parlamentar: Parlamentar) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            InitialAvatar(parlamentar.nome, size = 72)
+            PersonAvatar(name = parlamentar.nome, fotoUrl = parlamentar.foto, size = 72)
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -336,6 +336,12 @@ fun VereadorDetailScreen(viewModel: TransparenciaViewModel, slug: String, onBack
             }
             if (vereador.naturalidade.isNotBlank()) {
                 DetailField("Naturalidade", vereador.naturalidade)
+            }
+            if (vereador.dataNascimento.isNotBlank()) {
+                DetailField("Data de nascimento", vereador.dataNascimento)
+            }
+            if (vereador.estadoCivil.isNotBlank()) {
+                DetailField("Estado civil", vereador.estadoCivil)
             }
             if (vereador.totalMaterias > 0 || vereador.totalSessoes > 0) {
                 DetailSectionHeader("Produção legislativa")
@@ -682,6 +688,16 @@ fun SessaoDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack: ()
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Sessao, id) }
         s?.let {
             if (it.data.isNotBlank()) DetailField("Data", it.data)
+            val video = it.videoUrl()
+            if (video.isNotBlank()) {
+                DetailLinkAction(
+                    label = "Transmissão",
+                    url = video,
+                    baseUrl = CAMARA_PORTAL_BASE,
+                    actionText = "Assistir sessão",
+                    usePdfIcon = false,
+                )
+            }
             if (it.resumo.isNotBlank()) {
                 DetailSectionHeader("Resumo")
                 DetailBodyText(it.resumo)

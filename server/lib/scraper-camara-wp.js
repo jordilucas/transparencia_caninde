@@ -16,7 +16,7 @@ function parseIsoMs(iso) {
   return Number.isNaN(t) ? 0 : t;
 }
 
-async function fetchAllPages(http, path, params = {}) {
+async function fetchAllPages(http, path, params = {}, pageDelayMs = 0) {
   const items = [];
   let page = 1;
   const perPage = 100;
@@ -30,12 +30,15 @@ async function fetchAllPages(http, path, params = {}) {
     const totalPages = parseInt(headers['x-wp-totalpages'] || '1', 10);
     if (page >= totalPages) break;
     page += 1;
+    if (pageDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, pageDelayMs));
+    }
   }
   return items;
 }
 
-async function fetchTaxonomyMap(http, taxonomy) {
-  const rows = await fetchAllPages(http, taxonomy);
+async function fetchTaxonomyMap(http, taxonomy, pageDelayMs = 0) {
+  const rows = await fetchAllPages(http, taxonomy, {}, pageDelayMs);
   const map = new Map();
   for (const row of rows) {
     map.set(row.id, row.name || row.slug || '');
@@ -137,12 +140,12 @@ function buildMesaFromParlamentares(parlamentares) {
     .map((p) => ({ nome: p.nome, cargo: p.cargo }));
 }
 
-async function scrapeCamaraWp(http) {
+async function scrapeCamaraWp(http, { pageDelayMs = 0 } = {}) {
   const [cargoMap, vinculoMap, legislaturaMap, tipoMateriaMap] = await Promise.all([
-    fetchTaxonomyMap(http, 'cargo'),
-    fetchTaxonomyMap(http, 'vinculo'),
-    fetchTaxonomyMap(http, 'ano_legislatura'),
-    fetchTaxonomyMap(http, 'tipo_materia'),
+    fetchTaxonomyMap(http, 'cargo', pageDelayMs),
+    fetchTaxonomyMap(http, 'vinculo', pageDelayMs),
+    fetchTaxonomyMap(http, 'ano_legislatura', pageDelayMs),
+    fetchTaxonomyMap(http, 'tipo_materia', pageDelayMs),
   ]);
 
   const taxMaps = {
@@ -152,9 +155,9 @@ async function scrapeCamaraWp(http) {
   };
 
   const [vereadoresRaw, sessoesRaw, materiasRaw] = await Promise.all([
-    fetchAllPages(http, 'vereadores', { _embed: 'wp:term', orderby: 'modified', order: 'desc' }),
-    fetchAllPages(http, 'sessao', { orderby: 'modified', order: 'desc' }),
-    fetchAllPages(http, 'materia', { orderby: 'modified', order: 'desc' }),
+    fetchAllPages(http, 'vereadores', { _embed: 'wp:term', orderby: 'modified', order: 'desc' }, pageDelayMs),
+    fetchAllPages(http, 'sessao', { orderby: 'modified', order: 'desc' }, pageDelayMs),
+    fetchAllPages(http, 'materia', { orderby: 'modified', order: 'desc' }, pageDelayMs),
   ]);
 
   const parlamentares = vereadoresRaw

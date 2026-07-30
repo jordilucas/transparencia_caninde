@@ -3,6 +3,7 @@
 const PREF_BASE = 'https://www.caninde.ce.gov.br';
 const CAMARA_BASE = 'https://www.cmcaninde.ce.gov.br';
 const { resolvePrefUrl, extractColStrongFields, extractPdfLinks } = require('./scraper-detail-prefeitura');
+const { isAllowedOutboundUrl } = require('./allowed-hosts');
 
 function decodePortalPageId(id) {
   if (!id || typeof id !== 'string') return '';
@@ -219,8 +220,13 @@ function findLinkMeta(cache, url) {
   return lists.find((l) => l.url === url) || null;
 }
 
+function isAllowedPortalUrl(url) {
+  return isAllowedOutboundUrl(url);
+}
+
 module.exports = {
   decodePortalPageId,
+  isAllowedPortalUrl,
   scrapePublicacaoDetail,
   scrapePortalPage,
   mergePublicacaoDetail,

@@ -7,6 +7,7 @@ Aplicativo **Kotlin Multiplatform** (Compose Multiplatform) + **servidor Node.js
 | Documento | Conteúdo |
 |-----------|----------|
 | [`API.md`](API.md) | Contrato completo das mensagens WebSocket |
+| [`docs/DADOS-E-SEGURANCA.md`](docs/DADOS-E-SEGURANCA.md) | Fontes oficiais, allowlist, anti-DDoS e scraping responsável |
 | [`docs/ROADMAP-DADOS.md`](docs/ROADMAP-DADOS.md) | Roadmap de fontes e fases futuras |
 | [`docs/HOSPEDAGEM-GRATUITA.md`](docs/HOSPEDAGEM-GRATUITA.md) | Deploy no Render / Fly.io |
 | [`docs/DEPLOY-WEB.md`](docs/DEPLOY-WEB.md) | Deploy do site (GitHub Pages) |
@@ -26,6 +27,7 @@ O projeto separa **coleta de dados** (servidor) de **apresentação** (app). O s
 - **Merge inteligente** — quando JSON e HTML coexistem, o registro mais completo e recente prevalece.
 - **Detalhe sob demanda** — biografias, páginas longas e HTML pesado são buscados apenas quando o usuário abre o item.
 - **Links externos** — portais financeiros (Governo Transparente) abrem no navegador; o app não simula dados que não possui.
+- **Scraping responsável** — allowlist de hosts, cooldown de refresh, fila HTTP e cache; ver [`docs/DADOS-E-SEGURANCA.md`](docs/DADOS-E-SEGURANCA.md).
 
 ### O que o app oferece hoje
 
