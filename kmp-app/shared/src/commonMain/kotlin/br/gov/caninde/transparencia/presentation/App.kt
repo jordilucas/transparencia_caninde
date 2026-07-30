@@ -75,6 +75,14 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
     val prefeituraState by viewModel.prefeituraState.collectAsState()
     val camaraState by viewModel.camaraState.collectAsState()
 
+    val onSobreScreen = currentRoute is AppRoute.Main && (currentRoute as AppRoute.Main).screen == Screen.Sobre
+    val showConnectionError = shouldShowConnectionErrorScreen(
+        connectionState = connectionState,
+        prefeitura = prefeituraState,
+        camara = camaraState,
+        onSobreScreen = onSobreScreen,
+    )
+
     LaunchedEffect(Unit) {
         viewModel.onStart()
         hideAppLoadingScreen()
@@ -99,10 +107,11 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
                             .weight(1f)
                             .fillMaxHeight(),
                     ) {
-                        AppRouteContent(
+                        MainAppContent(
+                            showConnectionError = showConnectionError,
+                            connectionState = connectionState,
                             currentRoute = currentRoute,
                             viewModel = viewModel,
-                            connectionState = connectionState,
                             prefeituraState = prefeituraState,
                             camaraState = camaraState,
                             onNavigate = ::navigate,
@@ -139,10 +148,11 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
                             .fillMaxSize()
                             .padding(contentPadding),
                     ) {
-                        AppRouteContent(
+                        MainAppContent(
+                            showConnectionError = showConnectionError,
+                            connectionState = connectionState,
                             currentRoute = currentRoute,
                             viewModel = viewModel,
-                            connectionState = connectionState,
                             prefeituraState = prefeituraState,
                             camaraState = camaraState,
                             onNavigate = ::navigate,
@@ -217,6 +227,38 @@ private fun MainNavigationRail(
                 ),
             )
         }
+    }
+}
+
+@Composable
+private fun MainAppContent(
+    showConnectionError: Boolean,
+    connectionState: ConnectionState,
+    currentRoute: AppRoute,
+    viewModel: TransparenciaViewModel,
+    prefeituraState: PrefeituraUiState,
+    camaraState: CamaraUiState,
+    onNavigate: (AppRoute) -> Unit,
+    onNavigateBack: () -> Unit,
+    onMainScreenSelect: (Screen) -> Unit,
+) {
+    if (showConnectionError && currentRoute is AppRoute.Main) {
+        ConnectionErrorScreen(
+            connectionState = connectionState,
+            onRetry = { viewModel.reconnect() },
+            onSobreClick = { onMainScreenSelect(Screen.Sobre) },
+        )
+    } else {
+        AppRouteContent(
+            currentRoute = currentRoute,
+            viewModel = viewModel,
+            connectionState = connectionState,
+            prefeituraState = prefeituraState,
+            camaraState = camaraState,
+            onNavigate = onNavigate,
+            onNavigateBack = onNavigateBack,
+            onMainScreenSelect = onMainScreenSelect,
+        )
     }
 }
 
