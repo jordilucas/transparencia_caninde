@@ -37,16 +37,45 @@ fun routeFromPublicacao(publicacao: Publicacao): AppRoute {
 }
 
 fun routeFromContrato(contrato: Contrato): AppRoute {
-    val id = contrato.numero.ifBlank { contrato.id }
+    val id = contratoDetailId(contrato)
     if (id.isNotBlank()) return AppRoute.Contrato(id)
     return routeFromExternalUrl(contrato.url)
 }
 
 fun routeFromLicitacao(licitacao: Licitacao): AppRoute {
-    val id = licitacao.numero.ifBlank { licitacao.id }
+    val id = licitacaoDetailId(licitacao)
     if (id.isNotBlank()) return AppRoute.Licitacao(id)
     return routeFromExternalUrl(licitacao.url)
 }
+
+fun contratoDetailId(contrato: Contrato): String {
+    if (contrato.id.isNotBlank()) return contrato.id
+    contratoIdRegex.find(contrato.url)?.groupValues?.get(1)?.let { return it }
+    return contrato.numero
+}
+
+fun licitacaoDetailId(licitacao: Licitacao): String {
+    if (licitacao.id.isNotBlank()) return licitacao.id
+    licitacaoIdRegex.find(licitacao.url)?.groupValues?.get(1)?.let { return it }
+    return licitacao.numero
+}
+
+private val vereadorSlugRegex = Regex("/vereadores/([^/?#]+)", RegexOption.IGNORE_CASE)
+
+fun parlamentarSlug(parlamentar: Parlamentar): String {
+    if (parlamentar.slug.isNotBlank()) return parlamentar.slug
+    vereadorSlugRegex.find(parlamentar.profileUrl)?.groupValues?.get(1)?.let { return it }
+    return ""
+}
+
+fun materiaSlug(materia: Materia): String {
+    if (materia.slug.isNotBlank()) return materia.slug
+    materiaSlugRegex.find(materia.url)?.groupValues?.get(1)?.let { return it }
+    return ""
+}
+
+fun sessaoRouteId(sessao: Sessao, index: Int): String =
+    sessao.slug.ifBlank { index.toString() }
 
 fun portalBaseUrl(origem: String): String = when (origem) {
     "camara" -> CAMARA_PORTAL_BASE

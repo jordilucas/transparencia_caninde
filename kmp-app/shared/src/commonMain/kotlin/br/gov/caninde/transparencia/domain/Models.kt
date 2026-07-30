@@ -21,6 +21,8 @@ data class WsPayload(
     val diariosOficiais: List<String>? = null,
     val secretarias: List<Secretaria>? = null,
     val publicacoes: List<Publicacao>? = null,
+    val obras: List<Obra>? = null,
+    val lrf: List<LrfDocumento>? = null,
     val linksTransparencia: List<LinkExterno>? = null,
     val resumo: ResumoPrefeitura? = null,
     val resumoCamara: ResumoCamara? = null,
@@ -142,6 +144,28 @@ data class Publicacao(
 )
 
 @Serializable
+data class Obra(
+    val id: String = "",
+    val titulo: String = "",
+    val descricao: String = "",
+    val valor: String = "",
+    val secretaria: String = "",
+    val situacao: String = "",
+    val data: String = "",
+    val url: String = "",
+)
+
+@Serializable
+data class LrfDocumento(
+    val id: String = "",
+    val titulo: String = "",
+    val tipo: String = "",
+    val exercicio: String = "",
+    val data: String = "",
+    val url: String = "",
+)
+
+@Serializable
 data class PaginaPortal(
     val titulo: String = "",
     val url: String = "",
@@ -197,6 +221,8 @@ data class ResumoPrefeitura(
     val totalContratos: Int = 0,
     val totalLicitacoes: Int = 0,
     val totalPublicacoes: Int = 0,
+    val totalObras: Int = 0,
+    val totalLrf: Int = 0,
     val exercicio: Int = 2025,
     val fontesUtilizadas: List<String> = emptyList(),
 )
@@ -312,6 +338,7 @@ sealed class ConnectionState {
     object Error : ConnectionState()
 }
 
+@Serializable
 data class PrefeituraUiState(
     val isLoading: Boolean = true,
     val contratos: List<Contrato> = emptyList(),
@@ -319,6 +346,8 @@ data class PrefeituraUiState(
     val gestores: List<Gestor> = emptyList(),
     val diariosOficiais: List<String> = emptyList(),
     val publicacoes: List<Publicacao> = emptyList(),
+    val obras: List<Obra> = emptyList(),
+    val lrf: List<LrfDocumento> = emptyList(),
     val secretarias: List<Secretaria> = emptyList(),
     val linksTransparencia: List<LinkExterno> = emptyList(),
     val graficos: GraficosPayload? = null,
@@ -327,6 +356,7 @@ data class PrefeituraUiState(
     val error: String? = null,
 )
 
+@Serializable
 data class CamaraUiState(
     val isLoading: Boolean = true,
     val parlamentares: List<Parlamentar> = emptyList(),

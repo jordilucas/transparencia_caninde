@@ -114,6 +114,9 @@ async function scrapePrefeitura() {
       + ` (fontes: ${merged.fontesUtilizadas.join('+') || 'nenhuma'})`,
     );
 
+    const obras = (merged.obras || jsonBundle?.obras || []).slice(0, 30);
+    const lrf = (merged.lrf || jsonBundle?.lrf || []).slice(0, 30);
+
     const result = {
       ...scrapeResult.buildPrefeituraPayload({
         contratos,
@@ -121,6 +124,8 @@ async function scrapePrefeitura() {
         diariosOficiais: diarios,
         secretarias,
         publicacoes,
+        obras,
+        lrf,
         gestores,
         linksTransparencia: camaraTransp.buildLinksTransparenciaPrefeitura(),
         fonte: fonteParts.join(' + ') || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
@@ -291,6 +296,8 @@ wss.on('connection', (ws, req) => {
               contrato: detail.contrato,
               licitacao: detail.licitacao,
               sessao: detail.sessao,
+              publicacao: detail.publicacao,
+              paginaPortal: detail.paginaPortal,
               gestores: detail.gestores,
               institucional: detail.institucional,
             };

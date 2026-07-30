@@ -40,7 +40,7 @@ function handleWsMessage(msg) {
 
     case 'REQUEST_DETAIL': {
       const entity = msg.payload?.entity || msg.entity;
-      const id = msg.payload?.id || msg.id || '';
+      const id = msg.payload?.id || msg.payload?.entityId || msg.id || '';
       return [{ type: 'DETAIL_DATA', timestamp, entity, entityId: id, detailRequest: true }];
     }
 

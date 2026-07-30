@@ -49,8 +49,14 @@ val navItems: List<NavItem> by lazy {
 }
 
 @Composable
-fun TransparenciaApp(viewModel: TransparenciaViewModel) {
-    val routeStack = remember { mutableStateListOf<AppRoute>(AppRoute.Main(Screen.Prefeitura)) }
+fun TransparenciaApp(
+    viewModel: TransparenciaViewModel,
+    initialWebPath: String? = null,
+) {
+    val parsedInitial = initialWebPath?.let { parseWebPath(it) }
+    val routeStack = remember {
+        mutableStateListOf(parsedInitial ?: AppRoute.Main(Screen.Prefeitura))
+    }
     val currentRoute = routeStack.last()
     val showBottomBar = currentRoute is AppRoute.Main
 
@@ -68,6 +74,17 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
             routeStack.add(AppRoute.Main(screen))
         } else {
             routeStack[0] = AppRoute.Main(screen)
+        }
+    }
+
+    fun replaceRouteFromWeb(path: String) {
+        parseWebPath(path)?.let { route ->
+            if (routeStack.size == 1 && routeStack[0] is AppRoute.Main && route is AppRoute.Main) {
+                routeStack[0] = route
+            } else {
+                routeStack.clear()
+                routeStack.add(route)
+            }
         }
     }
 
@@ -90,6 +107,12 @@ fun TransparenciaApp(viewModel: TransparenciaViewModel) {
 
     LaunchedEffect(currentRoute) {
         AppAnalytics.logScreen(currentRoute)
+        updateWebPath(currentRoute.toWebPath())
+    }
+
+    DisposableEffect(Unit) {
+        val removeListener = installWebHistoryListener(::replaceRouteFromWeb)
+        onDispose { removeListener() }
     }
 
     LaunchedEffect(showConnectionError) {
@@ -291,9 +314,11 @@ private fun AppRouteContent(
                 state = prefeituraState,
                 connectionState = connectionState,
                 onRefresh = { viewModel.refreshPrefeitura() },
-                onContratoClick = { onNavigate(AppRoute.Contrato(it.numero)) },
-                onLicitacaoClick = { onNavigate(AppRoute.Licitacao(it.numero)) },
-                onSecretariaClick = { onNavigate(AppRoute.Secretaria(it.id.ifBlank { it.nome })) },
+                onContratoClick = { onNavigate(AppRoute.Contrato(contratoDetailId(it))) },
+                onLicitacaoClick = { onNavigate(AppRoute.Licitacao(licitacaoDetailId(it))) },
+                onSecretariaClick = { s ->
+                    if (s.id.isNotBlank()) onNavigate(AppRoute.Secretaria(s.id))
+                },
                 onGestoresClick = { onNavigate(AppRoute.Gestores) },
                 onInstitucionalClick = { onNavigate(AppRoute.Institucional(false)) },
                 onPublicacaoClick = { onNavigate(routeFromPublicacao(it)) },
@@ -304,9 +329,13 @@ private fun AppRouteContent(
                 state = camaraState,
                 connectionState = connectionState,
                 onRefresh = { viewModel.refreshCamara() },
-                onVereadorClick = { onNavigate(AppRoute.Vereador(it.slug.ifBlank { it.nome })) },
-                onMateriaClick = { onNavigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
-                onSessaoClick = { idx, _ -> onNavigate(AppRoute.Sessao(idx.toString())) },
+                onVereadorClick = { p ->
+                    parlamentarSlug(p).takeIf { it.isNotBlank() }?.let { onNavigate(AppRoute.Vereador(it)) }
+                },
+                onMateriaClick = { m ->
+                    materiaSlug(m).takeIf { it.isNotBlank() }?.let { onNavigate(AppRoute.Materia(it)) }
+                },
+                onSessaoClick = { idx, s -> onNavigate(AppRoute.Sessao(sessaoRouteId(s, idx))) },
                 onInstitucionalClick = { onNavigate(AppRoute.Institucional(true)) },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
                 onSobreClick = onSobreClick,
@@ -319,13 +348,19 @@ private fun AppRouteContent(
             Screen.Busca -> BuscaScreen(
                 prefeitura = prefeituraState,
                 camara = camaraState,
-                onContratoClick = { onNavigate(AppRoute.Contrato(it.numero)) },
-                onVereadorClick = { onNavigate(AppRoute.Vereador(it.slug.ifBlank { it.nome })) },
-                onSecretariaClick = { onNavigate(AppRoute.Secretaria(it.id.ifBlank { it.nome })) },
-                onLicitacaoClick = { onNavigate(AppRoute.Licitacao(it.numero)) },
-                onMateriaClick = { onNavigate(AppRoute.Materia(it.slug.ifBlank { it.titulo })) },
+                onContratoClick = { onNavigate(AppRoute.Contrato(contratoDetailId(it))) },
+                onVereadorClick = { p ->
+                    parlamentarSlug(p).takeIf { it.isNotBlank() }?.let { onNavigate(AppRoute.Vereador(it)) }
+                },
+                onSecretariaClick = { s ->
+                    if (s.id.isNotBlank()) onNavigate(AppRoute.Secretaria(s.id))
+                },
+                onLicitacaoClick = { onNavigate(AppRoute.Licitacao(licitacaoDetailId(it))) },
+                onMateriaClick = { m ->
+                    materiaSlug(m).takeIf { it.isNotBlank() }?.let { onNavigate(AppRoute.Materia(it)) }
+                },
                 onPublicacaoClick = { onNavigate(routeFromPublicacao(it)) },
-                onSessaoClick = { idx, _ -> onNavigate(AppRoute.Sessao(idx.toString())) },
+                onSessaoClick = { idx, s -> onNavigate(AppRoute.Sessao(sessaoRouteId(s, idx))) },
                 onSobreClick = onSobreClick,
             )
             Screen.Sobre -> SobreScreen(

@@ -42,6 +42,12 @@ class TransparenciaRepository(
 
     fun connect(scope: CoroutineScope) {
         ownerScope = scope
+        LocalCache.loadPrefeitura()?.let { cached ->
+            _prefeituraState.value = cached
+        }
+        LocalCache.loadCamara()?.let { cached ->
+            _camaraState.value = cached
+        }
         connectJob?.cancel()
         connectJob = scope.launch {
             var attempt = 0
@@ -155,6 +161,23 @@ class TransparenciaRepository(
             return
         }
         _detailState.value = DetailUiState(isLoading = true, entity = entity, entityId = id, payload = null, error = null)
+
+        if (!isConnected()) {
+            forceReconnect()
+            val connected = withTimeoutOrNull(CONNECT_TIMEOUT_MS) {
+                connectionState.first { it is ConnectionState.Connected }
+            } != null
+            if (!connected) {
+                _detailState.value = DetailUiState(
+                    isLoading = false,
+                    entity = entity,
+                    entityId = id,
+                    error = "Sem conexão com o servidor",
+                )
+                return
+            }
+        }
+
         if (!sendFrame(messageHandler.buildRequestDetail(entity, id))) {
             _detailState.value = DetailUiState(
                 isLoading = false,
@@ -208,6 +231,12 @@ class TransparenciaRepository(
             _camaraState.value = reduced.camara
             _detailState.value = reduced.detail
             val msg = messageHandler.parse(raw)
+            if (msg.type == "PREFEITURA_DATA") {
+                LocalCache.savePrefeitura(reduced.prefeitura)
+            }
+            if (msg.type == "CAMARA_DATA") {
+                LocalCache.saveCamara(reduced.camara)
+            }
             if (msg.type == "DETAIL_DATA" && msg.payload != null && reduced.detail.error.isNullOrBlank()) {
                 val entity = reduced.detail.entity ?: return
                 val key = detailCacheKey(entity, reduced.detail.entityId)

@@ -122,6 +122,12 @@ fun BuscaScreen(
             val publicacoes = if (showPref) prefeitura.publicacoes.filter {
                 matchesAnySearch(searchQuery, it.titulo, it.tipo, it.data)
             } else emptyList()
+            val obras = if (showPref) prefeitura.obras.filter {
+                matchesAnySearch(searchQuery, it.titulo, it.descricao, it.secretaria, it.situacao)
+            } else emptyList()
+            val lrfDocs = if (showPref) prefeitura.lrf.filter {
+                matchesAnySearch(searchQuery, it.titulo, it.tipo, it.exercicio)
+            } else emptyList()
             val gestores = if (showPref) prefeitura.gestores.filter {
                 matchesAnySearch(searchQuery, it.nome, it.cargo)
             } else emptyList()
@@ -136,6 +142,7 @@ fun BuscaScreen(
             } else emptyList()
 
             val total = contratos.size + licitacoes.size + secretarias.size + publicacoes.size +
+                obras.size + lrfDocs.size +
                 gestores.size + parlamentares.size + materias.size + sessoes.size
 
             LaunchedEffect(searchQuery, scope, total) {
@@ -190,6 +197,36 @@ fun BuscaScreen(
                             subtitle = listOfNotNull(p.tipo.takeIf { it.isNotBlank() }, p.data.takeIf { it.isNotBlank() }).joinToString(" · "),
                             trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
                             onClick = { onPublicacaoClick(p) },
+                        )
+                    }
+                }
+                if (obras.isNotEmpty()) {
+                    SectionHeader("Obras (${obras.size})")
+                    obras.take(8).forEach { o ->
+                        ListRow(
+                            icon = {
+                                IconContainer(AppColors.Amber100) {
+                                    Icon(Icons.Default.Construction, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
+                                }
+                            },
+                            title = o.titulo,
+                            subtitle = listOfNotNull(o.secretaria.takeIf { it.isNotBlank() }, o.valor.takeIf { it.isNotBlank() }).joinToString(" · "),
+                            trailing = {},
+                        )
+                    }
+                }
+                if (lrfDocs.isNotEmpty()) {
+                    SectionHeader("LRF (${lrfDocs.size})")
+                    lrfDocs.take(8).forEach { d ->
+                        ListRow(
+                            icon = {
+                                IconContainer(AppColors.Blue100) {
+                                    Icon(Icons.Default.Description, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
+                                }
+                            },
+                            title = d.titulo,
+                            subtitle = d.tipo,
+                            trailing = {},
                         )
                     }
                 }

@@ -119,20 +119,48 @@ function mapPublicacoes(rows) {
   })).filter((p) => p.titulo);
 }
 
+function mapObras(rows) {
+  return rows.map((r) => ({
+    id: String(r.Id ?? ''),
+    titulo: String(r.Obra || r.Descricao || r.Titulo || r.Nome || 'Obra').trim().substring(0, 200),
+    descricao: String(r.Descricao || r.Objeto || '').trim().substring(0, 400),
+    valor: formatBRL(r.ValorGlobal || r.Valor || r.ValorTotal || ''),
+    secretaria: String(r.Secretaria || r.Orgao || '').trim(),
+    situacao: String(r.Situacao || r.Status || '').trim(),
+    data: String(r.DataInicio || r.Data || '').trim(),
+    url: resolveUrl(r.Url || r.Arquivo || ''),
+  })).filter((o) => o.titulo);
+}
+
+function mapLrf(rows) {
+  return rows.map((r) => ({
+    id: String(r.Id ?? ''),
+    titulo: String(r.Descricao || r.TipoArquivo || r.Titulo || 'Documento LRF').trim().substring(0, 200),
+    tipo: String(r.TipoArquivo || r.Tipo || 'LRF').trim(),
+    exercicio: String(r.Exercicio || r.Ano || '').trim(),
+    data: String(r.Data || '').trim(),
+    url: resolveUrl(r.Url || r.Arquivo || ''),
+  })).filter((d) => d.titulo);
+}
+
 async function scrapePrefeituraDadosAbertos(http, ano) {
   const year = ano || new Date().getFullYear();
 
-  const [licSettled, contSettled, secSettled, pubSettled] = await Promise.allSettled([
+  const [licSettled, contSettled, secSettled, pubSettled, obrasSettled, lrfSettled] = await Promise.allSettled([
     fetchDataset(http, 'licitacoes', year),
     fetchDataset(http, 'contratos', year),
     fetchDataset(http, 'secretarias', year),
     fetchDataset(http, 'publicacoes', year),
+    fetchDataset(http, 'obras', year),
+    fetchDataset(http, 'LRF', year),
   ]);
 
   const licRows = licSettled.status === 'fulfilled' ? licSettled.value : [];
   const contRows = contSettled.status === 'fulfilled' ? contSettled.value : [];
   const secRows = secSettled.status === 'fulfilled' ? secSettled.value : [];
   const pubRows = pubSettled.status === 'fulfilled' ? pubSettled.value : [];
+  const obrasRows = obrasSettled.status === 'fulfilled' ? obrasSettled.value : [];
+  const lrfRows = lrfSettled.status === 'fulfilled' ? lrfSettled.value : [];
 
   if (licSettled.status === 'rejected') {
     console.warn('[DadosAbertos] licitações indisponível:', licSettled.reason?.message || licSettled.reason);
@@ -145,12 +173,16 @@ async function scrapePrefeituraDadosAbertos(http, ano) {
   const contratos = mapContratos(contRows);
   const secretarias = mapSecretarias(secRows);
   const publicacoes = mapPublicacoes(pubRows);
+  const obras = mapObras(obrasRows);
+  const lrf = mapLrf(lrfRows);
 
   return {
     contratos,
     licitacoes,
     secretarias,
     publicacoes,
+    obras,
+    lrf,
     fonte: `${EXPORT_URL} (dados abertos JSON, exercício ${year})`,
     dataSource: 'dadosabertos',
   };
@@ -165,5 +197,7 @@ module.exports = {
   mapLicitacoes,
   mapSecretarias,
   mapPublicacoes,
+  mapObras,
+  mapLrf,
   scrapePrefeituraDadosAbertos,
 };

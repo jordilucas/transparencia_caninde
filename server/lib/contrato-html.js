@@ -51,6 +51,11 @@ function formatVigencia(text) {
   return t.replace(/VIGENTE/i, 'Vigente');
 }
 
+function idFromPortalUrl(url, page) {
+  const m = String(url || '').match(new RegExp(`${page}\\?id=(\\d+)`, 'i'));
+  return m ? m[1] : '';
+}
+
 function parseContratoHtmlRow(cols, link) {
   if (!cols || cols.length < 3) return null;
   const numero = cleanNumero(cols[0]);
@@ -61,6 +66,7 @@ function parseContratoHtmlRow(cols, link) {
   const dataLabel = [data, vigencia].filter(Boolean).join(' · ');
 
   return {
+    id: idFromPortalUrl(link, 'contratos'),
     numero,
     secretaria,
     objeto,

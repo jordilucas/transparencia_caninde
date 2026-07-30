@@ -90,7 +90,7 @@ class WsMessageHandlerTest {
         val json = handler.buildRequestDetail(DetailEntity.Secretaria, "5")
         assert(json.contains("REQUEST_DETAIL"))
         assert(json.contains("secretaria"))
-        assert(json.contains("\"id\":\"5\""))
+        assert(json.contains("\"entityId\":\"5\""))
     }
 
     @Test

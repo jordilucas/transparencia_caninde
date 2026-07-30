@@ -7,6 +7,11 @@ const portalPage = require('./scraper-portal-page');
 const { mergeParlamentar } = require('./merge-camara-sources');
 const { createDetailCache } = require('./detail-cache');
 
+function idFromPortalUrl(url, page) {
+  const m = String(url || '').match(new RegExp(`${page}\\?id=(\\d+)`, 'i'));
+  return m ? m[1] : '';
+}
+
 function createDetailHandler({ http, cheerio, getCache }) {
   const detailCache = createDetailCache();
 
@@ -17,18 +22,28 @@ function createDetailHandler({ http, cheerio, getCache }) {
 
   function findContrato(cache, id) {
     const list = cache?.prefeitura?.contratos || [];
-    return list.find((c) => c.numero === id || String(c.id) === String(id)) || null;
+    return list.find(
+      (c) => c.numero === id
+        || String(c.id) === String(id)
+        || idFromPortalUrl(c.url, 'contratos') === String(id),
+    ) || null;
   }
 
   function findLicitacao(cache, id) {
     const list = cache?.prefeitura?.licitacoes || [];
-    return list.find((l) => l.numero === id || String(l.id) === String(id)) || null;
+    return list.find(
+      (l) => l.numero === id
+        || String(l.id) === String(id)
+        || idFromPortalUrl(l.url, 'licitacaolista') === String(id),
+    ) || null;
   }
 
   function findSessao(cache, id) {
     const list = cache?.camara?.sessoes || [];
-    const idx = parseInt(id, 10);
-    if (!Number.isNaN(idx) && list[idx]) return list[idx];
+    if (/^\d+$/.test(String(id))) {
+      const idx = parseInt(id, 10);
+      if (list[idx]) return list[idx];
+    }
     return list.find((s) => s.slug === id || s.titulo === id) || null;
   }
 
@@ -104,55 +119,68 @@ function createDetailHandler({ http, cheerio, getCache }) {
         break;
       }
       case 'contrato': {
-        const c = findContrato(cache, id);
-        if (!c) {
-          result = {
-            entity: 'contrato',
-            entityId: id,
-            error: 'Contrato não encontrado na listagem atual.',
-          };
-          break;
-        }
-        const detailUrl = c.url || `${detailPref.BASE}/contratos.php?id=${c.id || id}`;
+        let c = findContrato(cache, id);
+        const detailUrl = c?.url || `${detailPref.BASE}/contratos.php?id=${c?.id || id}`;
         try {
           const html = await fetchHtml(detailUrl);
           const scraped = detailPref.scrapeContratoDetail(html, cheerio, id);
+          const base = c || {
+            id: String(id),
+            numero: scraped?.numero || String(id),
+            url: detailUrl,
+          };
           result = {
             entity: 'contrato',
             entityId: id,
-            contrato: detailPref.mergeContratoDetail(c, scraped),
+            contrato: detailPref.mergeContratoDetail(base, scraped),
           };
-        } catch {
-          result = { entity: 'contrato', entityId: id, contrato: c };
+        } catch (err) {
+          if (c) {
+            result = { entity: 'contrato', entityId: id, contrato: c };
+          } else {
+            result = {
+              entity: 'contrato',
+              entityId: id,
+              error: err.message || 'Contrato não encontrado.',
+            };
+          }
         }
         break;
       }
       case 'licitacao': {
-        const l = findLicitacao(cache, id);
-        if (!l) {
-          result = {
-            entity: 'licitacao',
-            entityId: id,
-            error: 'Licitação não encontrada na listagem atual.',
-          };
-          break;
-        }
-        const detailUrl = l.url || `${detailPref.BASE}/licitacaolista.php?id=${l.id || id}`;
+        let l = findLicitacao(cache, id);
+        const detailUrl = l?.url || `${detailPref.BASE}/licitacaolista.php?id=${l?.id || id}`;
         try {
           const html = await fetchHtml(detailUrl);
           const scraped = detailPref.scrapeLicitacaoDetail(html, cheerio, id);
+          const base = l || {
+            id: String(id),
+            numero: scraped?.numero || String(id),
+            url: detailUrl,
+          };
           result = {
             entity: 'licitacao',
             entityId: id,
-            licitacao: detailPref.mergeLicitacaoDetail(l, scraped),
+            licitacao: detailPref.mergeLicitacaoDetail(base, scraped),
           };
-        } catch {
-          result = { entity: 'licitacao', entityId: id, licitacao: l };
+        } catch (err) {
+          if (l) {
+            result = { entity: 'licitacao', entityId: id, licitacao: l };
+          } else {
+            result = {
+              entity: 'licitacao',
+              entityId: id,
+              error: err.message || 'Licitação não encontrada.',
+            };
+          }
         }
         break;
       }
       case 'sessao': {
-        const s = findSessao(cache, id);
+        let s = findSessao(cache, id);
+        if (!s && id && !/^\d+$/.test(String(id))) {
+          s = { slug: id, url: `${scraperCamara.BASE}/sessao/${id}/`, titulo: id };
+        }
         if (!s) {
           result = {
             entity: 'sessao',
@@ -161,9 +189,12 @@ function createDetailHandler({ http, cheerio, getCache }) {
           };
           break;
         }
-        if (s.url && /\/sessao\//i.test(s.url)) {
+        const sessaoUrl = s.url && /\/sessao\//i.test(s.url)
+          ? s.url
+          : (s.slug ? `${scraperCamara.BASE}/sessao/${s.slug}/` : '');
+        if (sessaoUrl) {
           try {
-            const html = await fetchHtml(s.url);
+            const html = await fetchHtml(sessaoUrl);
             const scraped = detailCamara.scrapeSessaoDetail(html, cheerio, s.slug || id);
             result = {
               entity: 'sessao',

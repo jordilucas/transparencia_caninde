@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.domain.*
 import br.gov.caninde.transparencia.domain.PREFEITURA_PORTAL_BASE
+import br.gov.caninde.transparencia.platform.openExternalUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +39,7 @@ fun PrefeituraScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     var contratoFilter by remember { mutableStateOf(ContratoListFilter.Todos) }
     var licitacaoFilter by remember { mutableStateOf(LicitacaoListFilter.Todas) }
-    val tabs = listOf("Contratos", "Licitações", "Publicações", "Secretarias", "Transparência")
+    val tabs = listOf("Contratos", "Licitações", "Publicações", "Secretarias", "Obras/LRF", "Transparência")
 
     Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
 
@@ -189,7 +190,8 @@ fun PrefeituraScreen(
                     }
                     2 -> publicacoesItems(state.publicacoes, state.diariosOficiais, onPublicacaoClick)
                     3 -> secretariasItems(state.secretarias, onSecretariaClick)
-                    4 -> {
+                    4 -> obrasLrfItems(state.obras, state.lrf)
+                    5 -> {
                         item { TransparenciaLinksIntro("a Prefeitura") }
                         transparenciaLinksItems(state.linksTransparencia, onClick = onTransparenciaLinkClick)
                     }
@@ -497,6 +499,68 @@ fun LazyListScope.secretariasItems(secretarias: List<Secretaria>, onClick: (Secr
         )
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))
+    }
+}
+
+// ─── Obras e LRF ──────────────────────────────────────────────────────────────
+
+fun LazyListScope.obrasLrfItems(obras: List<Obra>, lrf: List<LrfDocumento>) {
+    if (obras.isNotEmpty()) {
+        item { SectionHeader("Obras (${obras.size})") }
+        obras.take(20).forEach { obra ->
+            item {
+                ListRow(
+                    icon = {
+                        IconContainer(AppColors.Amber100) {
+                            Icon(Icons.Default.Construction, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
+                        }
+                    },
+                    title = obra.titulo,
+                    subtitle = listOfNotNull(
+                        obra.secretaria.takeIf { it.isNotBlank() },
+                        obra.valor.takeIf { it.isNotBlank() },
+                        obra.situacao.takeIf { it.isNotBlank() },
+                    ).joinToString(" · "),
+                    trailing = {
+                        if (obra.url.isNotBlank()) {
+                            Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
+                        }
+                    },
+                    onClick = obra.url.takeIf { it.isNotBlank() }?.let { url -> ({ openExternalUrl(url) }) },
+                )
+                HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+            }
+        }
+    }
+    if (lrf.isNotEmpty()) {
+        item { SectionHeader("LRF — Responsabilidade fiscal (${lrf.size})") }
+        lrf.take(20).forEach { doc ->
+            item {
+                ListRow(
+                    icon = {
+                        IconContainer(AppColors.Blue100) {
+                            Icon(Icons.Default.Description, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
+                        }
+                    },
+                    title = doc.titulo,
+                    subtitle = listOfNotNull(
+                        doc.tipo.takeIf { it.isNotBlank() },
+                        doc.exercicio.takeIf { it.isNotBlank() },
+                        doc.data.takeIf { it.isNotBlank() },
+                    ).joinToString(" · "),
+                    trailing = {
+                        if (doc.url.isNotBlank()) {
+                            Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
+                        }
+                    },
+                    onClick = doc.url.takeIf { it.isNotBlank() }?.let { url -> ({ openExternalUrl(url) }) },
+                )
+                HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+            }
+        }
+    }
+    if (obras.isEmpty() && lrf.isEmpty()) {
+        item { EmptyState("Nenhuma obra ou documento LRF no exercício atual.") }
     }
 }
 

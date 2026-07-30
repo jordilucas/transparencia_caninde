@@ -287,6 +287,8 @@ function mergePrefeituraSources(jsonBundle, htmlBundle) {
     licitacoes: licitacoes.items,
     secretarias: secretariasEnriched,
     publicacoes: mergedPublicacoes,
+    obras: (jsonBundle?.obras || []).map((o) => ({ ...o, fonteOrigem: 'json' })),
+    lrf: (jsonBundle?.lrf || []).map((d) => ({ ...d, fonteOrigem: 'json' })),
     gestores: gestores.items,
     diariosOficiais: publicacoesToDiariosStrings(mergedPublicacoes),
     fontesUtilizadas: [...allSources],

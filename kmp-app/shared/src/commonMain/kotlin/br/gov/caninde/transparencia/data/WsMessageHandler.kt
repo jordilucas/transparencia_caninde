@@ -1,6 +1,7 @@
 package br.gov.caninde.transparencia.data
 
 import br.gov.caninde.transparencia.domain.*
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
@@ -77,6 +78,8 @@ class WsMessageHandler(
         },
         diariosOficiais = DataMerge.mergeDiarios(previous.diariosOficiais, p.diariosOficiais ?: emptyList()),
         publicacoes = DataMerge.mergePublicacoes(previous.publicacoes, p.publicacoes ?: emptyList()),
+        obras = if ((p.obras ?: emptyList()).isNotEmpty()) p.obras ?: emptyList() else previous.obras,
+        lrf = if ((p.lrf ?: emptyList()).isNotEmpty()) p.lrf ?: emptyList() else previous.lrf,
         secretarias = DataMerge.mergeSecretarias(previous.secretarias, p.secretarias ?: emptyList()),
         linksTransparencia = if ((p.linksTransparencia ?: emptyList()).isNotEmpty()) {
             p.linksTransparencia ?: emptyList()
@@ -130,6 +133,15 @@ class WsMessageHandler(
     fun toDetailUiState(p: WsPayload?, previous: DetailUiState): DetailUiState {
         if (p == null) return previous.copy(isLoading = false, error = "Resposta vazia")
         val err = p.error?.takeIf { it.isNotBlank() }
+        if (previous.isLoading && previous.entity != null) {
+            val expectedWs = entityToWs(previous.entity)
+            val entityMatches = p.entity.equals(expectedWs, ignoreCase = true)
+            val idMatches = p.entityId == previous.entityId
+                || p.entityId == previous.entityId.trim()
+            if (!entityMatches || !idMatches) {
+                return previous
+            }
+        }
         return previous.copy(
             isLoading = false,
             entityId = p.entityId ?: previous.entityId,
@@ -160,7 +172,12 @@ class WsMessageHandler(
             DetailEntity.Gestores -> "all"
             else -> id
         }
-        return """{"type":"REQUEST_DETAIL","payload":{"entity":"$wsEntity","id":"$resolvedId"}}"""
+        return json.encodeToString(
+            WsMessage(
+                type = "REQUEST_DETAIL",
+                payload = WsPayload(entity = wsEntity, entityId = resolvedId),
+            ),
+        )
     }
 }
 

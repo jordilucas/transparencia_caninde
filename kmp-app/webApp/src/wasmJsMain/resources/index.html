@@ -63,6 +63,15 @@
             } catch (e) { /* ignore */ }
             gtag("event", name, params);
         };
+        window.transparenciaCacheSave = function (key, value) {
+            try { localStorage.setItem("tc_" + key, value); } catch (e) { /* ignore */ }
+        };
+        window.transparenciaCacheLoad = function (key) {
+            try { return localStorage.getItem("tc_" + key); } catch (e) { return null; }
+        };
+        window.addEventListener("popstate", function () {
+            if (typeof transparenciaHistoryPop === "function") transparenciaHistoryPop();
+        });
     </script>
 </head>
 <body>

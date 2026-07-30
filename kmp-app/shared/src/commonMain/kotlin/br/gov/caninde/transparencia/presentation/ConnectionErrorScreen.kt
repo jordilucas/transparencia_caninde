@@ -26,6 +26,8 @@ fun hasCachedServerData(prefeitura: PrefeituraUiState, camara: CamaraUiState): B
         camara.parlamentares.isNotEmpty() ||
         prefeitura.secretarias.isNotEmpty() ||
         prefeitura.licitacoes.isNotEmpty() ||
+        prefeitura.obras.isNotEmpty() ||
+        prefeitura.lrf.isNotEmpty() ||
         prefeitura.lastUpdated.isNotBlank() ||
         camara.lastUpdated.isNotBlank()
 
