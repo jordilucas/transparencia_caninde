@@ -206,7 +206,28 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
-            titulo = "Julho 2026",
+            titulo = "Navegação e links",
+            data = "30/07/2026",
+            itens = listOf(
+                "Voltar do navegador sincronizado com o app",
+                "Links compartilháveis abrem direto no item (#/contrato/…)",
+                "Compartilhar inclui URL do detalhe, não só a home",
+            ),
+        ),
+        ChangelogEntry(
+            titulo = "Dados e estabilidade",
+            data = "30/07/2026",
+            itens = listOf(
+                "Cache local na web (dados após primeiro acesso)",
+                "Obras e documentos LRF na Prefeitura",
+                "Correção de telas de detalhe (contratos, licitações, sessões)",
+                "Tela de erro quando sem conexão com o servidor",
+                "Reconexão automática após cold start do servidor",
+                "Coleta responsável: só portais oficiais, cooldown e limites anti-sobrecarga",
+            ),
+        ),
+        ChangelogEntry(
+            titulo = "Busca e compartilhar",
             data = "30/07/2026",
             itens = listOf(
                 "Busca com ignorar acentos e filtros Prefeitura/Câmara",

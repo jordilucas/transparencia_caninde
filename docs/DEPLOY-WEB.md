@@ -125,6 +125,12 @@ O frontend web usa o backend Render; o domínio `.com.br` serve apenas o site es
 
 Push em `main` (`kmp-app/**`) ou [Deploy web](https://github.com/jordilucas/transparencia_caninde/actions/workflows/deploy-web.yml) → Run workflow.
 
+### Checklist antes do push
+
+1. Atualizar **Novidades** em `kmp-app/shared/.../domain/DataSources.kt` (`changelog`)
+2. Commit inclui o changelog junto com as mudanças do release
+3. Push em `main` → workflow publica em `gh-pages`
+
 Build local:
 
 ```bash

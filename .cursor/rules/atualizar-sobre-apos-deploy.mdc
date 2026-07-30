@@ -1,0 +1,48 @@
+---
+description: Atualizar changelog na página Sobre após cada deploy
+alwaysApply: true
+---
+
+# Changelog no Sobre após deploy
+
+Sempre que concluir um **deploy** (web GitHub Pages ou servidor Render), atualizar a seção **Novidades** antes do push final.
+
+## Onde editar
+
+`kmp-app/shared/src/commonMain/kotlin/br/gov/caninde/transparencia/domain/DataSources.kt` → lista `changelog`
+
+A UI lê esse dado em `SobreScreen.kt` (seção "Novidades").
+
+## Como registrar
+
+1. Adicionar `ChangelogEntry` **no topo** da lista (mais recente primeiro)
+2. Usar data `DD/MM/YYYY` do deploy
+3. `titulo` curto (ex.: "Navegação e links", "Dados e estabilidade")
+4. `itens`: 3–6 bullets em português, focados no que o cidadão percebe — não jargão técnico
+
+```kotlin
+ChangelogEntry(
+    titulo = "Título da release",
+    data = "30/07/2026",
+    itens = listOf(
+        "Melhoria visível 1",
+        "Melhoria visível 2",
+    ),
+),
+```
+
+## Por tipo de deploy
+
+| Deploy | Incluir no changelog |
+|--------|----------------------|
+| **Web** (`kmp-app/**`) | UI, navegação, cache local, novas telas |
+| **Servidor** (`server/**`) | Novos dados, estabilidade, velocidade, correções de detalhe |
+| **Ambos** | Uma ou duas entradas agrupadas por tema |
+
+Deploy web exige commit em `main` **antes** do push (o workflow builda o que está no repositório).
+
+## Checklist pós-deploy
+
+- [ ] Entrada nova no topo de `changelog`
+- [ ] Commit inclui `DataSources.kt` junto com as mudanças do deploy
+- [ ] Itens descrevem benefício para o usuário, não nomes de arquivos ou commits
