@@ -12,15 +12,23 @@ data class WebSocketEndpoint(
             return if (authToken.isNotBlank()) "$base?token=$authToken" else base
         }
 
-    val healthCheckUrl: String
+    val httpBaseUrl: String
         get() {
             val httpScheme = when (scheme) {
                 "wss" -> "https"
                 "ws" -> "http"
                 else -> "http"
             }
-            return "$httpScheme://$host${portSuffix(httpScheme, port)}/health"
+            return "$httpScheme://$host${portSuffix(httpScheme, port)}"
         }
+
+    val healthCheckUrl: String
+        get() = "$httpBaseUrl/health"
+
+    fun mediaProxyUrl(imageUrl: String, encodeQuery: (String) -> String): String {
+        if (imageUrl.isBlank()) return imageUrl
+        return "$httpBaseUrl/media?url=${encodeQuery(imageUrl)}"
+    }
 
     companion object {
         val DEFAULT = WebSocketEndpoint(scheme = "ws", host = "10.0.2.2", port = 8080)

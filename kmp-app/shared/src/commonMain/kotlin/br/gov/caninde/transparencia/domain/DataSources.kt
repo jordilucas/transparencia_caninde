@@ -206,6 +206,14 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Web — CORS e fotos",
+            data = "31/07/2026",
+            itens = listOf(
+                "Health check do servidor com CORS para transparenciacaninde.com.br",
+                "Fotos dos vereadores na web via proxy seguro do backend",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Correção servidor",
             data = "31/07/2026",
             itens = listOf(

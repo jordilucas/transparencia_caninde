@@ -22,4 +22,14 @@ class WebSocketEndpointTest {
         val e = WebSocketEndpoint("wss", "transparencia-caninde.onrender.com", 443)
         assertEquals("https://transparencia-caninde.onrender.com/health", e.healthCheckUrl)
     }
+
+    @Test
+    fun mediaProxyUrlEncodaQuery() {
+        val e = WebSocketEndpoint("wss", "transparencia-caninde.onrender.com", 443)
+        val proxied = e.mediaProxyUrl("https://www.cmcaninde.ce.gov.br/foto.jpg") { "ENC" }
+        assertEquals(
+            "https://transparencia-caninde.onrender.com/media?url=ENC",
+            proxied,
+        )
+    }
 }

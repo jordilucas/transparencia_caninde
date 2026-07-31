@@ -28,6 +28,8 @@ const camaraWp = require('./lib/scraper-camara-wp');
 const camaraPortal = require('./lib/scraper-camara-portal');
 const mergeCamara = require('./lib/merge-camara-sources');
 const { createGuardedHttp, createRefreshGuard, createScrapeLock } = require('./lib/scrape-guard');
+const { corsHeaders, handleOptionsPreflight } = require('./lib/cors');
+const { handleMediaProxy } = require('./lib/media-proxy');
 
 const PORT = config.port;
 const PREF_INTERVAL = config.prefInterval;
@@ -252,10 +254,18 @@ async function payloadForSource(source, forceScrape) {
 }
 
 // ─── HTTP + WebSocket (mesma porta; /health para hospedagem) ─────────────────
-const httpServer = http.createServer((req, res) => {
+const httpServer = http.createServer(async (req, res) => {
+  const origin = req.headers.origin;
+  const cors = corsHeaders(origin);
+
+  if (req.method === 'OPTIONS') {
+    handleOptionsPreflight(req, res);
+    return;
+  }
+
   const path = (req.url || '/').split('?')[0];
   if (path === '/health' || path === '/') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.writeHead(200, { 'Content-Type': 'application/json', ...cors });
     res.end(JSON.stringify({
       ok: true,
       service: 'transparencia-caninde-ws',
@@ -264,7 +274,11 @@ const httpServer = http.createServer((req, res) => {
     }));
     return;
   }
-  res.writeHead(404, { 'Content-Type': 'text/plain' });
+  if (path === '/media' && req.method === 'GET') {
+    await handleMediaProxy(req, res, scrapeHttp, cors);
+    return;
+  }
+  res.writeHead(404, { 'Content-Type': 'text/plain', ...cors });
   res.end('Not Found');
 });
 

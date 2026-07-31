@@ -14,12 +14,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
+import br.gov.caninde.transparencia.data.WebSocketEndpoint
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.js.Js
 import io.ktor.client.request.get
 import io.ktor.client.statement.readRawBytes
 import org.jetbrains.skia.Image as SkiaImage
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import org.koin.compose.koinInject
 
 private val imageHttp by lazy { HttpClient(Js) }
 
@@ -30,14 +32,24 @@ actual fun RemoteAvatarImage(
     size: Dp,
     modifier: Modifier,
 ) {
-    var bitmap by remember(url) { mutableStateOf<ImageBitmap?>(null) }
-    var failed by remember(url) { mutableStateOf(false) }
+    val endpoint: WebSocketEndpoint = koinInject()
+    val fetchUrl = remember(url, endpoint) {
+        endpoint.mediaProxyUrl(url, ::encodeUriSegment)
+    }
 
-    LaunchedEffect(url) {
+    var bitmap by remember(fetchUrl) { mutableStateOf<ImageBitmap?>(null) }
+    var failed by remember(fetchUrl) { mutableStateOf(false) }
+
+    LaunchedEffect(fetchUrl) {
+        if (url.isBlank()) {
+            failed = true
+            bitmap = null
+            return@LaunchedEffect
+        }
         failed = false
         bitmap = null
         try {
-            val bytes = imageHttp.get(url).readRawBytes()
+            val bytes = imageHttp.get(fetchUrl).readRawBytes()
             bitmap = SkiaImage.makeFromEncoded(bytes).toComposeImageBitmap()
         } catch (_: Throwable) {
             failed = true
