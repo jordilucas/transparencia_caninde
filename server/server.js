@@ -48,7 +48,7 @@ const httpClient = axios.create({
   }
 });
 
-const http = createGuardedHttp(httpClient, { minDelayMs: config.fetchMinDelayMs });
+const scrapeHttp = createGuardedHttp(httpClient, { minDelayMs: config.fetchMinDelayMs });
 const refreshGuard = createRefreshGuard(config.refreshCooldownMs);
 const scrapeLock = createScrapeLock();
 
@@ -60,7 +60,7 @@ let cache = {
 };
 
 const detailHandler = createDetailHandler({
-  http,
+  http: scrapeHttp,
   cheerio,
   getCache: () => cache,
 });
@@ -91,8 +91,8 @@ async function scrapePrefeituraInner() {
     const year = new Date().getFullYear();
 
     const [jsonResult, htmlResult] = await Promise.allSettled([
-      dadosAbertos.scrapePrefeituraDadosAbertos(http, year),
-      scraperPrefeitura.scrapePrefeituraHtml(http, cheerio),
+      dadosAbertos.scrapePrefeituraDadosAbertos(scrapeHttp, year),
+      scraperPrefeitura.scrapePrefeituraHtml(scrapeHttp, cheerio),
     ]);
 
     const jsonBundle = jsonResult.status === 'fulfilled' ? jsonResult.value : null;
@@ -166,9 +166,9 @@ async function scrapeCamaraInner() {
   console.log('[Câmara] iniciando scraping (Canindé/CE)...');
   try {
     const [wpResult, htmlResult, portalResult] = await Promise.allSettled([
-      camaraWp.scrapeCamaraWp(http, { pageDelayMs: config.wpPageDelayMs }),
-      scraperCamara.scrapeCamaraHtml(http, cheerio),
-      camaraPortal.scrapeCamaraPortal(http, cheerio),
+      camaraWp.scrapeCamaraWp(scrapeHttp, { pageDelayMs: config.wpPageDelayMs }),
+      scraperCamara.scrapeCamaraHtml(scrapeHttp, cheerio),
+      camaraPortal.scrapeCamaraPortal(scrapeHttp, cheerio),
     ]);
 
     const wpBundle = wpResult.status === 'fulfilled' ? wpResult.value : null;
