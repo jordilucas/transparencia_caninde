@@ -25,6 +25,8 @@ const dadosAbertos = require('./lib/scraper-prefeitura-dadosabertos');
 const camaraTransp = require('./lib/scraper-camara-transparencia');
 const mergeSources = require('./lib/merge-sources');
 const camaraWp = require('./lib/scraper-camara-wp');
+const camaraPortal = require('./lib/scraper-camara-portal');
+const mergeCamara = require('./lib/merge-camara-sources');
 const { createGuardedHttp, createRefreshGuard, createScrapeLock } = require('./lib/scrape-guard');
 
 const PORT = config.port;
@@ -163,13 +165,15 @@ async function scrapeCamara() {
 async function scrapeCamaraInner() {
   console.log('[Câmara] iniciando scraping (Canindé/CE)...');
   try {
-    const [wpResult, htmlResult] = await Promise.allSettled([
+    const [wpResult, htmlResult, portalResult] = await Promise.allSettled([
       camaraWp.scrapeCamaraWp(http, { pageDelayMs: config.wpPageDelayMs }),
       scraperCamara.scrapeCamaraHtml(http, cheerio),
+      camaraPortal.scrapeCamaraPortal(http, cheerio),
     ]);
 
     const wpBundle = wpResult.status === 'fulfilled' ? wpResult.value : null;
     const htmlBundle = htmlResult.status === 'fulfilled' ? htmlResult.value : null;
+    const portalBundle = portalResult.status === 'fulfilled' ? portalResult.value : null;
 
     if (wpResult.status === 'rejected') {
       console.warn('[Câmara] WP REST indisponível:', wpResult.reason?.message || wpResult.reason);
@@ -177,12 +181,21 @@ async function scrapeCamaraInner() {
     if (htmlResult.status === 'rejected') {
       console.warn('[Câmara] HTML indisponível:', htmlResult.reason?.message || htmlResult.reason);
     }
+    if (portalResult.status === 'rejected') {
+      console.warn('[Câmara] Portal transparência indisponível:', portalResult.reason?.message || portalResult.reason);
+    }
 
     const merged = mergeCamara.mergeCamaraSources(wpBundle || {}, htmlBundle || {});
+    const documentosTransparencia = portalBundle?.documentosTransparencia || [];
+    const fontesUtilizadas = [
+      ...(merged.fontesUtilizadas || []),
+      ...(portalBundle?.fontesUtilizadas || []),
+    ].filter((v, i, arr) => arr.indexOf(v) === i);
 
     console.log(
       `[Câmara] merge — ${merged.parlamentares.length} vereadores, ${merged.sessoes.length} sessões`
-      + ` (fontes: ${merged.fontesUtilizadas.join('+') || 'nenhuma'})`,
+      + `, ${documentosTransparencia.length} docs portal`
+      + ` (fontes: ${fontesUtilizadas.join('+') || 'nenhuma'})`,
     );
 
     const result = {
@@ -191,9 +204,10 @@ async function scrapeCamaraInner() {
         sessoes: merged.sessoes,
         materias: merged.materias,
         mesaDiretora: merged.mesaDiretora,
+        documentosTransparencia,
         linksTransparencia: camaraTransp.buildLinksTransparenciaCamara(),
         fonte: merged.fonte,
-        fontesUtilizadas: merged.fontesUtilizadas,
+        fontesUtilizadas,
       }),
       scrapedAt: now(),
     };

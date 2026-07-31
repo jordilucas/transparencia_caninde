@@ -114,6 +114,11 @@ class WsMessageHandler(
         } else {
             previous.linksTransparencia
         },
+        documentosTransparencia = if ((p.documentosTransparencia ?: emptyList()).isNotEmpty()) {
+            p.documentosTransparencia ?: emptyList()
+        } else {
+            previous.documentosTransparencia
+        },
         graficos = p.graficos ?: previous.graficos,
         resumo = p.resumoCamara ?: ResumoCamara(
             totalParlamentares = (p.parlamentares ?: previous.parlamentares).size,

@@ -32,6 +32,7 @@ data class WsPayload(
     val sessoes: List<Sessao>? = null,
     val materias: List<Materia>? = null,
     val mesaDiretora: List<MembroMesa>? = null,
+    val documentosTransparencia: List<DocumentoCamara>? = null,
     val graficos: GraficosPayload? = null,
     val entity: String? = null,
     val entityId: String? = null,
@@ -283,10 +284,19 @@ data class MembroMesa(
 )
 
 @Serializable
+data class DocumentoCamara(
+    val titulo: String = "",
+    val data: String = "",
+    val url: String = "",
+    val categoria: String = "",
+)
+
+@Serializable
 data class ResumoCamara(
     val totalParlamentares: Int = 0,
     val totalSessoes2025: Int = 0,
     val totalMaterias: Int = 0,
+    val totalDocumentosTransparencia: Int = 0,
     val exercicio: Int = 2025,
     val fontesUtilizadas: List<String> = emptyList(),
 )
@@ -363,6 +373,7 @@ data class CamaraUiState(
     val sessoes: List<Sessao> = emptyList(),
     val materias: List<Materia> = emptyList(),
     val mesaDiretora: List<MembroMesa> = emptyList(),
+    val documentosTransparencia: List<DocumentoCamara> = emptyList(),
     val linksTransparencia: List<LinkExterno> = emptyList(),
     val graficos: GraficosPayload? = null,
     val resumo: ResumoCamara = ResumoCamara(),

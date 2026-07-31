@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.domain.*
+import br.gov.caninde.transparencia.presentation.detail.ChartBarSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,11 +30,14 @@ fun CamaraScreen(
     onSessaoClick: (Int, Sessao) -> Unit = { _, _ -> },
     onInstitucionalClick: () -> Unit = {},
     onTransparenciaLinkClick: (LinkExterno) -> Unit = {},
+    onDocumentoClick: (DocumentoCamara) -> Unit = {},
     onSobreClick: () -> Unit = {},
 ) {
     var areaLegislativo by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
     var materiaFilter by remember { mutableStateOf(MATERIA_FILTER_TODAS) }
+    var sessoesVisible by remember(state.sessoes) { mutableIntStateOf(CAMARA_LIST_PAGE_SIZE) }
+    var materiasVisible by remember(state.materias, materiaFilter) { mutableIntStateOf(CAMARA_LIST_PAGE_SIZE) }
     val tabs = listOf("Parlamentares", "Sessões", "Matérias", "Mesa Diretora")
     val materiaFilters = remember(state.materias) { materiaFilterOptions(state.materias) }
     val filteredMaterias = remember(state.materias, materiaFilter) {
@@ -41,6 +45,12 @@ fun CamaraScreen(
     }
     LaunchedEffect(materiaFilters) {
         if (materiaFilter !in materiaFilters) materiaFilter = MATERIA_FILTER_TODAS
+    }
+    LaunchedEffect(selectedTab, materiaFilter) {
+        materiasVisible = CAMARA_LIST_PAGE_SIZE
+    }
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == 1) sessoesVisible = CAMARA_LIST_PAGE_SIZE
     }
 
     Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
@@ -139,6 +149,10 @@ fun CamaraScreen(
                         "Canindé Transparente",
                         onClick = onTransparenciaLinkClick,
                     )
+                    documentosTransparenciaItems(
+                        state.documentosTransparencia,
+                        onClick = onDocumentoClick,
+                    )
                     item { Spacer(Modifier.height(80.dp)) }
                 } else item {
                     // Cards resumo
@@ -183,6 +197,13 @@ fun CamaraScreen(
                         }
                     }
                     LastUpdatedText(state.lastUpdated)
+                    state.graficos?.camara
+                        ?.firstOrNull { it.titulo.contains("tipo", ignoreCase = true) && it.labels.isNotEmpty() }
+                        ?.let { series ->
+                            Column(Modifier.padding(horizontal = 12.dp)) {
+                                ChartBarSection(series)
+                            }
+                        }
                 }
 
                 if (areaLegislativo) {
@@ -206,10 +227,22 @@ fun CamaraScreen(
 
                     when (selectedTab) {
                         0 -> parlamentaresItems(state.parlamentares, onVereadorClick)
-                        1 -> sessoesItems(state.sessoes, onSessaoClick)
+                        1 -> {
+                            sessoesItems(state.sessoes.take(sessoesVisible), onSessaoClick)
+                            verMaisItem(
+                                total = state.sessoes.size,
+                                visible = sessoesVisible,
+                                pageSize = CAMARA_LIST_PAGE_SIZE,
+                            ) { sessoesVisible += CAMARA_LIST_PAGE_SIZE }
+                        }
                         2 -> {
                             materiasFilterItems(materiaFilters, materiaFilter) { materiaFilter = it }
-                            materiasItems(filteredMaterias, onMateriaClick)
+                            materiasItems(filteredMaterias.take(materiasVisible), onMateriaClick)
+                            verMaisItem(
+                                total = filteredMaterias.size,
+                                visible = materiasVisible,
+                                pageSize = CAMARA_LIST_PAGE_SIZE,
+                            ) { materiasVisible += CAMARA_LIST_PAGE_SIZE }
                         }
                         3 -> mesaDiretoraItems(state.mesaDiretora, state.parlamentares, onVereadorClick)
                     }
@@ -484,6 +517,62 @@ fun LazyListScope.mesaDiretoraItems(
                 }
             },
             onClick = parlamentar?.let { { onVereadorClick(it) } },
+        )
+        HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
+            modifier = Modifier.padding(horizontal = 16.dp))
+    }
+}
+
+fun LazyListScope.verMaisItem(
+    total: Int,
+    visible: Int,
+    pageSize: Int,
+    onShowMore: () -> Unit,
+) {
+    if (total <= visible) return
+    item {
+        TextButton(
+            onClick = onShowMore,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        ) {
+            Text(
+                "Ver mais (${(total - visible).coerceAtMost(pageSize)} de ${total - visible} restantes)",
+                fontSize = 12.sp,
+                color = AppColors.Blue500,
+            )
+        }
+    }
+}
+
+fun LazyListScope.documentosTransparenciaItems(
+    documentos: List<DocumentoCamara>,
+    onClick: (DocumentoCamara) -> Unit,
+) {
+    if (documentos.isEmpty()) return
+    item { SectionHeader(title = "Documentos publicados") }
+    items(documentos.take(30)) { doc ->
+        val icon = when (doc.categoria) {
+            "licitacao" -> Icons.Default.Gavel
+            "contrato" -> Icons.Default.Description
+            else -> Icons.Default.Article
+        }
+        ListRow(
+            icon = {
+                IconContainer(AppColors.Amber100) {
+                    Icon(icon, contentDescription = null,
+                        tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
+                }
+            },
+            title = doc.titulo.ifBlank { "Documento" },
+            subtitle = listOfNotNull(
+                doc.categoria.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() },
+                doc.data.takeIf { it.isNotBlank() },
+            ).joinToString(" · "),
+            trailing = {
+                Icon(Icons.Default.ChevronRight, contentDescription = null,
+                    tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
+            },
+            onClick = { if (doc.url.isNotBlank()) onClick(doc) },
         )
         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
             modifier = Modifier.padding(horizontal = 16.dp))

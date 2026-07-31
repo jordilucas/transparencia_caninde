@@ -206,6 +206,18 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Câmara — etapa 2",
+            data = "31/07/2026",
+            itens = listOf(
+                "Até 50 sessões e matérias (antes 25)",
+                "Documentos de licitações e contratos do portal Canindé Transparente",
+                "Ver mais nas listas de sessões e matérias",
+                "Gráfico de matérias por tipo na aba Legislativo",
+                "Busca inclui mesa diretora, links e documentos da Câmara",
+                "Sessões abrem por slug estável (não só por posição na lista)",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Web mobile",
             data = "31/07/2026",
             itens = listOf(

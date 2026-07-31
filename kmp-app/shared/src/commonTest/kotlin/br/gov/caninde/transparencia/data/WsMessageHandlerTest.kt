@@ -164,4 +164,18 @@ class WsMessageHandlerTest {
         )
         assertEquals(1, state.linksTransparencia.size)
     }
+
+    @Test
+    fun toCamaraUiStateMapeiaDocumentosTransparencia() {
+        val state = handler.toCamaraUiState(
+            WsPayload(
+                documentosTransparencia = listOf(
+                    DocumentoCamara(titulo = "Edital 1", url = "https://example/doc", categoria = "licitacao"),
+                ),
+            ),
+            "2025-06-04T12:00:00Z",
+        )
+        assertEquals(1, state.documentosTransparencia.size)
+        assertEquals("Edital 1", state.documentosTransparencia.first().titulo)
+    }
 }

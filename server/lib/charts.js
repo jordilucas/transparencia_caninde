@@ -23,6 +23,19 @@ function contratosPorMes(contratos) {
   return entries.map(([label, valor]) => ({ label, valor }));
 }
 
+function sessoesPorMes(sessoes) {
+  const map = new Map();
+  for (const s of sessoes) {
+    const m = (s.data || '').match(/\d{2}\/(\d{2})\/(\d{4})/);
+    const label = m ? `${m[2]}-${m[1]}` : '';
+    if (!label) continue;
+    map.set(label, (map.get(label) || 0) + 1);
+  }
+  const entries = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  if (entries.length === 0) return [];
+  return entries.slice(-12).map(([label, valor]) => ({ label, valor }));
+}
+
 function buildPrefeituraCharts(data) {
   const series = [];
   const lic = countBy(data.licitacoes || [], (l) => l.situacao);
@@ -42,19 +55,30 @@ function buildPrefeituraCharts(data) {
 function buildCamaraCharts(data) {
   const series = [];
   const mat = countBy(data.materias || [], (m) => m.tipo);
-  if (mat.length) series.push({ titulo: 'Matérias por tipo', labels: mat.map((x) => x.label), valores: mat.map((x) => x.valor) });
-  if ((data.parlamentares || []).length) {
+  if (mat.length) {
     series.push({
-      titulo: 'Vereadores',
-      labels: ['Total'],
-      valores: [data.parlamentares.length],
+      titulo: 'Matérias por tipo',
+      labels: mat.map((x) => x.label),
+      valores: mat.map((x) => x.valor),
     });
   }
-  if ((data.sessoes || []).length) {
+  const partidos = countBy(
+    (data.parlamentares || []).filter((p) => (p.partido || '').trim()),
+    (p) => p.partido.trim(),
+  );
+  if (partidos.length) {
     series.push({
-      titulo: 'Sessões listadas',
-      labels: ['Total'],
-      valores: [data.sessoes.length],
+      titulo: 'Vereadores por partido',
+      labels: partidos.map((x) => x.label),
+      valores: partidos.map((x) => x.valor),
+    });
+  }
+  const sessMes = sessoesPorMes(data.sessoes || []);
+  if (sessMes.length) {
+    series.push({
+      titulo: 'Sessões por mês',
+      labels: sessMes.map((x) => x.label),
+      valores: sessMes.map((x) => x.valor),
     });
   }
   return { prefeitura: [], camara: series };
@@ -67,4 +91,10 @@ function attachCharts(prefeitura, camara) {
   if (camara) camara.graficos = { prefeitura: [], camara: c.camara };
 }
 
-module.exports = { buildPrefeituraCharts, buildCamaraCharts, attachCharts, countBy };
+module.exports = {
+  buildPrefeituraCharts,
+  buildCamaraCharts,
+  attachCharts,
+  countBy,
+  sessoesPorMes,
+};

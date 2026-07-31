@@ -4,7 +4,7 @@ const scraperCamara = require('./scraper-camara');
 const detailCamara = require('./scraper-detail-camara');
 const detailPref = require('./scraper-detail-prefeitura');
 const portalPage = require('./scraper-portal-page');
-const { mergeParlamentar } = require('./merge-camara-sources');
+const { mergeParlamentar, mergeMateria } = require('./merge-camara-sources');
 const { createDetailCache } = require('./detail-cache');
 const { assertAllowedOutboundUrl } = require('./allowed-hosts');
 
@@ -42,11 +42,24 @@ function createDetailHandler({ http, cheerio, getCache }) {
 
   function findSessao(cache, id) {
     const list = cache?.camara?.sessoes || [];
-    if (/^\d+$/.test(String(id))) {
-      const idx = parseInt(id, 10);
+    const raw = String(id || '');
+    const fromList = list.find((s) => {
+      if (s.slug && s.slug === raw) return true;
+      if (s.titulo && s.titulo === raw) return true;
+      if (s.url && raw && s.url.includes(raw)) return true;
+      return false;
+    });
+    if (fromList) return fromList;
+    if (/^\d+$/.test(raw)) {
+      const idx = parseInt(raw, 10);
       if (list[idx]) return list[idx];
     }
-    return list.find((s) => s.slug === id || s.titulo === id) || null;
+    const slugFromPath = raw.match(/^(?:sessao|video)[/-](.+)$/i);
+    if (slugFromPath) {
+      const slug = slugFromPath[1].replace(/\/$/, '');
+      return list.find((s) => s.slug === slug) || null;
+    }
+    return null;
   }
 
   function findPublicacao(cache, id) {
@@ -74,6 +87,10 @@ function createDetailHandler({ http, cheerio, getCache }) {
       case 'materia': {
         const html = await fetchHtml(`${scraperCamara.BASE}/materia/${id}/`);
         result = detailCamara.scrapeMateriaDetail(html, cheerio, id);
+        const listItem = (cache?.camara?.materias || []).find((m) => m.slug === id);
+        if (listItem && result?.materia) {
+          result.materia = mergeMateria(result.materia, listItem);
+        }
         break;
       }
       case 'secretaria': {

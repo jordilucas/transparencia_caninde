@@ -27,11 +27,15 @@ describe('charts', () => {
         { tipo: 'Projeto de Lei' },
         { tipo: 'Requerimento' },
       ],
-      parlamentares: [{ nome: 'A' }],
-      sessoes: [],
+      parlamentares: [{ nome: 'A', partido: 'PT' }, { nome: 'B', partido: 'PSB' }],
+      sessoes: [{ data: '01/03/2026' }, { data: '15/03/2026' }],
     });
     const mat = g.camara.find((s) => s.titulo.includes('tipo'));
     assert.ok(mat);
     assert.equal(mat.valores.reduce((a, b) => a + b, 0), 3);
+    const partidos = g.camara.find((s) => s.titulo.includes('partido'));
+    assert.ok(partidos);
+    const sessMes = g.camara.find((s) => s.titulo.includes('mês'));
+    assert.ok(sessMes);
   });
 });

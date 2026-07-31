@@ -6,6 +6,7 @@
  */
 
 const BASE = 'https://www.cmcaninde.ce.gov.br';
+const { CAMARA_LIST_LIMIT } = require('./camara-limits');
 
 function parseCargoPartido(cargoText) {
   const m = cargoText.match(/Cargo:\s*(.+?)\s*-\s*(.+)/i);
@@ -145,7 +146,7 @@ function scrapeSessoesFromHtml(html, cheerio) {
   }
 
   $('h3.mb-0 a.btn-link, article h2 a, .video a').each((i, el) => {
-    if (sessoes.length >= 25) return false;
+    if (sessoes.length >= CAMARA_LIST_LIMIT) return false;
     const linkEl = $(el).is('a') ? $(el) : $(el).find('a').first();
     const href = linkEl.attr('href') || '';
     if (!/\/sessao\/|\/video\//i.test(href)) return;
@@ -164,7 +165,7 @@ function scrapeMateriasFromHtml(html, cheerio) {
   const $ = cheerio.load(html);
   const materias = [];
   $('h3.mb-0 a.btn-link').each((i, el) => {
-    if (i >= 12) return false;
+    if (i >= CAMARA_LIST_LIMIT) return false;
     const titulo = $(el).text().trim();
     const href = $(el).attr('href') || '';
     let tipo = 'Matéria';

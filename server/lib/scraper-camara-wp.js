@@ -63,6 +63,18 @@ function legislaturaFromClassList(classList) {
   return hit.replace('ano_legislatura-', '').replace('-', ' - ');
 }
 
+const { CAMARA_LIST_LIMIT } = require('./camara-limits');
+
+function featuredMediaUrl(item) {
+  const media = item?._embedded?.['wp:featuredmedia'];
+  if (!Array.isArray(media) || media.length === 0) return '';
+  const first = media[0];
+  return first?.source_url
+    || first?.media_details?.sizes?.medium?.source_url
+    || first?.media_details?.sizes?.thumbnail?.source_url
+    || '';
+}
+
 function inferTipoMateria(titulo, slug) {
   const t = `${titulo} ${slug}`.toLowerCase();
   if (/requerimento/.test(t)) return 'Requerimento';
@@ -89,7 +101,7 @@ function mapVereadorFromWp(item, taxMaps) {
     cargo,
     vinculo,
     legislatura,
-    foto: '',
+    foto: featuredMediaUrl(item),
     slug,
     profileUrl: item.link || `${BASE}/vereadores/${slug}/`,
     totalMaterias: 0,
@@ -155,7 +167,7 @@ async function scrapeCamaraWp(http, { pageDelayMs = 0 } = {}) {
   };
 
   const [vereadoresRaw, sessoesRaw, materiasRaw] = await Promise.all([
-    fetchAllPages(http, 'vereadores', { _embed: 'wp:term', orderby: 'modified', order: 'desc' }, pageDelayMs),
+    fetchAllPages(http, 'vereadores', { _embed: 'wp:featuredmedia,wp:term', orderby: 'modified', order: 'desc' }, pageDelayMs),
     fetchAllPages(http, 'sessao', { orderby: 'modified', order: 'desc' }, pageDelayMs),
     fetchAllPages(http, 'materia', { orderby: 'modified', order: 'desc' }, pageDelayMs),
   ]);
@@ -167,12 +179,12 @@ async function scrapeCamaraWp(http, { pageDelayMs = 0 } = {}) {
   const sessoes = sessoesRaw
     .map((item) => mapSessaoFromWp(item))
     .filter(Boolean)
-    .slice(0, 25);
+    .slice(0, CAMARA_LIST_LIMIT);
 
   const materias = materiasRaw
     .map((item) => mapMateriaFromWp(item, tipoMateriaMap))
     .filter(Boolean)
-    .slice(0, 25);
+    .slice(0, CAMARA_LIST_LIMIT);
 
   const mesaDiretora = buildMesaFromParlamentares(parlamentares);
 

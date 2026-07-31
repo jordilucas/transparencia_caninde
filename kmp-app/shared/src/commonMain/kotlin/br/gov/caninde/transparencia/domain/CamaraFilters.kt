@@ -1,6 +1,7 @@
 package br.gov.caninde.transparencia.domain
 
 const val MATERIA_FILTER_TODAS = "Todas"
+const val CAMARA_LIST_PAGE_SIZE = 15
 
 fun materiaFilterOptions(materias: List<Materia>): List<String> {
     val tipos = materias

@@ -355,6 +355,7 @@ private fun AppRouteContent(
                 onSessaoClick = { idx, s -> onNavigate(AppRoute.Sessao(sessaoRouteId(s, idx))) },
                 onInstitucionalClick = { onNavigate(AppRoute.Institucional(true)) },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
+                onDocumentoClick = { doc -> onNavigate(routeFromExternalUrl(doc.url)) },
                 onSobreClick = onSobreClick,
             )
             Screen.Graficos -> GraficosScreen(
@@ -378,6 +379,8 @@ private fun AppRouteContent(
                 },
                 onPublicacaoClick = { onNavigate(routeFromPublicacao(it)) },
                 onSessaoClick = { idx, s -> onNavigate(AppRoute.Sessao(sessaoRouteId(s, idx))) },
+                onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
+                onDocumentoClick = { doc -> onNavigate(routeFromExternalUrl(doc.url)) },
                 onSobreClick = onSobreClick,
             )
             Screen.Sobre -> SobreScreen(

@@ -7,6 +7,7 @@ private val licitacaoIdRegex = Regex("licitacaolista\\.php\\?id=([^&]+)", RegexO
 private val publicacaoIdRegex = Regex("publicacoes\\.php\\?id=([^&]+)", RegexOption.IGNORE_CASE)
 private val materiaSlugRegex = Regex("/materia/([^/?#]+)", RegexOption.IGNORE_CASE)
 private val sessaoSlugRegex = Regex("/sessao/([^/?#]+)", RegexOption.IGNORE_CASE)
+private val videoSlugRegex = Regex("/video/([^/?#]+)", RegexOption.IGNORE_CASE)
 
 fun routeFromExternalUrl(url: String): AppRoute {
     val trimmed = url.trim()
@@ -74,8 +75,12 @@ fun materiaSlug(materia: Materia): String {
     return ""
 }
 
-fun sessaoRouteId(sessao: Sessao, index: Int): String =
-    sessao.slug.ifBlank { index.toString() }
+fun sessaoRouteId(sessao: Sessao, index: Int): String {
+    if (sessao.slug.isNotBlank()) return sessao.slug
+    sessaoSlugRegex.find(sessao.url)?.groupValues?.get(1)?.let { return it }
+    videoSlugRegex.find(sessao.url)?.groupValues?.get(1)?.let { return it }
+    return index.toString()
+}
 
 fun portalBaseUrl(origem: String): String = when (origem) {
     "camara" -> CAMARA_PORTAL_BASE

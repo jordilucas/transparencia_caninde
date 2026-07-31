@@ -28,6 +28,8 @@ fun BuscaScreen(
     onMateriaClick: (Materia) -> Unit,
     onPublicacaoClick: (Publicacao) -> Unit = {},
     onSessaoClick: (Int, Sessao) -> Unit = { _, _ -> },
+    onTransparenciaLinkClick: (LinkExterno) -> Unit = {},
+    onDocumentoClick: (DocumentoCamara) -> Unit = {},
     onSobreClick: () -> Unit = {},
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -140,10 +142,20 @@ fun BuscaScreen(
             val sessoes = if (showCam) camara.sessoes.withIndex().filter { (_, s) ->
                 matchesAnySearch(searchQuery, s.titulo, s.data, s.resumo)
             } else emptyList()
+            val mesa = if (showCam) camara.mesaDiretora.filter {
+                matchesAnySearch(searchQuery, it.nome, it.cargo)
+            } else emptyList()
+            val linksCamara = if (showCam) camara.linksTransparencia.filter {
+                matchesAnySearch(searchQuery, it.titulo, it.categoria, it.url)
+            } else emptyList()
+            val documentosCamara = if (showCam) camara.documentosTransparencia.filter {
+                matchesAnySearch(searchQuery, it.titulo, it.categoria, it.data)
+            } else emptyList()
 
             val total = contratos.size + licitacoes.size + secretarias.size + publicacoes.size +
                 obras.size + lrfDocs.size +
-                gestores.size + parlamentares.size + materias.size + sessoes.size
+                gestores.size + parlamentares.size + materias.size + sessoes.size +
+                mesa.size + linksCamara.size + documentosCamara.size
 
             LaunchedEffect(searchQuery, scope, total) {
                 if (searchQuery.length < 2) return@LaunchedEffect
@@ -297,6 +309,43 @@ fun BuscaScreen(
                             subtitle = s.data,
                             trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
                             onClick = { onSessaoClick(idx, s) },
+                        )
+                    }
+                }
+                if (mesa.isNotEmpty()) {
+                    SectionHeader("Mesa diretora (${mesa.size})")
+                    mesa.take(5).forEach { m ->
+                        ListRow(
+                            icon = {
+                                IconContainer(AppColors.Blue100) {
+                                    Icon(Icons.Default.Groups, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
+                                }
+                            },
+                            title = m.nome,
+                            subtitle = m.cargo,
+                            trailing = {},
+                        )
+                    }
+                }
+                if (linksCamara.isNotEmpty()) {
+                    SectionHeader("Transparência Câmara (${linksCamara.size})")
+                    linksCamara.take(6).forEach { link ->
+                        TransparenciaLinkRow(link, onClick = onTransparenciaLinkClick)
+                    }
+                }
+                if (documentosCamara.isNotEmpty()) {
+                    SectionHeader("Documentos Câmara (${documentosCamara.size})")
+                    documentosCamara.take(8).forEach { doc ->
+                        ListRow(
+                            icon = {
+                                IconContainer(AppColors.Amber100) {
+                                    Icon(Icons.Default.Description, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
+                                }
+                            },
+                            title = doc.titulo,
+                            subtitle = listOfNotNull(doc.categoria.takeIf { it.isNotBlank() }, doc.data.takeIf { it.isNotBlank() }).joinToString(" · "),
+                            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
+                            onClick = { if (doc.url.isNotBlank()) onDocumentoClick(doc) },
                         )
                     }
                 }

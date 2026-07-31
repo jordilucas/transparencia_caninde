@@ -1,6 +1,7 @@
 'use strict';
 
 const { parseIsoMs } = require('./scraper-camara-wp');
+const { CAMARA_LIST_LIMIT } = require('./camara-limits');
 
 function pickNewer(a, b, field = 'modifiedAt') {
   const aMs = parseIsoMs(a?.[field]);
@@ -112,7 +113,7 @@ function mergeCamaraSources(wpBundle = {}, htmlBundle = {}) {
       (s) => s.slug || s.titulo,
       mergeSessao,
     ),
-  ).slice(0, 25);
+  ).slice(0, CAMARA_LIST_LIMIT);
 
   const materias = sortByModified(
     mergeListByKey(
@@ -121,7 +122,7 @@ function mergeCamaraSources(wpBundle = {}, htmlBundle = {}) {
       (m) => m.slug || m.titulo,
       mergeMateria,
     ),
-  ).slice(0, 25);
+  ).slice(0, CAMARA_LIST_LIMIT);
 
   const mesaHtml = htmlBundle.mesaDiretora || [];
   const mesaWp = wpBundle.mesaDiretora || [];
