@@ -32,6 +32,7 @@ sealed class AppRoute {
     data class Sessao(val id: String) : AppRoute()
     data class Publicacao(val id: String) : AppRoute()
     data class PaginaPortal(val pageId: String) : AppRoute()
+    data class DocumentoCamara(val pageId: String) : AppRoute()
     data object Gestores : AppRoute()
     data class Institucional(val camara: Boolean) : AppRoute()
 }
@@ -355,7 +356,7 @@ private fun AppRouteContent(
                 onSessaoClick = { idx, s -> onNavigate(AppRoute.Sessao(sessaoRouteId(s, idx))) },
                 onInstitucionalClick = { onNavigate(AppRoute.Institucional(true)) },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
-                onDocumentoClick = { doc -> onNavigate(routeFromExternalUrl(doc.url)) },
+                onDocumentoClick = { doc -> onNavigate(AppRoute.DocumentoCamara(documentoCamaraRouteId(doc))) },
                 onSobreClick = onSobreClick,
             )
             Screen.Graficos -> GraficosScreen(
@@ -366,6 +367,7 @@ private fun AppRouteContent(
             Screen.Busca -> BuscaScreen(
                 prefeitura = prefeituraState,
                 camara = camaraState,
+                connectionState = connectionState,
                 onContratoClick = { onNavigate(AppRoute.Contrato(contratoDetailId(it))) },
                 onVereadorClick = { p ->
                     parlamentarSlug(p).takeIf { it.isNotBlank() }?.let { onNavigate(AppRoute.Vereador(it)) }
@@ -380,7 +382,7 @@ private fun AppRouteContent(
                 onPublicacaoClick = { onNavigate(routeFromPublicacao(it)) },
                 onSessaoClick = { idx, s -> onNavigate(AppRoute.Sessao(sessaoRouteId(s, idx))) },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
-                onDocumentoClick = { doc -> onNavigate(routeFromExternalUrl(doc.url)) },
+                onDocumentoClick = { doc -> onNavigate(AppRoute.DocumentoCamara(documentoCamaraRouteId(doc))) },
                 onSobreClick = onSobreClick,
             )
             Screen.Sobre -> SobreScreen(
@@ -401,6 +403,7 @@ private fun AppRouteContent(
         is AppRoute.Sessao -> SessaoDetailScreen(viewModel, route.id, onNavigateBack)
         is AppRoute.Publicacao -> PublicacaoDetailScreen(viewModel, route.id, onNavigateBack)
         is AppRoute.PaginaPortal -> PaginaPortalDetailScreen(viewModel, route.pageId, onNavigateBack)
+        is AppRoute.DocumentoCamara -> DocumentoCamaraDetailScreen(viewModel, route.pageId, onNavigateBack)
         AppRoute.Gestores -> GestoresDetailScreen(viewModel, onNavigateBack)
         is AppRoute.Institucional -> InstitucionalDetailScreen(viewModel, route.camara, onNavigateBack)
     }

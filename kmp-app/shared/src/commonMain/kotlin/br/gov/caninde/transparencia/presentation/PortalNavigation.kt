@@ -8,6 +8,7 @@ private val publicacaoIdRegex = Regex("publicacoes\\.php\\?id=([^&]+)", RegexOpt
 private val materiaSlugRegex = Regex("/materia/([^/?#]+)", RegexOption.IGNORE_CASE)
 private val sessaoSlugRegex = Regex("/sessao/([^/?#]+)", RegexOption.IGNORE_CASE)
 private val videoSlugRegex = Regex("/video/([^/?#]+)", RegexOption.IGNORE_CASE)
+private val documentoCamaraRegex = Regex("caninde-transparente/(licitac|contrat)", RegexOption.IGNORE_CASE)
 
 fun routeFromExternalUrl(url: String): AppRoute {
     val trimmed = url.trim()
@@ -26,6 +27,11 @@ fun routeFromExternalUrl(url: String): AppRoute {
     publicacaoIdRegex.find(absolute)?.groupValues?.get(1)?.let { return AppRoute.Publicacao(it) }
     materiaSlugRegex.find(absolute)?.groupValues?.get(1)?.let { return AppRoute.Materia(it) }
     sessaoSlugRegex.find(absolute)?.groupValues?.get(1)?.let { return AppRoute.Sessao(it) }
+    videoSlugRegex.find(absolute)?.groupValues?.get(1)?.let { return AppRoute.Sessao(it) }
+
+    if (documentoCamaraRegex.containsMatchIn(absolute)) {
+        return AppRoute.DocumentoCamara(encodePortalPageId(absolute))
+    }
 
     return AppRoute.PaginaPortal(encodePortalPageId(absolute))
 }

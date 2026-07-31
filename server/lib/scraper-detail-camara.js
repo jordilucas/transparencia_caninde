@@ -195,6 +195,26 @@ function scrapeMateriaDetail(html, cheerio, slug) {
   };
 }
 
+function extractVideoEmbed($) {
+  let embedUrl = '';
+  $('iframe[src]').each((_, el) => {
+    if (embedUrl) return false;
+    const src = ($(el).attr('src') || '').trim();
+    if (/youtube|youtu\.be|vimeo|facebook\.com\/plugins\/video/i.test(src)) {
+      embedUrl = resolveHref(src);
+    }
+  });
+  if (embedUrl) return embedUrl;
+
+  $('a[href*="youtube.com"], a[href*="youtu.be"]').each((_, el) => {
+    if (embedUrl) return false;
+    const href = $(el).attr('href') || '';
+    const id = href.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{6,})/)?.[1];
+    if (id) embedUrl = `https://www.youtube.com/embed/${id}`;
+  });
+  return embedUrl;
+}
+
 function scrapeSessaoDetail(html, cheerio, slug) {
   const $ = cheerio.load(html);
   const titulo = $('h1, h2').first().text().replace(/\s+/g, ' ').trim();
@@ -228,10 +248,12 @@ function scrapeSessaoDetail(html, cheerio, slug) {
   let data = '';
   const dateM = $('body').text().match(/\d{2}\/\d{2}\/\d{4}/);
   if (dateM) data = dateM[0];
+  const videoEmbedUrl = extractVideoEmbed($);
   return {
     titulo,
     resumo,
     data,
+    videoEmbedUrl,
     camposExtras: camposExtras.slice(0, 10),
     anexos,
   };
@@ -244,6 +266,7 @@ function mergeSessaoDetail(listItem, scraped) {
     titulo: scraped.titulo || listItem.titulo,
     resumo: scraped.resumo || listItem.resumo,
     data: scraped.data || listItem.data,
+    videoEmbedUrl: scraped.videoEmbedUrl || listItem.videoEmbedUrl || '',
     camposExtras: scraped.camposExtras?.length ? scraped.camposExtras : (listItem.camposExtras || []),
     anexos: scraped.anexos?.length ? scraped.anexos : (listItem.anexos || []),
   };

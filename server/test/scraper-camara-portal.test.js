@@ -3,7 +3,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const cheerio = require('cheerio');
-const { scrapeDocumentList, resolveUrl } = require('../lib/scraper-camara-portal');
+const { scrapeDocumentList, resolveUrl, scrapeDocumentoCamaraDetail } = require('../lib/scraper-camara-portal');
 
 describe('scraper-camara-portal', () => {
   it('resolveUrl monta URL absoluta do portal', () => {
@@ -30,5 +30,28 @@ describe('scraper-camara-portal', () => {
     assert.ok(docs.length >= 2);
     assert.ok(docs.some((d) => d.titulo.includes('Edital')));
     assert.ok(docs.every((d) => d.url.startsWith('https://www.cmcaninde.ce.gov.br/')));
+  });
+
+  it('scrapeDocumentoCamaraDetail extrai resumo e anexos', () => {
+    const html = `
+      <article>
+        <h1>Edital de Pregão 001/2026</h1>
+        <div class="entry-content">
+          <p>Objeto: aquisição de material de expediente para a Câmara Municipal.</p>
+          <p>Modalidade: Pregão Eletrônico</p>
+          <a href="/wp-content/uploads/edital.pdf">Baixar edital</a>
+        </div>
+        <time>10/07/2026</time>
+      </article>
+    `;
+    const doc = scrapeDocumentoCamaraDetail(
+      html,
+      cheerio,
+      'https://www.cmcaninde.ce.gov.br/caninde-transparente/licitacao/edital-001/',
+    );
+    assert.ok(doc.titulo.includes('Edital'));
+    assert.ok(doc.resumo.includes('expediente'));
+    assert.equal(doc.categoria, 'licitacao');
+    assert.ok(doc.anexos.length >= 1);
   });
 });

@@ -33,6 +33,7 @@ data class WsPayload(
     val materias: List<Materia>? = null,
     val mesaDiretora: List<MembroMesa>? = null,
     val documentosTransparencia: List<DocumentoCamara>? = null,
+    val documentoCamara: DocumentoCamara? = null,
     val graficos: GraficosPayload? = null,
     val entity: String? = null,
     val entityId: String? = null,
@@ -260,6 +261,7 @@ data class Sessao(
     val slug: String = "",
     val resumo: String = "",
     val modifiedAt: String = "",
+    val videoEmbedUrl: String = "",
     val camposExtras: List<DetalheCampo> = emptyList(),
     val anexos: List<DetalheAnexo> = emptyList(),
 )
@@ -289,6 +291,9 @@ data class DocumentoCamara(
     val data: String = "",
     val url: String = "",
     val categoria: String = "",
+    val resumo: String = "",
+    val camposExtras: List<DetalheCampo> = emptyList(),
+    val anexos: List<DetalheAnexo> = emptyList(),
 )
 
 @Serializable
@@ -331,6 +336,7 @@ data class LastUpdated(
 enum class DetailEntity {
     Vereador, Materia, Secretaria, Contrato, Licitacao, Sessao, Gestores,
     InstitucionalCamara, InstitucionalPrefeitura, Publicacao, PaginaPortal,
+    DocumentoCamara,
 }
 
 data class DetailUiState(

@@ -3,6 +3,8 @@ package br.gov.caninde.transparencia.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,6 +23,7 @@ import kotlinx.coroutines.delay
 fun BuscaScreen(
     prefeitura: PrefeituraUiState,
     camara: CamaraUiState,
+    connectionState: ConnectionState = ConnectionState.Connected,
     onContratoClick: (Contrato) -> Unit,
     onVereadorClick: (Parlamentar) -> Unit,
     onSecretariaClick: (Secretaria) -> Unit,
@@ -34,6 +37,18 @@ fun BuscaScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var scope by remember { mutableStateOf(SearchScope.Tudo) }
+    var entityFilter by remember { mutableStateOf(SearchEntityFilter.Todos) }
+    val sectionLimits = remember { mutableStateMapOf<String, Int>() }
+
+    val hits = remember(prefeitura, camara, searchQuery, scope, entityFilter) {
+        SearchIndex.search(prefeitura, camara, searchQuery, scope, entityFilter)
+    }
+    val grouped = remember(hits) { SearchIndex.grouped(hits) }
+
+    LaunchedEffect(grouped) {
+        val sections = grouped.map { it.first }.toSet()
+        sectionLimits.keys.filter { it !in sections }.forEach { sectionLimits.remove(it) }
+    }
 
     Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
         Box(
@@ -89,8 +104,24 @@ fun BuscaScreen(
                         )
                     }
                 }
+                if (searchQuery.isNotBlank()) {
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        SearchEntityFilter.entries.forEach { filter ->
+                            FilterChip(
+                                selected = entityFilter == filter,
+                                onClick = { entityFilter = filter },
+                                label = { Text(filter.label, fontSize = 10.sp) },
+                            )
+                        }
+                    }
+                }
             }
         }
+
+        ConnectionBanner(connectionState)
 
         if (searchQuery.isBlank()) {
             Column(
@@ -107,253 +138,152 @@ fun BuscaScreen(
                     color = AppColors.TextTertiary,
                     modifier = Modifier.padding(top = 8.dp),
                 )
+                if (prefeitura.contratos.isEmpty() && camara.parlamentares.isEmpty()) {
+                    Text(
+                        "Aguarde o carregamento dos dados ou verifique a conexão.",
+                        fontSize = 11.sp,
+                        color = AppColors.TextTertiary,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                }
             }
         } else {
-            val showPref = scope == SearchScope.Tudo || scope == SearchScope.Prefeitura
-            val showCam = scope == SearchScope.Tudo || scope == SearchScope.Camara
-
-            val contratos = if (showPref) prefeitura.contratos.filter {
-                matchesAnySearch(searchQuery, it.objeto, it.empresa, it.numero, it.secretaria)
-            } else emptyList()
-            val licitacoes = if (showPref) prefeitura.licitacoes.filter {
-                matchesAnySearch(searchQuery, it.objeto, it.numero, it.modalidade, it.situacao)
-            } else emptyList()
-            val secretarias = if (showPref) prefeitura.secretarias.filter {
-                matchesAnySearch(searchQuery, it.nome, it.secretario)
-            } else emptyList()
-            val publicacoes = if (showPref) prefeitura.publicacoes.filter {
-                matchesAnySearch(searchQuery, it.titulo, it.tipo, it.data)
-            } else emptyList()
-            val obras = if (showPref) prefeitura.obras.filter {
-                matchesAnySearch(searchQuery, it.titulo, it.descricao, it.secretaria, it.situacao)
-            } else emptyList()
-            val lrfDocs = if (showPref) prefeitura.lrf.filter {
-                matchesAnySearch(searchQuery, it.titulo, it.tipo, it.exercicio)
-            } else emptyList()
-            val gestores = if (showPref) prefeitura.gestores.filter {
-                matchesAnySearch(searchQuery, it.nome, it.cargo)
-            } else emptyList()
-            val parlamentares = if (showCam) camara.parlamentares.filter {
-                matchesAnySearch(searchQuery, it.nome, it.nomeCompleto, it.partido, it.cargo)
-            } else emptyList()
-            val materias = if (showCam) camara.materias.filter {
-                matchesAnySearch(searchQuery, it.titulo, it.tipo, it.autor)
-            } else emptyList()
-            val sessoes = if (showCam) camara.sessoes.withIndex().filter { (_, s) ->
-                matchesAnySearch(searchQuery, s.titulo, s.data, s.resumo)
-            } else emptyList()
-            val mesa = if (showCam) camara.mesaDiretora.filter {
-                matchesAnySearch(searchQuery, it.nome, it.cargo)
-            } else emptyList()
-            val linksCamara = if (showCam) camara.linksTransparencia.filter {
-                matchesAnySearch(searchQuery, it.titulo, it.categoria, it.url)
-            } else emptyList()
-            val documentosCamara = if (showCam) camara.documentosTransparencia.filter {
-                matchesAnySearch(searchQuery, it.titulo, it.categoria, it.data)
-            } else emptyList()
-
-            val total = contratos.size + licitacoes.size + secretarias.size + publicacoes.size +
-                obras.size + lrfDocs.size +
-                gestores.size + parlamentares.size + materias.size + sessoes.size +
-                mesa.size + linksCamara.size + documentosCamara.size
-
-            LaunchedEffect(searchQuery, scope, total) {
+            LaunchedEffect(searchQuery, scope, entityFilter, hits.size) {
                 if (searchQuery.length < 2) return@LaunchedEffect
                 val queryLength = searchQuery.length
-                val scopeName = scope.name.lowercase()
-                val resultCount = total
                 delay(600)
                 if (searchQuery.length >= 2) {
                     AppAnalytics.logSearch(
                         queryLength = queryLength,
-                        resultsCount = resultCount,
-                        scope = scopeName,
+                        resultsCount = hits.size,
+                        scope = "${scope.name.lowercase()}:${entityFilter.name.lowercase()}",
                     )
                 }
             }
 
-            Column(Modifier.fillMaxSize().padding(top = 8.dp)) {
-                if (total > 0) {
-                    Text(
-                        "$total resultado${if (total == 1) "" else "s"}",
-                        fontSize = 12.sp,
-                        color = AppColors.TextSecondary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    )
+            LazyColumn(Modifier.fillMaxSize().padding(top = 8.dp)) {
+                if (hits.isNotEmpty()) {
+                    item {
+                        Text(
+                            "${hits.size} resultado${if (hits.size == 1) "" else "s"}",
+                            fontSize = 12.sp,
+                            color = AppColors.TextSecondary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
+                    }
                 }
 
-                if (contratos.isNotEmpty()) {
-                    SectionHeader("Contratos (${contratos.size})")
-                    contratos.take(8).forEach { c ->
-                        ContratosRow(c, onClick = { onContratoClick(c) })
+                grouped.forEach { (section, sectionHits) ->
+                    val limit = sectionLimits[section] ?: SEARCH_PAGE_SIZE
+                    val visible = sectionHits.take(limit)
+
+                    item { SectionHeader("$section (${sectionHits.size})") }
+                    items(visible, key = { "${section}-${it.hashCode()}" }) { hit ->
+                        SearchHitRow(hit, onContratoClick, onLicitacaoClick, onPublicacaoClick, onSecretariaClick,
+                            onVereadorClick, onMateriaClick, onSessaoClick, onTransparenciaLinkClick, onDocumentoClick)
                         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     }
-                }
-                if (licitacoes.isNotEmpty()) {
-                    SectionHeader("Licitações (${licitacoes.size})")
-                    licitacoes.take(8).forEach { l ->
-                        LicitacoesRow(l, onClick = { onLicitacaoClick(l) })
-                        HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    if (sectionHits.size > limit) {
+                        item {
+                            TextButton(
+                                onClick = { sectionLimits[section] = limit + SEARCH_PAGE_SIZE },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(
+                                    "Ver mais (${sectionHits.size - limit} restantes)",
+                                    fontSize = 12.sp,
+                                    color = AppColors.Blue500,
+                                )
+                            }
+                        }
                     }
                 }
-                if (publicacoes.isNotEmpty()) {
-                    SectionHeader("Publicações (${publicacoes.size})")
-                    publicacoes.take(8).forEach { p ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Green100) {
-                                    Icon(Icons.Default.Article, null, tint = AppColors.Green700, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = p.titulo,
-                            subtitle = listOfNotNull(p.tipo.takeIf { it.isNotBlank() }, p.data.takeIf { it.isNotBlank() }).joinToString(" · "),
-                            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
-                            onClick = { onPublicacaoClick(p) },
-                        )
-                    }
+
+                if (hits.isEmpty()) {
+                    item { EmptyState("Nenhum resultado para \"$searchQuery\"") }
                 }
-                if (obras.isNotEmpty()) {
-                    SectionHeader("Obras (${obras.size})")
-                    obras.take(8).forEach { o ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Amber100) {
-                                    Icon(Icons.Default.Construction, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = o.titulo,
-                            subtitle = listOfNotNull(o.secretaria.takeIf { it.isNotBlank() }, o.valor.takeIf { it.isNotBlank() }).joinToString(" · "),
-                            trailing = {},
-                        )
-                    }
-                }
-                if (lrfDocs.isNotEmpty()) {
-                    SectionHeader("LRF (${lrfDocs.size})")
-                    lrfDocs.take(8).forEach { d ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Blue100) {
-                                    Icon(Icons.Default.Description, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = d.titulo,
-                            subtitle = d.tipo,
-                            trailing = {},
-                        )
-                    }
-                }
-                if (secretarias.isNotEmpty()) {
-                    SectionHeader("Secretarias (${secretarias.size})")
-                    secretarias.take(8).forEach { s ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Blue100) {
-                                    Icon(Icons.Default.AccountBalance, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = s.nome,
-                            subtitle = s.secretario,
-                            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
-                            onClick = { onSecretariaClick(s) },
-                        )
-                    }
-                }
-                if (gestores.isNotEmpty()) {
-                    SectionHeader("Gestores (${gestores.size})")
-                    gestores.take(5).forEach { g ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Purple100) {
-                                    Icon(Icons.Default.Person, null, tint = AppColors.Purple700, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = g.nome,
-                            subtitle = g.cargo,
-                            trailing = {},
-                        )
-                    }
-                }
-                if (parlamentares.isNotEmpty()) {
-                    SectionHeader("Vereadores (${parlamentares.size})")
-                    parlamentares.take(8).forEach { p ->
-                        ParlamentarRow(p, onClick = { onVereadorClick(p) })
-                        HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    }
-                }
-                if (materias.isNotEmpty()) {
-                    SectionHeader("Matérias (${materias.size})")
-                    materias.take(8).forEach { m ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Purple100) {
-                                    Icon(Icons.Default.FilePresent, null, tint = AppColors.Purple700, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = m.titulo,
-                            subtitle = m.tipo,
-                            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
-                            onClick = { onMateriaClick(m) },
-                        )
-                    }
-                }
-                if (sessoes.isNotEmpty()) {
-                    SectionHeader("Sessões (${sessoes.size})")
-                    sessoes.take(8).forEach { (idx, s) ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Green100) {
-                                    Icon(Icons.Default.Event, null, tint = AppColors.Green700, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = s.titulo.ifBlank { "Sessão ${idx + 1}" },
-                            subtitle = s.data,
-                            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
-                            onClick = { onSessaoClick(idx, s) },
-                        )
-                    }
-                }
-                if (mesa.isNotEmpty()) {
-                    SectionHeader("Mesa diretora (${mesa.size})")
-                    mesa.take(5).forEach { m ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Blue100) {
-                                    Icon(Icons.Default.Groups, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = m.nome,
-                            subtitle = m.cargo,
-                            trailing = {},
-                        )
-                    }
-                }
-                if (linksCamara.isNotEmpty()) {
-                    SectionHeader("Transparência Câmara (${linksCamara.size})")
-                    linksCamara.take(6).forEach { link ->
-                        TransparenciaLinkRow(link, onClick = onTransparenciaLinkClick)
-                    }
-                }
-                if (documentosCamara.isNotEmpty()) {
-                    SectionHeader("Documentos Câmara (${documentosCamara.size})")
-                    documentosCamara.take(8).forEach { doc ->
-                        ListRow(
-                            icon = {
-                                IconContainer(AppColors.Amber100) {
-                                    Icon(Icons.Default.Description, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
-                                }
-                            },
-                            title = doc.titulo,
-                            subtitle = listOfNotNull(doc.categoria.takeIf { it.isNotBlank() }, doc.data.takeIf { it.isNotBlank() }).joinToString(" · "),
-                            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
-                            onClick = { if (doc.url.isNotBlank()) onDocumentoClick(doc) },
-                        )
-                    }
-                }
-                if (total == 0) {
-                    EmptyState("Nenhum resultado para \"$searchQuery\"")
-                }
-                Spacer(Modifier.height(80.dp))
+                item { Spacer(Modifier.height(80.dp)) }
             }
         }
+    }
+}
+
+@Composable
+private fun SearchHitRow(
+    hit: SearchHit,
+    onContratoClick: (Contrato) -> Unit,
+    onLicitacaoClick: (Licitacao) -> Unit,
+    onPublicacaoClick: (Publicacao) -> Unit,
+    onSecretariaClick: (Secretaria) -> Unit,
+    onVereadorClick: (Parlamentar) -> Unit,
+    onMateriaClick: (Materia) -> Unit,
+    onSessaoClick: (Int, Sessao) -> Unit,
+    onTransparenciaLinkClick: (LinkExterno) -> Unit,
+    onDocumentoClick: (DocumentoCamara) -> Unit,
+) {
+    when (hit) {
+        is SearchHit.ContratoHit -> ContratosRow(hit.item, onClick = { onContratoClick(hit.item) })
+        is SearchHit.LicitacaoHit -> LicitacoesRow(hit.item, onClick = { onLicitacaoClick(hit.item) })
+        is SearchHit.PublicacaoHit -> ListRow(
+            icon = { IconContainer(AppColors.Green100) { Icon(Icons.Default.Article, null, tint = AppColors.Green700, modifier = Modifier.size(18.dp)) } },
+            title = hit.title,
+            subtitle = hit.subtitle,
+            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
+            onClick = { onPublicacaoClick(hit.item) },
+        )
+        is SearchHit.SecretariaHit -> ListRow(
+            icon = { IconContainer(AppColors.Blue100) { Icon(Icons.Default.AccountBalance, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp)) } },
+            title = hit.title,
+            subtitle = hit.subtitle,
+            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
+            onClick = { onSecretariaClick(hit.item) },
+        )
+        is SearchHit.ObraHit -> ListRow(
+            icon = { IconContainer(AppColors.Amber100) { Icon(Icons.Default.Construction, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp)) } },
+            title = hit.title,
+            subtitle = hit.subtitle,
+            trailing = {},
+        )
+        is SearchHit.LrfHit -> ListRow(
+            icon = { IconContainer(AppColors.Blue100) { Icon(Icons.Default.Description, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp)) } },
+            title = hit.title,
+            subtitle = hit.subtitle,
+            trailing = {},
+        )
+        is SearchHit.GestorHit -> ListRow(
+            icon = { IconContainer(AppColors.Purple100) { Icon(Icons.Default.Person, null, tint = AppColors.Purple700, modifier = Modifier.size(18.dp)) } },
+            title = hit.title,
+            subtitle = hit.subtitle,
+            trailing = {},
+        )
+        is SearchHit.ParlamentarHit -> ParlamentarRow(hit.item, onClick = { onVereadorClick(hit.item) })
+        is SearchHit.MateriaHit -> ListRow(
+            icon = { IconContainer(AppColors.Purple100) { Icon(Icons.Default.FilePresent, null, tint = AppColors.Purple700, modifier = Modifier.size(18.dp)) } },
+            title = hit.title,
+            subtitle = hit.subtitle,
+            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
+            onClick = { onMateriaClick(hit.item) },
+        )
+        is SearchHit.SessaoHit -> ListRow(
+            icon = { IconContainer(AppColors.Green100) { Icon(Icons.Default.Event, null, tint = AppColors.Green700, modifier = Modifier.size(18.dp)) } },
+            title = hit.title,
+            subtitle = hit.subtitle,
+            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
+            onClick = { onSessaoClick(hit.index, hit.item) },
+        )
+        is SearchHit.MesaHit -> ListRow(
+            icon = { IconContainer(AppColors.Blue100) { Icon(Icons.Default.Groups, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp)) } },
+            title = hit.title,
+            subtitle = hit.subtitle,
+            trailing = {},
+        )
+        is SearchHit.LinkCamaraHit -> TransparenciaLinkRow(hit.item, onClick = onTransparenciaLinkClick)
+        is SearchHit.DocumentoCamaraHit -> ListRow(
+            icon = { IconContainer(AppColors.Amber100) { Icon(Icons.Default.Description, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp)) } },
+            title = hit.title,
+            subtitle = hit.subtitle,
+            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
+            onClick = { if (hit.item.url.isNotBlank()) onDocumentoClick(hit.item) },
+        )
     }
 }

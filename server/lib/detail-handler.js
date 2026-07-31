@@ -4,6 +4,7 @@ const scraperCamara = require('./scraper-camara');
 const detailCamara = require('./scraper-detail-camara');
 const detailPref = require('./scraper-detail-prefeitura');
 const portalPage = require('./scraper-portal-page');
+const camaraPortal = require('./scraper-camara-portal');
 const { mergeParlamentar, mergeMateria } = require('./merge-camara-sources');
 const { createDetailCache } = require('./detail-cache');
 const { assertAllowedOutboundUrl } = require('./allowed-hosts');
@@ -208,23 +209,68 @@ function createDetailHandler({ http, cheerio, getCache }) {
           };
           break;
         }
-        const sessaoUrl = s.url && /\/sessao\//i.test(s.url)
+        const isVideo = s.url && /\/video\//i.test(s.url);
+        const sessaoUrl = isVideo
           ? s.url
-          : (s.slug ? `${scraperCamara.BASE}/sessao/${s.slug}/` : '');
+          : (s.url && /\/sessao\//i.test(s.url)
+            ? s.url
+            : (s.slug ? `${scraperCamara.BASE}/sessao/${s.slug}/` : ''));
+        const videoUrl = isVideo
+          ? s.url
+          : (s.slug ? `${scraperCamara.BASE}/video/${s.slug}/` : '');
         if (sessaoUrl) {
           try {
-            const html = await fetchHtml(sessaoUrl);
-            const scraped = detailCamara.scrapeSessaoDetail(html, cheerio, s.slug || id);
+            let html = await fetchHtml(sessaoUrl);
+            let scraped = detailCamara.scrapeSessaoDetail(html, cheerio, s.slug || id);
+            if (!scraped.videoEmbedUrl && videoUrl && videoUrl !== sessaoUrl) {
+              try {
+                const videoHtml = await fetchHtml(videoUrl);
+                const videoScraped = detailCamara.scrapeSessaoDetail(videoHtml, cheerio, s.slug || id);
+                if (videoScraped.videoEmbedUrl) {
+                  scraped = { ...scraped, videoEmbedUrl: videoScraped.videoEmbedUrl };
+                }
+              } catch {
+                // página de vídeo opcional
+              }
+            }
             result = {
               entity: 'sessao',
               entityId: id,
-              sessao: detailCamara.mergeSessaoDetail(s, scraped),
+              sessao: detailCamara.mergeSessaoDetail(
+                { ...s, url: isVideo ? s.url : (s.url || sessaoUrl) },
+                scraped,
+              ),
             };
           } catch {
             result = { entity: 'sessao', entityId: id, sessao: s };
           }
         } else {
           result = { entity: 'sessao', entityId: id, sessao: s };
+        }
+        break;
+      }
+      case 'documento_camara': {
+        const url = portalPage.decodePortalPageId(id);
+        if (!url) {
+          result = { entity: 'documento_camara', entityId: id, error: 'URL inválida.' };
+          break;
+        }
+        const listItem = (cache?.camara?.documentosTransparencia || []).find((d) => d.url === url);
+        try {
+          const html = await fetchHtml(url);
+          const scraped = camaraPortal.scrapeDocumentoCamaraDetail(html, cheerio, url);
+          result = {
+            entity: 'documento_camara',
+            entityId: id,
+            documentoCamara: camaraPortal.mergeDocumentoCamara(listItem, scraped),
+          };
+        } catch (err) {
+          result = {
+            entity: 'documento_camara',
+            entityId: id,
+            documentoCamara: listItem || { url, titulo: url },
+            error: err.message || 'Documento não encontrado.',
+          };
         }
         break;
       }

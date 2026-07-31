@@ -144,8 +144,12 @@ fun CamaraScreen(
             LazyColumn(Modifier.fillMaxSize()) {
                 if (!areaLegislativo) {
                     item { TransparenciaLinksIntro("a Câmara Municipal") }
+                    financasCamaraItems(
+                        state.linksTransparencia.filter { it.categoria == "financeiro" },
+                        onClick = onTransparenciaLinkClick,
+                    )
                     transparenciaLinksItems(
-                        state.linksTransparencia.filter { it.categoria != "pessoal" },
+                        state.linksTransparencia.filter { it.categoria != "pessoal" && it.categoria != "financeiro" },
                         "Canindé Transparente",
                         onClick = onTransparenciaLinkClick,
                     )
@@ -541,6 +545,27 @@ fun LazyListScope.verMaisItem(
                 color = AppColors.Blue500,
             )
         }
+    }
+}
+
+fun LazyListScope.financasCamaraItems(
+    links: List<LinkExterno>,
+    onClick: (LinkExterno) -> Unit,
+) {
+    if (links.isEmpty()) return
+    item {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Text(
+                "Receitas e despesas oficiais no Governo Transparente. Totais detalhados ficam no portal externo.",
+                fontSize = 11.sp,
+                color = AppColors.TextSecondary,
+            )
+        }
+    }
+    item { SectionHeader(title = "Finanças públicas") }
+    items(links) { link ->
+        TransparenciaLinkRow(link, onClick)
+        HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
     }
 }
 

@@ -570,6 +570,32 @@ fun PublicacaoDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack
 }
 
 @Composable
+fun DocumentoCamaraDetailScreen(viewModel: TransparenciaViewModel, pageId: String, onBack: () -> Unit) {
+    val state by viewModel.detailState.collectAsState()
+    LaunchedEffect(pageId) { viewModel.loadDetail(DetailEntity.DocumentoCamara, pageId) }
+    val doc = state.payload?.documentoCamara
+    DetailScaffold(
+        title = truncateToolbarTitle(doc?.titulo?.ifBlank { "Documento" } ?: "Documento"),
+        onBack = onBack,
+        shareTitle = doc?.titulo ?: "Documento Câmara",
+        shareText = doc?.url?.let { ShareTexts.paginaPortal(doc.titulo, pageId) },
+    ) {
+        DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.DocumentoCamara, pageId) }
+        doc?.let { d ->
+            if (d.categoria.isNotBlank()) DetailField("Tipo", d.categoria.replaceFirstChar { it.uppercase() })
+            if (d.data.isNotBlank()) DetailField("Data", d.data)
+            if (d.resumo.isNotBlank()) {
+                DetailSectionHeader("Resumo")
+                DetailBodyText(d.resumo)
+            }
+            DetailCamposExtras(d.camposExtras)
+            DetailAnexos(d.anexos, CAMARA_PORTAL_BASE)
+            if (d.url.isNotBlank()) DetailPortalLink(d.url, CAMARA_PORTAL_BASE)
+        }
+    }
+}
+
+@Composable
 fun PaginaPortalDetailScreen(viewModel: TransparenciaViewModel, pageId: String, onBack: () -> Unit) {
     val state by viewModel.detailState.collectAsState()
     LaunchedEffect(pageId) { viewModel.loadDetail(DetailEntity.PaginaPortal, pageId) }
@@ -688,16 +714,10 @@ fun SessaoDetailScreen(viewModel: TransparenciaViewModel, id: String, onBack: ()
         DetailLoadingOrError(state) { viewModel.loadDetail(DetailEntity.Sessao, id) }
         s?.let {
             if (it.data.isNotBlank()) DetailField("Data", it.data)
-            val video = it.videoUrl()
-            if (video.isNotBlank()) {
-                DetailLinkAction(
-                    label = "Transmissão",
-                    url = video,
-                    baseUrl = CAMARA_PORTAL_BASE,
-                    actionText = "Assistir sessão",
-                    usePdfIcon = false,
-                )
-            }
+            SessionVideoPlayer(
+                embedUrl = it.videoEmbedUrl,
+                watchUrl = it.videoUrl(),
+            )
             if (it.resumo.isNotBlank()) {
                 DetailSectionHeader("Resumo")
                 DetailBodyText(it.resumo)

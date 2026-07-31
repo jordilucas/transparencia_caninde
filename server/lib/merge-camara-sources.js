@@ -49,12 +49,15 @@ function mergeSessao(wp, html) {
   if (!html) return wp;
   const base = pickNewer(wp, html);
   const other = base === wp ? html : wp;
+  const htmlVideo = html.url && /\/video\//i.test(html.url) ? html.url : '';
+  const wpVideo = wp.url && /\/video\//i.test(wp.url) ? wp.url : '';
   return {
     titulo: base.titulo || other.titulo,
     data: base.data || other.data,
-    url: base.url || other.url,
+    url: htmlVideo || wpVideo || base.url || other.url,
     slug: base.slug || other.slug,
     resumo: base.resumo || other.resumo,
+    videoEmbedUrl: html.videoEmbedUrl || wp.videoEmbedUrl || other.videoEmbedUrl || '',
     modifiedAt: base.modifiedAt || other.modifiedAt || '',
   };
 }

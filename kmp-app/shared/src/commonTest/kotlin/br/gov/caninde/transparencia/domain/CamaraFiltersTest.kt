@@ -27,4 +27,12 @@ class CamaraFiltersTest {
         assertTrue(sessao.isVideoSession())
         assertTrue(sessao.videoUrl().contains("/video/"))
     }
+
+    @Test
+    fun youtubeWatchUrl_deEmbed() {
+        assertEquals(
+            "https://www.youtube.com/watch?v=abc123XY",
+            youtubeWatchUrl("https://www.youtube.com/embed/abc123XY"),
+        )
+    }
 }

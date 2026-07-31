@@ -167,6 +167,7 @@ class WsMessageHandler(
         DetailEntity.InstitucionalPrefeitura -> "institucional"
         DetailEntity.Publicacao -> "publicacao"
         DetailEntity.PaginaPortal -> "pagina_portal"
+        DetailEntity.DocumentoCamara -> "documento_camara"
     }
 
     fun buildRequestDetail(entity: DetailEntity, id: String): String {
