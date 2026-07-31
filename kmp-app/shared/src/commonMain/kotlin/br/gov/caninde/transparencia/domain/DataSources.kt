@@ -206,6 +206,15 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Web mobile",
+            data = "31/07/2026",
+            itens = listOf(
+                "Correção de carregamento em celular (Safari/iOS)",
+                "Mensagem clara se o navegador não for suportado",
+                "Botão recarregar quando a primeira carga demora",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Câmara — melhorias",
             data = "30/07/2026",
             itens = listOf(

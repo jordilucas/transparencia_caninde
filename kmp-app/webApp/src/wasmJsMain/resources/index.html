@@ -2,7 +2,10 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta name="description" content="Portal de transparência pública — Prefeitura e Câmara Municipal de Canindé, CE.">
@@ -98,6 +101,110 @@
         window.transparenciaHistoryBack = function () {
             window.history.back();
         };
+
+        function hideBootScreen() {
+            var loading = document.getElementById("app-loading");
+            if (loading) loading.style.display = "none";
+        }
+
+        function showBootError(title, subtitle, showRetry) {
+            hideBootScreen();
+            var panel = document.getElementById("app-boot-error");
+            var titleEl = document.getElementById("boot-error-title");
+            var subtitleEl = document.getElementById("boot-error-subtitle");
+            var retryEl = document.getElementById("boot-error-retry");
+            if (!panel || !titleEl || !subtitleEl || !retryEl) return;
+            titleEl.textContent = title;
+            subtitleEl.textContent = subtitle || "";
+            retryEl.style.display = showRetry ? "inline-block" : "none";
+            panel.style.display = "flex";
+        }
+
+        function supportsKotlinWasm() {
+            if (typeof WebAssembly !== "object") return false;
+            var ua = navigator.userAgent || "";
+            var isSafari = /Safari/i.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/i.test(ua);
+            if (!isSafari) return true;
+            var iosMatch = ua.match(/OS (\d+)[_.](\d+)/i);
+            if (iosMatch) {
+                var iosMajor = parseInt(iosMatch[1], 10);
+                var iosMinor = parseInt(iosMatch[2], 10);
+                return iosMajor > 18 || (iosMajor === 18 && iosMinor >= 2);
+            }
+            var versionMatch = ua.match(/Version\/(\d+)[.](\d+)/i);
+            if (versionMatch) {
+                var major = parseInt(versionMatch[1], 10);
+                var minor = parseInt(versionMatch[2], 10);
+                return major > 18 || (major === 18 && minor >= 2);
+            }
+            return true;
+        }
+
+        function loadAppScript() {
+            var script = document.createElement("script");
+            script.src = "transparencia-caninde.js";
+            script.async = true;
+            script.onerror = function () {
+                showBootError(
+                    "Não foi possível carregar o app",
+                    "Verifique sua conexão com a internet e tente novamente.",
+                    true
+                );
+            };
+            document.body.appendChild(script);
+        }
+
+        window.addEventListener("error", function (event) {
+            if (!event || !event.message) return;
+            if (/wasm|WebAssembly|instantiate/i.test(event.message)) {
+                showBootError(
+                    "Seu navegador não conseguiu iniciar o app",
+                    "Atualize o Safari/Chrome ou tente em outro aparelho.",
+                    true
+                );
+            }
+        });
+
+        window.addEventListener("unhandledrejection", function (event) {
+            var reason = event && event.reason ? String(event.reason) : "";
+            if (/wasm|WebAssembly|instantiate/i.test(reason)) {
+                showBootError(
+                    "Erro ao iniciar o app",
+                    "O navegador pode estar desatualizado ou sem memória suficiente.",
+                    true
+                );
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var retry = document.getElementById("boot-error-retry");
+            if (retry) {
+                retry.addEventListener("click", function () {
+                    window.location.reload();
+                });
+            }
+
+            if (!supportsKotlinWasm()) {
+                showBootError(
+                    "Navegador não suportado neste aparelho",
+                    "Use Safari 18.2+ (iOS 18.2+) ou Chrome atualizado. Também funciona no computador.",
+                    false
+                );
+                return;
+            }
+
+            loadAppScript();
+
+            setTimeout(function () {
+                var loading = document.getElementById("app-loading");
+                if (loading && loading.style.display !== "none") {
+                    var hint = document.getElementById("loader-slow-hint");
+                    var retrySlow = document.getElementById("loader-slow-retry");
+                    if (hint) hint.style.display = "block";
+                    if (retrySlow) retrySlow.style.display = "inline-block";
+                }
+            }, 30000);
+        });
     </script>
 </head>
 <body>
@@ -107,9 +214,21 @@
             <p class="loader-title">Transparência Canindé</p>
             <p class="loader-subtitle">Carregando dados públicos…</p>
             <p class="loader-hint">Prefeitura e Câmara Municipal de Canindé/CE</p>
+            <p id="loader-slow-hint" class="loader-hint" style="display:none;">
+                A primeira carga no celular pode levar até 1 minuto…
+            </p>
+            <button id="loader-slow-retry" class="loader-retry" type="button" style="display:none;" onclick="location.reload()">
+                Recarregar
+            </button>
+        </div>
+    </div>
+    <div id="app-boot-error" role="alert" aria-live="assertive">
+        <div class="loader-card">
+            <p id="boot-error-title" class="loader-title">Erro</p>
+            <p id="boot-error-subtitle" class="loader-subtitle"></p>
+            <button id="boot-error-retry" class="loader-retry" type="button">Tentar novamente</button>
         </div>
     </div>
     <div id="ComposeTarget"></div>
-    <script src="transparencia-caninde.js"></script>
 </body>
 </html>
