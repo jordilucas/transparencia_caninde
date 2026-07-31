@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta name="description" content="Portal de transparência pública — Prefeitura e Câmara Municipal de Canindé, CE.">
+    <link rel="canonical" href="https://transparenciacaninde.com.br/">
+    <title>Transparência Canindé</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRKC3S7WK7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag("js", new Date());
+        gtag("config", "G-JRKC3S7WK7", { send_page_view: false, anonymize_ip: true });
+    </script>
+    <script>
+        (function () {
+            var path = window.location.pathname || "/";
+            if (path.indexOf("/transparencia_caninde") === 0) {
+                var tag = document.createElement("base");
+                tag.href = "/transparencia_caninde/";
+                document.head.appendChild(tag);
+            }
+        })();
+        window.transparenciaShareContent = function (title, text) {
+            if (navigator.share) {
+                navigator.share({ title: title, text: text }).catch(function () {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text);
+                    } else {
+                        alert(title + "\n\n" + text);
+                    }
+                });
+            } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function () {
+                    alert(title + "\n\n" + text);
+                });
+            } else {
+                alert(title + "\n\n" + text);
+            }
+        };
+        window.transparenciaHideLoading = function () {
+            var el = document.getElementById("app-loading");
+            if (el) el.style.display = "none";
+        };
+        window.transparenciaLogScreen = function (screenName) {
+            if (typeof gtag === "function" && screenName) {
+                gtag("event", "screen_view", {
+                    screen_name: screenName,
+                    firebase_screen: screenName,
+                });
+            }
+        };
+        window.transparenciaLogEvent = function (name, paramsJson) {
+            if (typeof gtag !== "function" || !name) return;
+            var params = {};
+            try {
+                if (paramsJson) params = JSON.parse(paramsJson);
+            } catch (e) { /* ignore */ }
+            gtag("event", name, params);
+        };
+        window.transparenciaCacheSave = function (key, value) {
+            try { localStorage.setItem("tc_" + key, value); } catch (e) { /* ignore */ }
+        };
+        window.transparenciaCacheLoad = function (key) {
+            try { return localStorage.getItem("tc_" + key); } catch (e) { return null; }
+        };
+        window.transparenciaEncodeUri = function (value) {
+            return encodeURIComponent(value || "");
+        };
+        window.transparenciaDecodeUri = function (value) {
+            try { return decodeURIComponent(value || ""); } catch (e) { return value || ""; }
+        };
+        window.transparenciaCurrentAppPath = function () {
+            var hash = window.location.hash || "";
+            if (hash.charAt(0) === "#") hash = hash.substring(1);
+            if (hash && hash !== "/") {
+                return hash.charAt(0) === "/" ? hash : ("/" + hash);
+            }
+            var path = window.location.pathname || "/";
+            if (path !== "/" && path.indexOf(".") === -1) return path;
+            return "/";
+        };
+        window.transparenciaUpdatePath = function (path, replace) {
+            var normalized = (!path || path === "/") ? "/" : path;
+            var hash = normalized === "/" ? "#/" : ("#" + normalized);
+            var url = window.location.pathname + window.location.search + hash;
+            if (replace) {
+                window.history.replaceState({ tcPath: normalized }, "", url);
+            } else {
+                window.history.pushState({ tcPath: normalized }, "", url);
+            }
+        };
+        window.transparenciaHistoryBack = function () {
+            window.history.back();
+        };
+
+        function hideBootScreen() {
+            var loading = document.getElementById("app-loading");
+            if (loading) loading.style.display = "none";
+        }
+
+        function showBootError(title, subtitle, showRetry) {
+            hideBootScreen();
+            var panel = document.getElementById("app-boot-error");
+            var titleEl = document.getElementById("boot-error-title");
+            var subtitleEl = document.getElementById("boot-error-subtitle");
+            var retryEl = document.getElementById("boot-error-retry");
+            if (!panel || !titleEl || !subtitleEl || !retryEl) return;
+            titleEl.textContent = title;
+            subtitleEl.textContent = subtitle || "";
+            retryEl.style.display = showRetry ? "inline-block" : "none";
+            panel.style.display = "flex";
+        }
+
+        function supportsKotlinWasm() {
+            if (typeof WebAssembly !== "object") return false;
+            var ua = navigator.userAgent || "";
+            var isSafari = /Safari/i.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/i.test(ua);
+            if (!isSafari) return true;
+            var iosMatch = ua.match(/OS (\d+)[_.](\d+)/i);
+            if (iosMatch) {
+                var iosMajor = parseInt(iosMatch[1], 10);
+                var iosMinor = parseInt(iosMatch[2], 10);
+                return iosMajor > 18 || (iosMajor === 18 && iosMinor >= 2);
+            }
+            var versionMatch = ua.match(/Version\/(\d+)[.](\d+)/i);
+            if (versionMatch) {
+                var major = parseInt(versionMatch[1], 10);
+                var minor = parseInt(versionMatch[2], 10);
+                return major > 18 || (major === 18 && minor >= 2);
+            }
+            return true;
+        }
+
+        function loadAppScript() {
+            var script = document.createElement("script");
+            script.src = "transparencia-caninde.js?v=8cfc3f3876c3";
+            script.async = true;
+            script.onerror = function () {
+                showBootError(
+                    "Não foi possível carregar o app",
+                    "Verifique sua conexão com a internet e tente novamente.",
+                    true
+                );
+            };
+            document.body.appendChild(script);
+        }
+
+        window.addEventListener("error", function (event) {
+            if (!event || !event.message) return;
+            if (/wasm|WebAssembly|instantiate/i.test(event.message)) {
+                showBootError(
+                    "Seu navegador não conseguiu iniciar o app",
+                    "Atualize o Safari/Chrome ou tente em outro aparelho.",
+                    true
+                );
+            }
+        });
+
+        window.addEventListener("unhandledrejection", function (event) {
+            var reason = event && event.reason ? String(event.reason) : "";
+            if (/wasm|WebAssembly|instantiate/i.test(reason)) {
+                showBootError(
+                    "Erro ao iniciar o app",
+                    "O navegador pode estar desatualizado ou sem memória suficiente.",
+                    true
+                );
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var retry = document.getElementById("boot-error-retry");
+            if (retry) {
+                retry.addEventListener("click", function () {
+                    window.location.reload();
+                });
+            }
+
+            if (!supportsKotlinWasm()) {
+                showBootError(
+                    "Navegador não suportado neste aparelho",
+                    "Use Safari 18.2+ (iOS 18.2+) ou Chrome atualizado. Também funciona no computador.",
+                    false
+                );
+                return;
+            }
+
+            loadAppScript();
+
+            setTimeout(function () {
+                var loading = document.getElementById("app-loading");
+                if (loading && loading.style.display !== "none") {
+                    var hint = document.getElementById("loader-slow-hint");
+                    var retrySlow = document.getElementById("loader-slow-retry");
+                    if (hint) hint.style.display = "block";
+                    if (retrySlow) retrySlow.style.display = "inline-block";
+                }
+            }, 30000);
+        });
+    </script>
+</head>
+<body>
+    <div id="app-loading" role="status" aria-live="polite">
+        <div class="loader-card">
+            <div class="loader-spinner" aria-hidden="true"></div>
+            <p class="loader-title">Transparência Canindé</p>
+            <p class="loader-subtitle">Carregando dados públicos…</p>
+            <p class="loader-hint">Prefeitura e Câmara Municipal de Canindé/CE</p>
+            <p id="loader-slow-hint" class="loader-hint" style="display:none;">
+                A primeira carga no celular pode levar até 1 minuto…
+            </p>
+            <button id="loader-slow-retry" class="loader-retry" type="button" style="display:none;" onclick="location.reload()">
+                Recarregar
+            </button>
+        </div>
+    </div>
+    <div id="app-boot-error" role="alert" aria-live="assertive">
+        <div class="loader-card">
+            <p id="boot-error-title" class="loader-title">Erro</p>
+            <p id="boot-error-subtitle" class="loader-subtitle"></p>
+            <button id="boot-error-retry" class="loader-retry" type="button">Tentar novamente</button>
+        </div>
+    </div>
+    <div id="ComposeTarget"></div>
+</body>
+</html>
