@@ -19,7 +19,7 @@ import br.gov.caninde.transparencia.presentation.detail.*
 import br.gov.caninde.transparencia.platform.hideAppLoadingScreen
 
 enum class Screen {
-    Prefeitura, Camara, Graficos, Busca, Sobre
+    Prefeitura, Camara, Graficos, Busca, Agua, Sobre
 }
 
 sealed class AppRoute {
@@ -45,6 +45,7 @@ val navItems: List<NavItem> by lazy {
         NavItem(Screen.Camara, "Câmara", Icons.Default.Groups),
         NavItem(Screen.Graficos, "Gráficos", Icons.Default.BarChart),
         NavItem(Screen.Busca, "Busca", Icons.Default.Search),
+        NavItem(Screen.Agua, "Água", Icons.Default.WaterDrop),
         NavItem(Screen.Sobre, "Sobre", Icons.Default.Info),
     )
 }
@@ -103,12 +104,13 @@ fun TransparenciaApp(
     val prefeituraState by viewModel.prefeituraState.collectAsState()
     val camaraState by viewModel.camaraState.collectAsState()
 
-    val onSobreScreen = currentRoute is AppRoute.Main && (currentRoute as AppRoute.Main).screen == Screen.Sobre
+    val onOfflineSafeScreen = currentRoute is AppRoute.Main &&
+        (currentRoute as AppRoute.Main).screen.let { it == Screen.Sobre || it == Screen.Agua }
     val showConnectionError = shouldShowConnectionErrorScreen(
         connectionState = connectionState,
         prefeitura = prefeituraState,
         camara = camaraState,
-        onSobreScreen = onSobreScreen,
+        onOfflineSafeScreen = onOfflineSafeScreen,
     )
 
     LaunchedEffect(Unit) {
@@ -385,6 +387,7 @@ private fun AppRouteContent(
                 onDocumentoClick = { doc -> onNavigate(AppRoute.DocumentoCamara(documentoCamaraRouteId(doc))) },
                 onSobreClick = onSobreClick,
             )
+            Screen.Agua -> ReclamacaoAguaScreen(onSobreClick = onSobreClick)
             Screen.Sobre -> SobreScreen(
                 prefeituraState = prefeituraState,
                 camaraState = camaraState,

@@ -17,7 +17,7 @@ class ConnectionErrorScreenTest {
                 ConnectionState.Error,
                 emptyPref,
                 emptyCam,
-                onSobreScreen = false,
+                onOfflineSafeScreen = false,
             ),
         )
     }
@@ -29,7 +29,7 @@ class ConnectionErrorScreenTest {
                 ConnectionState.Error,
                 emptyPref,
                 emptyCam,
-                onSobreScreen = true,
+                onOfflineSafeScreen = true,
             ),
         )
     }
@@ -42,7 +42,7 @@ class ConnectionErrorScreenTest {
                 ConnectionState.Error,
                 prefeitura,
                 emptyCam,
-                onSobreScreen = false,
+                onOfflineSafeScreen = false,
             ),
         )
     }
@@ -54,7 +54,7 @@ class ConnectionErrorScreenTest {
                 ConnectionState.Reconnecting,
                 emptyPref,
                 emptyCam,
-                onSobreScreen = false,
+                onOfflineSafeScreen = false,
             ),
         )
     }
@@ -66,7 +66,7 @@ class ConnectionErrorScreenTest {
                 ConnectionState.Connected,
                 emptyPref,
                 emptyCam,
-                onSobreScreen = false,
+                onOfflineSafeScreen = false,
             ),
         )
     }

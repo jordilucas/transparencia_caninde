@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /reclamacoes/{docId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['endereco', 'setor', 'diasSemAgua', 'criadoEmMillis'])
+        && request.resource.data.endereco is string
+        && request.resource.data.endereco.size() >= 6
+        && request.resource.data.setor in ['1', '2']
+        && request.resource.data.diasSemAgua is int
+        && request.resource.data.diasSemAgua >= 0
+        && request.resource.data.diasSemAgua <= 365;
+
+      allow update, delete: if false;
+    }
+  }
+}

@@ -10,6 +10,7 @@ class WebRoutesTest {
     fun parseWebPath_rotasPrincipais() {
         assertEquals(AppRoute.Main(Screen.Prefeitura), parseWebPath("/"))
         assertEquals(AppRoute.Main(Screen.Camara), parseWebPath("/camara"))
+        assertEquals(AppRoute.Main(Screen.Agua), parseWebPath("/agua"))
         assertEquals(AppRoute.Contrato("1073"), parseWebPath("/contrato/1073"))
         assertEquals(AppRoute.Vereador("joao-silva"), parseWebPath("/vereador/joao-silva"))
     }

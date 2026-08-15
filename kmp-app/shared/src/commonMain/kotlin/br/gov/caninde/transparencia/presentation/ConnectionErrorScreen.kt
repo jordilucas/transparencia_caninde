@@ -35,9 +35,9 @@ fun shouldShowConnectionErrorScreen(
     connectionState: ConnectionState,
     prefeitura: PrefeituraUiState,
     camara: CamaraUiState,
-    onSobreScreen: Boolean,
+    onOfflineSafeScreen: Boolean,
 ): Boolean {
-    if (onSobreScreen) return false
+    if (onOfflineSafeScreen) return false
     if (hasCachedServerData(prefeitura, camara)) return false
     return when (connectionState) {
         ConnectionState.Error -> true

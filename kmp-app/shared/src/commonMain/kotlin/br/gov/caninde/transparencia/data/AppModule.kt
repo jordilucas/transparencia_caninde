@@ -34,7 +34,9 @@ fun createAppModule(endpoint: WebSocketEndpoint = WebSocketEndpoint.DEFAULT): Mo
     single { endpoint }
     single { createHttpClient() }
     single { TransparenciaRepository(get(), get()) }
+    single { ReclamacaoAguaRepository(get()) }
     factory { TransparenciaViewModel(get()) }
+    factory { ReclamacaoAguaViewModel(get()) }
 }
 
 /** @deprecated Use [createAppModule] com endpoint explícito no Android. */

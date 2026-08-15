@@ -206,6 +206,17 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Falta de água — reclamações",
+            data = "15/08/2026",
+            itens = listOf(
+                "Nova aba Água para registrar falta de abastecimento em Canindé",
+                "Formulário com endereço, setor (1 ou 2), dias sem água e foto ou vídeo",
+                "Painel público com totais por setor e lista de reclamações",
+                "Registro anônimo; comprovantes hospedados com armazenamento gratuito",
+                "Rota web: transparenciacaninde.com.br#/agua",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Web — CORS e fotos",
             data = "31/07/2026",
             itens = listOf(
