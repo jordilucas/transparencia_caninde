@@ -19,6 +19,54 @@ object DataSourcesInfo {
     const val SITE_URL = "https://transparenciacaninde.com.br"
     const val MUNICIPIO = "Canindé, CE"
     const val IBGE = "2302800"
+    const val PREFEITURA_SITE = "https://www.caninde.ce.gov.br"
+    const val CAMARA_SITE = "https://www.cmcaninde.ce.gov.br"
+
+    val portaisOficiais: List<FonteCaptura> = listOf(
+        FonteCaptura(
+            titulo = "Prefeitura Municipal de Canindé",
+            url = PREFEITURA_SITE,
+            descricao = "Portal oficial do Executivo municipal — fonte primária de contratos, licitações, secretarias e publicações.",
+        ),
+        FonteCaptura(
+            titulo = "Câmara Municipal de Canindé",
+            url = CAMARA_SITE,
+            descricao = "Portal oficial do Legislativo municipal — vereadores, sessões, matérias e transparência legislativa.",
+        ),
+        FonteCaptura(
+            titulo = "Portal de transparência — Prefeitura",
+            url = "$PREFEITURA_PORTAL_BASE/acessoainformacao.php",
+            descricao = "Seção de acesso à informação e dados abertos da Prefeitura.",
+        ),
+        FonteCaptura(
+            titulo = "Canindé Transparente — Câmara",
+            url = "$CAMARA_PORTAL_BASE/caninde-transparente/",
+            descricao = "Portal de transparência legislativa da Câmara.",
+        ),
+    )
+
+    val comoFuncionaPassos: List<String> = listOf(
+        "Um servidor consulta, em intervalos regulares, apenas URLs públicas da Prefeitura e da Câmara — " +
+            "as mesmas páginas que qualquer cidadão pode abrir no navegador.",
+        "Contratos, licitações, vereadores, sessões e demais listagens são normalizados em JSON e enviados " +
+            "ao aplicativo via WebSocket (conexão em tempo real).",
+        "Ao abrir um item (contrato, vereador, matéria etc.), o servidor busca o detalhe na página oficial " +
+            "correspondente e exibe o conteúdo com link para o documento de origem.",
+        "O app guarda a última sincronização no cache local do dispositivo, permitindo consulta mesmo " +
+            "com conexão instável — sempre com indicação de quando os dados foram atualizados.",
+        "Links para receitas e despesas detalhadas abrem o Governo Transparente (sistema oficial); " +
+            "este portal não replica consultas interativas desse painel.",
+        "A aba Água funciona de forma distinta: reclamações de falta de água são registradas pelos próprios " +
+            "cidadãos (de forma anônima), com comprovantes em armazenamento seguro — não vêm dos portais oficiais.",
+    )
+
+    const val conformidadeLegalResumo =
+        "Este portal não infringe a legislação brasileira. Exibe somente informações já tornadas públicas " +
+            "pelos órgãos municipais, sem acesso a áreas restritas, sistemas internos ou dados sigilosos. " +
+            "Não alteramos o conteúdo oficial: facilitamos a consulta e indicamos sempre a fonte de origem. " +
+            "A republicação de dados públicos para fins de transparência e controle social encontra amparo na " +
+            "Constituição Federal, na Lei de Acesso à Informação (LAI) e nas normas de transparência fiscal. " +
+            "Trata-se de um projeto independente de facilitação — não substitui os sites oficiais da Prefeitura e da Câmara."
 
     val prefeituraJson: List<FonteCaptura> = listOf(
         FonteCaptura(
@@ -202,14 +250,35 @@ object DataSourcesInfo {
             descricao = "Estimula a transparência pública, o uso de dados abertos e a melhoria dos serviços digitais.",
             url = "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/L14129.htm",
         ),
+        ReferenciaLegal(
+            titulo = "Lei nº 13.709/2018 — LGPD (dados públicos)",
+            descricao = "Dados institucionais de agentes públicos e informações divulgadas para transparência " +
+                "são tratados conforme o interesse público; contatos pessoais de vereadores não são replicados neste app.",
+            url = "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm",
+        ),
+        ReferenciaLegal(
+            titulo = "Marco Civil da Internet (Lei nº 12.965/2014)",
+            descricao = "Garantias de liberdade de expressão e acesso à informação na internet, em consonância " +
+                "com a divulgação de dados já publicados por órgãos públicos.",
+            url = "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l12965.htm",
+        ),
     )
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Sobre — fontes e funcionamento",
+            data = "17/08/2026",
+            itens = listOf(
+                "Passo a passo de como o portal captura e exibe dados públicos",
+                "Fontes oficiais da Prefeitura e da Câmara em destaque, com links",
+                "Seção de conformidade legal — uso permitido de dados já publicados",
+                "Google Analytics reativado (IP anonimizado) para melhorar o serviço",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Privacidade e vereadores",
             data = "17/08/2026",
             itens = listOf(
-                "Sem rastreamento: removido Google Analytics e cookies de monitoramento",
                 "Contatos pessoais de vereadores não aparecem mais no app",
                 "Política de privacidade atualizada na aba Sobre",
                 "Botão compartilhar na aba Água para divulgar o registro de reclamações",

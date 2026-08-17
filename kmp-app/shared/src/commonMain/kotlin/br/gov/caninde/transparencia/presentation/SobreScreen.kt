@@ -51,13 +51,71 @@ fun SobreScreen(
                 SobreCard {
                     SobreParagraph(
                         "Este portal agrega e exibe dados públicos da Prefeitura e da Câmara Municipal de Canindé (CE). " +
-                            "Nenhuma informação é inventada: tudo o que você vê vem dos sites oficiais listados abaixo, " +
-                            "atualizados periodicamente pelo nosso servidor.",
+                            "Nenhuma informação é inventada: tudo o que você vê sobre gestão municipal vem dos sites " +
+                            "oficiais indicados abaixo, atualizados periodicamente pelo nosso servidor.",
                     )
                     SobreParagraph(
-                        "Os dados são reais, publicados pelos próprios órgãos públicos para consulta da população. " +
-                            "Este projeto facilita o acesso, mas a fonte de verdade continua sendo sempre o portal oficial de origem.",
+                        "Em caso de divergência, prevalece sempre a informação no portal oficial de origem. " +
+                            "Cada tela de detalhe inclui link para consultar o documento ou página publicada pelo órgão.",
                     )
+                }
+            }
+
+            item {
+                SobreSectionTitle("Como funciona")
+                SobreCard {
+                    DataSourcesInfo.comoFuncionaPassos.forEachIndexed { index, passo ->
+                        SobrePasso(numero = index + 1, texto = passo)
+                    }
+                    if (prefeituraState.lastUpdated.isNotBlank() || camaraState.lastUpdated.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp)
+                        Spacer(Modifier.height(8.dp))
+                        if (prefeituraState.lastUpdated.isNotBlank()) {
+                            SobreMeta("Prefeitura atualizada", prefeituraState.lastUpdated)
+                        }
+                        if (camaraState.lastUpdated.isNotBlank()) {
+                            SobreMeta("Câmara atualizada", camaraState.lastUpdated)
+                        }
+                    }
+                    val fontesAtivas = (prefeituraState.resumo.fontesUtilizadas + camaraState.resumo.fontesUtilizadas)
+                        .distinct()
+                        .filter { it.isNotBlank() }
+                    if (fontesAtivas.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        SobreMeta(
+                            "Fontes usadas na última sincronização",
+                            fontesAtivas.joinToString(", "),
+                        )
+                    }
+                }
+            }
+
+            item {
+                SobreSectionTitle("Fontes oficiais")
+                SobreCard {
+                    SobreParagraph(
+                        "Todos os dados de transparência municipal exibidos neste app têm origem nos portais abaixo. " +
+                            "Toque em cada link para abrir o site oficial e conferir na fonte.",
+                    )
+                    DataSourcesInfo.portaisOficiais.forEach { fonte ->
+                        SobreFonteRow(fonte)
+                    }
+                }
+            }
+
+            item {
+                SobreSectionTitle("Conformidade legal")
+                SobreCard {
+                    SobreParagraph(DataSourcesInfo.conformidadeLegalResumo)
+                    Spacer(Modifier.height(4.dp))
+                    SobreParagraph(
+                        "Fundamentação normativa — o acesso e a divulgação destas informações são direitos garantidos " +
+                            "ao cidadão e deveres da administração pública:",
+                    )
+                    DataSourcesInfo.baseLegal.forEach { lei ->
+                        SobreLeiRow(lei)
+                    }
                 }
             }
 
@@ -87,37 +145,7 @@ fun SobreScreen(
             }
 
             item {
-                SobreSectionTitle("Como capturamos os dados")
-                SobreCard {
-                    SobreParagraph(
-                        "Um servidor consulta as URLs abaixo em intervalos regulares, normaliza o conteúdo em JSON " +
-                            "e envia ao aplicativo via WebSocket. Detalhes (biografias, PDFs, páginas longas) são buscados " +
-                            "somente quando você abre o item.",
-                    )
-                    if (prefeituraState.lastUpdated.isNotBlank() || camaraState.lastUpdated.isNotBlank()) {
-                        Spacer(Modifier.height(8.dp))
-                        if (prefeituraState.lastUpdated.isNotBlank()) {
-                            SobreMeta("Prefeitura atualizada", prefeituraState.lastUpdated)
-                        }
-                        if (camaraState.lastUpdated.isNotBlank()) {
-                            SobreMeta("Câmara atualizada", camaraState.lastUpdated)
-                        }
-                    }
-                    val fontesAtivas = (prefeituraState.resumo.fontesUtilizadas + camaraState.resumo.fontesUtilizadas)
-                        .distinct()
-                        .filter { it.isNotBlank() }
-                    if (fontesAtivas.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
-                        SobreMeta(
-                            "Fontes ativas na última sincronização",
-                            fontesAtivas.joinToString(", "),
-                        )
-                    }
-                }
-            }
-
-            item {
-                SobreSectionTitle("Prefeitura — exportação JSON")
+                SobreSectionTitle("Detalhamento das fontes — Prefeitura (JSON)")
                 SobreCard {
                     SobreParagraph("Endpoint principal de dados abertos (parâmetro a=ano do exercício):")
                     DataSourcesInfo.prefeituraJson.forEach { fonte ->
@@ -127,7 +155,7 @@ fun SobreScreen(
             }
 
             item {
-                SobreSectionTitle("Prefeitura — páginas HTML")
+                SobreSectionTitle("Detalhamento das fontes — Prefeitura (HTML)")
                 SobreCard {
                     DataSourcesInfo.prefeituraHtml.forEach { fonte ->
                         SobreFonteRow(fonte)
@@ -136,7 +164,7 @@ fun SobreScreen(
             }
 
             item {
-                SobreSectionTitle("Prefeitura — detalhes sob demanda")
+                SobreSectionTitle("Detalhamento das fontes — Prefeitura (detalhes)")
                 SobreCard {
                     SobreParagraph("Consultadas ao abrir um item específico no app:")
                     DataSourcesInfo.prefeituraDetalhe.forEach { fonte ->
@@ -146,7 +174,7 @@ fun SobreScreen(
             }
 
             item {
-                SobreSectionTitle("Câmara — API WordPress (REST)")
+                SobreSectionTitle("Detalhamento das fontes — Câmara (API WordPress)")
                 SobreCard {
                     DataSourcesInfo.camaraWp.forEach { fonte ->
                         SobreFonteRow(fonte)
@@ -155,7 +183,7 @@ fun SobreScreen(
             }
 
             item {
-                SobreSectionTitle("Câmara — páginas HTML")
+                SobreSectionTitle("Detalhamento das fontes — Câmara (HTML)")
                 SobreCard {
                     DataSourcesInfo.camaraHtml.forEach { fonte ->
                         SobreFonteRow(fonte)
@@ -164,7 +192,7 @@ fun SobreScreen(
             }
 
             item {
-                SobreSectionTitle("Câmara — detalhes sob demanda")
+                SobreSectionTitle("Detalhamento das fontes — Câmara (detalhes)")
                 SobreCard {
                     DataSourcesInfo.camaraDetalhe.forEach { fonte ->
                         SobreFonteRow(fonte)
@@ -186,20 +214,6 @@ fun SobreScreen(
             }
 
             item {
-                SobreSectionTitle("Base legal")
-                SobreCard {
-                    SobreParagraph(
-                        "A captura e divulgação destes dados encontra amparo na legislação brasileira de transparência " +
-                            "e acesso à informação pública. Trata-se de informações já disponibilizadas pelos órgãos " +
-                            "municipais para consulta de qualquer cidadão.",
-                    )
-                    DataSourcesInfo.baseLegal.forEach { lei ->
-                        SobreLeiRow(lei)
-                    }
-                }
-            }
-
-            item {
                 SobreSectionTitle("Privacidade")
                 SobreCard {
                     SobreParagraph(
@@ -210,9 +224,9 @@ fun SobreScreen(
                     )
                     Spacer(Modifier.height(8.dp))
                     SobreParagraph(
-                        "Não utilizamos cookies de rastreamento nem ferramentas de analytics (Google Analytics, etc.). " +
-                            "O portal não registra telas visitadas, buscas ou compartilhamentos. Apenas o cache local do " +
-                            "navegador guarda dados públicos para uso offline.",
+                        "Utilizamos Google Analytics para entender o uso do portal — telas visitadas, buscas " +
+                            "(sem armazenar o texto digitado), compartilhamentos e erros de conexão. O IP é anonimizado. " +
+                            "Esses dados ajudam a melhorar o serviço e não identificam você pessoalmente.",
                     )
                 }
             }
@@ -222,8 +236,8 @@ fun SobreScreen(
                 SobreCard {
                     SobreParagraph(
                         "Embora busquemos manter os dados atualizados, pode haver atraso em relação ao portal de origem. " +
-                            "Em caso de divergência, prevalece sempre a informação no site oficial. " +
-                            "Este é um projeto independente de facilitação do acesso à transparência municipal.",
+                            "Este é um projeto independente e voluntário de facilitação do acesso à transparência municipal — " +
+                            "sem vínculo oficial com a Prefeitura ou a Câmara, e sem fins comerciais.",
                     )
                     Spacer(Modifier.height(4.dp))
                     SobreMeta("Site", DataSourcesInfo.SITE_URL)
@@ -259,6 +273,36 @@ private fun SobreCard(content: @Composable ColumnScope.() -> Unit) {
             Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             content = content,
+        )
+    }
+}
+
+@Composable
+private fun SobrePasso(numero: Int, texto: String) {
+    Row(
+        modifier = Modifier.padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .clip(RoundedCornerShape(11.dp))
+                .background(AppColors.Blue100),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "$numero",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.Navy800,
+            )
+        }
+        Text(
+            texto,
+            fontSize = 13.sp,
+            lineHeight = 20.sp,
+            color = AppColors.TextSecondary,
+            modifier = Modifier.weight(1f),
         )
     }
 }
