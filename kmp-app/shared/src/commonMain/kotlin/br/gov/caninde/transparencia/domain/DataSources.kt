@@ -266,6 +266,15 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Folha de pagamento",
+            data = "17/08/2026",
+            itens = listOf(
+                "Nova aba Folha com totais por secretaria e por mês",
+                "Dados agregados do portal oficial — sem nomes de servidores (LGPD)",
+                "Gráfico de participação por órgão e link para consulta nominal",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Experiência e transparência",
             data = "17/08/2026",
             itens = listOf(

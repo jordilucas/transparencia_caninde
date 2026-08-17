@@ -19,7 +19,7 @@ import br.gov.caninde.transparencia.presentation.detail.*
 import br.gov.caninde.transparencia.platform.hideAppLoadingScreen
 
 enum class Screen {
-    Prefeitura, Camara, Graficos, Busca, Agua, Sobre
+    Prefeitura, Folha, Camara, Graficos, Busca, Agua, Sobre
 }
 
 sealed class AppRoute {
@@ -44,6 +44,7 @@ data class NavItem(val screen: Screen, val label: String, val icon: ImageVector)
 val navItems: List<NavItem> by lazy {
     listOf(
         NavItem(Screen.Prefeitura, "Prefeitura", Icons.Default.AccountBalance),
+        NavItem(Screen.Folha, "Folha", Icons.Default.Payments),
         NavItem(Screen.Camara, "Câmara", Icons.Default.Groups),
         NavItem(Screen.Graficos, "Gráficos", Icons.Default.BarChart),
         NavItem(Screen.Busca, "Busca", Icons.Default.Search),
@@ -355,6 +356,12 @@ private fun AppRouteContent(
                     if (id.isNotBlank()) onNavigate(AppRoute.Lrf(id))
                 },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
+                onSobreClick = onSobreClick,
+            )
+            Screen.Folha -> FolhaPagamentoScreen(
+                prefeituraState = prefeituraState,
+                connectionState = connectionState,
+                onRefresh = { viewModel.refreshPrefeitura() },
                 onSobreClick = onSobreClick,
             )
             Screen.Camara -> CamaraScreen(

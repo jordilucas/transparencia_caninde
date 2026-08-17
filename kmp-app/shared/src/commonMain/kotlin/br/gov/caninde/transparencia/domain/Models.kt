@@ -26,6 +26,7 @@ data class WsPayload(
     val lrf: List<LrfDocumento>? = null,
     val linksTransparencia: List<LinkExterno>? = null,
     val resumoFinanceiro: ResumoFinanceiroPortal? = null,
+    val folhaPagamento: FolhaPagamentoResumo? = null,
     val resumo: ResumoPrefeitura? = null,
     val resumoCamara: ResumoCamara? = null,
     val scrapedAt: String? = null,
@@ -153,6 +154,35 @@ data class ResumoFinanceiroPortal(
     val gtReceitasUrl: String = "",
     val gtDespesasUrl: String = "",
     val aviso: String = "",
+)
+
+@Serializable
+data class FolhaCompetencia(
+    val competencia: String = "",
+    val tipoFolha: String = "",
+    val proventos: String = "",
+    val descontos: String = "",
+    val liquido: String = "",
+)
+
+@Serializable
+data class FolhaSetorResumo(
+    val secretaria: String = "",
+    val codigoOrgao: String = "",
+    val totalPago: String = "",
+    val totalPagoNumerico: Double = 0.0,
+    val quantidadePagamentos: Int = 0,
+)
+
+@Serializable
+data class FolhaPagamentoResumo(
+    val exercicio: Int = 0,
+    val competencias: List<FolhaCompetencia> = emptyList(),
+    val porSetor: List<FolhaSetorResumo> = emptyList(),
+    val totalPagoSetores: String = "",
+    val avisoPrivacidade: String = "",
+    val fonteUrl: String = "",
+    val fontePagamentosUrl: String = "",
 )
 
 @Serializable
@@ -393,6 +423,7 @@ data class PrefeituraUiState(
     val secretarias: List<Secretaria> = emptyList(),
     val linksTransparencia: List<LinkExterno> = emptyList(),
     val resumoFinanceiro: ResumoFinanceiroPortal? = null,
+    val folhaPagamento: FolhaPagamentoResumo? = null,
     val graficos: GraficosPayload? = null,
     val resumo: ResumoPrefeitura = ResumoPrefeitura(),
     val lastUpdated: String = "",

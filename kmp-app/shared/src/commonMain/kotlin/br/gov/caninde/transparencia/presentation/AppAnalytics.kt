@@ -6,6 +6,7 @@ import br.gov.caninde.transparencia.platform.logAnalyticsScreen
 fun AppRoute.analyticsScreenName(): String = when (this) {
     is AppRoute.Main -> when (screen) {
         Screen.Prefeitura -> "prefeitura"
+        Screen.Folha -> "folha_pagamento"
         Screen.Camara -> "camara"
         Screen.Graficos -> "graficos"
         Screen.Busca -> "busca"

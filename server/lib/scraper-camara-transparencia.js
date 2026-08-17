@@ -24,6 +24,7 @@ function buildLinksTransparenciaPrefeitura() {
   return [
     { titulo: 'Receitas — Governo Transparente', url: `${GT_BASE}/transparencia/receitas/${id}?clean=false`, categoria: 'financeiro' },
     { titulo: 'Despesas detalhadas', url: `${GT_BASE}/transparencia/despesas/opcoes/${id}?clean=false`, categoria: 'financeiro' },
+    { titulo: 'Folha de pagamento (portal)', url: 'https://www.caninde.ce.gov.br/folhadepagamento.php', categoria: 'pessoal' },
     { titulo: 'Convênios', url: `${GT_BASE}/transparencia/${id}/consultarconvenio?clean=false`, categoria: 'compras' },
     { titulo: 'Obras', url: `${GT_BASE}/transparencia/obras/${id}?clean=false`, categoria: 'obras' },
     { titulo: 'Emendas parlamentares', url: `${GT_BASE}/acessoinfo/${id}/consultaremendas?clean=false`, categoria: 'emendas' },

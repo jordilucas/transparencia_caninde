@@ -24,6 +24,7 @@ const { createDetailHandler } = require('./lib/detail-handler');
 const dadosAbertos = require('./lib/scraper-prefeitura-dadosabertos');
 const camaraTransp = require('./lib/scraper-camara-transparencia');
 const { buildResumoFinanceiro } = require('./lib/finance-summary');
+const scrapeFolha = require('./lib/scraper-folha-pagamento');
 const mergeSources = require('./lib/merge-sources');
 const camaraWp = require('./lib/scraper-camara-wp');
 const camaraPortal = require('./lib/scraper-camara-portal');
@@ -95,19 +96,24 @@ async function scrapePrefeituraInner() {
     const year = pendingPrefeituraExercicio || new Date().getFullYear();
     pendingPrefeituraExercicio = null;
 
-    const [jsonResult, htmlResult] = await Promise.allSettled([
+    const [jsonResult, htmlResult, folhaResult] = await Promise.allSettled([
       dadosAbertos.scrapePrefeituraDadosAbertos(scrapeHttp, year),
       scraperPrefeitura.scrapePrefeituraHtml(scrapeHttp, cheerio),
+      scrapeFolha.scrapeFolhaPagamento(scrapeHttp, cheerio, year),
     ]);
 
     const jsonBundle = jsonResult.status === 'fulfilled' ? jsonResult.value : null;
     const htmlBundle = htmlResult.status === 'fulfilled' ? htmlResult.value : null;
+    const folhaPagamento = folhaResult.status === 'fulfilled' ? folhaResult.value : null;
 
     if (jsonResult.status === 'rejected') {
       console.warn('[Prefeitura] dados abertos indisponível:', jsonResult.reason?.message || jsonResult.reason);
     }
     if (htmlResult.status === 'rejected') {
       console.warn('[Prefeitura] HTML indisponível:', htmlResult.reason?.message || htmlResult.reason);
+    }
+    if (folhaResult.status === 'rejected') {
+      console.warn('[Prefeitura] folha de pagamento indisponível:', folhaResult.reason?.message || folhaResult.reason);
     }
 
     const merged = mergeSources.mergePrefeituraSources(jsonBundle || {}, htmlBundle || {});
@@ -150,6 +156,7 @@ async function scrapePrefeituraInner() {
         gestores,
         linksTransparencia: camaraTransp.buildLinksTransparenciaPrefeitura(),
         resumoFinanceiro,
+        folhaPagamento,
         fonte: fonteParts.join(' + ') || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
         fontesUtilizadas: merged.fontesUtilizadas,
         exercicio: year,
@@ -160,7 +167,8 @@ async function scrapePrefeituraInner() {
 
     cache.prefeitura = result;
     cache.lastUpdated.prefeitura = now();
-    console.log(`[Prefeitura] OK — ${contratos.length} contratos, ${licitacoes.length} licitações`);
+    console.log(`[Prefeitura] OK — ${contratos.length} contratos, ${licitacoes.length} licitações`
+      + (folhaPagamento?.porSetor?.length ? `, folha ${folhaPagamento.porSetor.length} setores` : ''));
     if (result.error) console.warn(`[Prefeitura] aviso: ${result.error}`);
     return result;
   } catch (err) {

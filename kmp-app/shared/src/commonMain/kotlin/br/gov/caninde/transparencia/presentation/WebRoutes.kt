@@ -5,6 +5,7 @@ const val SITE_BASE_URL = "https://transparenciacaninde.com.br"
 fun AppRoute.toWebPath(): String = when (this) {
     is AppRoute.Main -> when (screen) {
         Screen.Prefeitura -> "/"
+        Screen.Folha -> "/folha"
         Screen.Camara -> "/camara"
         Screen.Graficos -> "/graficos"
         Screen.Busca -> "/busca"
@@ -39,6 +40,7 @@ fun parseWebPath(path: String): AppRoute? {
     if (segments.isEmpty()) return AppRoute.Main(Screen.Prefeitura)
     return when (segments.first()) {
         "camara" -> AppRoute.Main(Screen.Camara)
+        "folha" -> AppRoute.Main(Screen.Folha)
         "graficos" -> AppRoute.Main(Screen.Graficos)
         "busca" -> AppRoute.Main(Screen.Busca)
         "agua" -> AppRoute.Main(Screen.Agua)
