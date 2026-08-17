@@ -22,6 +22,15 @@ object DataSourcesInfo {
     const val PREFEITURA_SITE = "https://www.caninde.ce.gov.br"
     const val CAMARA_SITE = "https://www.cmcaninde.ce.gov.br"
 
+    val sobreDestaques: List<String> = listOf(
+        "Finanças — receita arrecadada, despesa paga e maiores fornecedores (Governo Transparente)",
+        "Folha de pagamento — totais por secretaria e por mês, sem nomes (LGPD)",
+        "Contratos, licitações, obras, LRF e diário oficial da Prefeitura",
+        "Vereadores, sessões, matérias e transparência da Câmara",
+        "Água — registro anônimo de falta de abastecimento com painel público",
+        "Busca unificada, gráficos, PWA (instalar como app) e seletor de exercício",
+    )
+
     val portaisOficiais: List<FonteCaptura> = listOf(
         FonteCaptura(
             titulo = "Prefeitura Municipal de Canindé",
@@ -54,8 +63,9 @@ object DataSourcesInfo {
             "correspondente e exibe o conteúdo com link para o documento de origem.",
         "O app guarda a última sincronização no cache local do dispositivo, permitindo consulta mesmo " +
             "com conexão instável — sempre com indicação de quando os dados foram atualizados.",
-        "Links para receitas e despesas detalhadas abrem o Governo Transparente (sistema oficial); " +
-            "este portal não replica consultas interativas desse painel.",
+        "Receitas, despesas e fornecedores da Prefeitura vêm do Governo Transparente (dados oficiais): " +
+            "o app exibe totais do exercício, período e data de atualização; consultas detalhadas abrem o painel oficial.",
+        "Folha de pagamento exibe apenas totais agregados por secretaria — sem nomes ou matrículas de servidores.",
         "A aba Água funciona de forma distinta: reclamações de falta de água são registradas pelos próprios " +
             "cidadãos (de forma anônima), com comprovantes em armazenamento seguro — não vêm dos portais oficiais.",
     )
@@ -270,6 +280,15 @@ object DataSourcesInfo {
     )
 
     val changelog: List<ChangelogEntry> = listOf(
+        ChangelogEntry(
+            titulo = "Sobre e divulgação",
+            data = "17/08/2026",
+            itens = listOf(
+                "Seção de destaques do portal na aba Sobre",
+                "Texto atualizado sobre finanças integradas do Governo Transparente",
+                "Materiais para compartilhar novidades no Instagram",
+            ),
+        ),
         ChangelogEntry(
             titulo = "Finanças em destaque",
             data = "17/08/2026",

@@ -62,6 +62,26 @@ fun SobreScreen(
             }
 
             item {
+                SobreSectionTitle("Destaques do portal")
+                SobreCard {
+                    SobreParagraph(
+                        "Principais funcionalidades disponíveis hoje — todas gratuitas e acessíveis pelo navegador ou como app (PWA):",
+                    )
+                    DataSourcesInfo.sobreDestaques.forEach { destaque ->
+                        Text(
+                            "• $destaque",
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            color = AppColors.TextSecondary,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    SobreMeta("Acesso", "${DataSourcesInfo.SITE_URL}#/")
+                }
+            }
+
+            item {
                 SobreSectionTitle("Como funciona")
                 SobreCard {
                     DataSourcesInfo.comoFuncionaPassos.forEachIndexed { index, passo ->
@@ -201,11 +221,12 @@ fun SobreScreen(
             }
 
             item {
-                SobreSectionTitle("Governo Transparente (links oficiais)")
+                SobreSectionTitle("Governo Transparente")
                 SobreCard {
                     SobreParagraph(
                         "Receitas, despesas e convênios detalhados ficam no painel do Governo Transparente. " +
-                            "O app direciona para esses endereços; não replica consultas interativas desse sistema.",
+                            "O app integra totais oficiais do exercício (receita arrecadada, despesa paga, fornecedores) " +
+                            "e indica período e data de atualização; para consultas linha a linha, use os links abaixo.",
                     )
                     DataSourcesInfo.governoTransparente.forEach { fonte ->
                         SobreFonteRow(fonte)
