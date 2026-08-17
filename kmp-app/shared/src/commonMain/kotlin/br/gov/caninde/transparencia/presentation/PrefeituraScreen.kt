@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,6 +34,7 @@ fun PrefeituraScreen(
     onGestoresClick: () -> Unit = {},
     onInstitucionalClick: () -> Unit = {},
     onPublicacaoClick: (Publicacao) -> Unit = {},
+    onObraClick: (Obra) -> Unit = {},
     onTransparenciaLinkClick: (LinkExterno) -> Unit = {},
     onSobreClick: () -> Unit = {},
 ) {
@@ -188,10 +190,13 @@ fun PrefeituraScreen(
                             onLicitacaoClick,
                         )
                     }
-                    2 -> publicacoesItems(state.publicacoes, state.diariosOficiais, onPublicacaoClick)
+                    2 -> publicacoesItems(state.publicacoes, state.diarios, state.diariosOficiais, onPublicacaoClick)
                     3 -> secretariasItems(state.secretarias, onSecretariaClick)
-                    4 -> obrasLrfItems(state.obras, state.lrf)
+                    4 -> obrasLrfItems(state.obras, state.lrf, onObraClick)
                     5 -> {
+                        state.resumoFinanceiro?.let { resumo ->
+                            item { ResumoFinanceiroCard(resumo) }
+                        }
                         item { TransparenciaLinksIntro("a Prefeitura") }
                         transparenciaLinksItems(state.linksTransparencia, onClick = onTransparenciaLinkClick)
                     }
@@ -407,9 +412,38 @@ fun LicitacoesRow(l: Licitacao, onClick: (() -> Unit)? = null) {
 
 fun LazyListScope.publicacoesItems(
     publicacoes: List<Publicacao>,
+    diarios: List<DiarioOficial>,
     diariosFallback: List<String>,
     onClick: (Publicacao) -> Unit = {},
 ) {
+    if (diarios.isNotEmpty()) {
+        item { SectionHeader(title = "Diário Oficial", action = "") }
+        items(diarios) { d ->
+            ListRow(
+                icon = {
+                    IconContainer(AppColors.Amber100) {
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = null,
+                            tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
+                    }
+                },
+                title = d.titulo.ifBlank { "Diário oficial" },
+                subtitle = listOfNotNull(
+                    d.numero.takeIf { it.isNotBlank() },
+                    d.data.takeIf { it.isNotBlank() },
+                ).joinToString(" · "),
+                trailing = {
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Abrir PDF",
+                        tint = AppColors.Blue500, modifier = Modifier.size(16.dp))
+                },
+                onClick = {
+                    val url = d.pdfUrl.ifBlank { d.url }
+                    if (url.isNotBlank()) openExternalUrl(url)
+                },
+            )
+            HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp,
+                modifier = Modifier.padding(horizontal = 16.dp))
+        }
+    }
     item { SectionHeader(title = "Publicações oficiais", action = "") }
     if (publicacoes.isNotEmpty()) {
         items(publicacoes) { p ->
@@ -504,7 +538,11 @@ fun LazyListScope.secretariasItems(secretarias: List<Secretaria>, onClick: (Secr
 
 // ─── Obras e LRF ──────────────────────────────────────────────────────────────
 
-fun LazyListScope.obrasLrfItems(obras: List<Obra>, lrf: List<LrfDocumento>) {
+fun LazyListScope.obrasLrfItems(
+    obras: List<Obra>,
+    lrf: List<LrfDocumento>,
+    onObraClick: (Obra) -> Unit = {},
+) {
     if (obras.isNotEmpty()) {
         item { SectionHeader("Obras (${obras.size})") }
         obras.take(20).forEach { obra ->
@@ -522,11 +560,12 @@ fun LazyListScope.obrasLrfItems(obras: List<Obra>, lrf: List<LrfDocumento>) {
                         obra.situacao.takeIf { it.isNotBlank() },
                     ).joinToString(" · "),
                     trailing = {
-                        if (obra.url.isNotBlank()) {
-                            Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
-                        }
+                        Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
                     },
-                    onClick = obra.url.takeIf { it.isNotBlank() }?.let { url -> ({ openExternalUrl(url) }) },
+                    onClick = {
+                        val obraId = obra.id.ifBlank { obra.titulo }
+                        if (obraId.isNotBlank()) onObraClick(obra)
+                    },
                 )
                 HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
             }
@@ -561,6 +600,53 @@ fun LazyListScope.obrasLrfItems(obras: List<Obra>, lrf: List<LrfDocumento>) {
     }
     if (obras.isEmpty() && lrf.isEmpty()) {
         item { EmptyState("Nenhuma obra ou documento LRF no exercício atual.") }
+    }
+}
+
+@Composable
+fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.Card),
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                "Resumo financeiro · ${resumo.exercicio}",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.Navy800,
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MetricCard(
+                    "Contratos",
+                    resumo.totalContratosValor.ifBlank { "${resumo.totalContratos}" },
+                    modifier = Modifier.weight(1f),
+                )
+                MetricCard(
+                    "Licitações abertas",
+                    "${resumo.licitacoesAbertas}",
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            if (resumo.aviso.isNotBlank()) {
+                Text(resumo.aviso, fontSize = 11.sp, lineHeight = 16.sp, color = AppColors.TextTertiary)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (resumo.gtReceitasUrl.isNotBlank()) {
+                    TextButton(onClick = { openExternalUrl(resumo.gtReceitasUrl) }) {
+                        Text("Receitas no GT", fontSize = 12.sp)
+                    }
+                }
+                if (resumo.gtDespesasUrl.isNotBlank()) {
+                    TextButton(onClick = { openExternalUrl(resumo.gtDespesasUrl) }) {
+                        Text("Despesas no GT", fontSize = 12.sp)
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -23,6 +23,7 @@ const { attachCharts } = require('./lib/charts');
 const { createDetailHandler } = require('./lib/detail-handler');
 const dadosAbertos = require('./lib/scraper-prefeitura-dadosabertos');
 const camaraTransp = require('./lib/scraper-camara-transparencia');
+const { buildResumoFinanceiro } = require('./lib/finance-summary');
 const mergeSources = require('./lib/merge-sources');
 const camaraWp = require('./lib/scraper-camara-wp');
 const camaraPortal = require('./lib/scraper-camara-portal');
@@ -113,8 +114,13 @@ async function scrapePrefeituraInner() {
     const licitacoes = merged.licitacoes.slice(0, 25);
     const secretarias = merged.secretarias.slice(0, 20);
     const publicacoes = merged.publicacoes.slice(0, 30);
-    const diarios = merged.diariosOficiais.slice(0, 15);
+    const diarios = merged.diarios?.length
+      ? merged.diarios
+      : merged.diariosOficiais.slice(0, 15);
+    const diariosStrings = merged.diariosOficiais.slice(0, 15);
     const gestores = merged.gestores.slice(0, 4);
+
+    const resumoFinanceiro = buildResumoFinanceiro(merged.contratos, merged.licitacoes);
 
     const fonteParts = [
       jsonBundle?.fonte,
@@ -133,13 +139,15 @@ async function scrapePrefeituraInner() {
       ...scrapeResult.buildPrefeituraPayload({
         contratos,
         licitacoes,
-        diariosOficiais: diarios,
+        diariosOficiais: diariosStrings,
+        diarios,
         secretarias,
         publicacoes,
         obras,
         lrf,
         gestores,
         linksTransparencia: camaraTransp.buildLinksTransparenciaPrefeitura(),
+        resumoFinanceiro,
         fonte: fonteParts.join(' + ') || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
         fontesUtilizadas: merged.fontesUtilizadas,
       }),

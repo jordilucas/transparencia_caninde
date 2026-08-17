@@ -408,6 +408,7 @@ private fun ReclamacaoDashboardTab(
         }
 
         DashboardStatsRow(uiState.stats)
+        ReclamacaoMapaSection(uiState.reclamacoes)
 
         if (uiState.reclamacoes.isEmpty()) {
             EmptyState("Nenhuma reclamação registrada ainda.")
@@ -421,6 +422,94 @@ private fun ReclamacaoDashboardTab(
             items(uiState.reclamacoes, key = { it.id }) { item ->
                 ReclamacaoCard(item)
             }
+        }
+    }
+}
+
+@Composable
+private fun ReclamacaoMapaSection(reclamacoes: List<ReclamacaoAgua>) {
+    if (reclamacoes.isEmpty()) return
+    val setor1 = reclamacoes.count { it.setor == "1" }
+    val setor2 = reclamacoes.count { it.setor == "2" }
+    val total = reclamacoes.size.coerceAtLeast(1)
+    val topEnderecos = reclamacoes
+        .groupBy { it.endereco.trim().lowercase() }
+        .entries
+        .sortedByDescending { it.value.size }
+        .take(5)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.Card),
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                "Distribuição por setor (rodízio SAAE)",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.Navy800,
+            )
+            SetorBar("Setor 1", setor1, total, AppColors.Blue500)
+            SetorBar("Setor 2", setor2, total, AppColors.Green700)
+            if (topEnderecos.isNotEmpty()) {
+                Text(
+                    "Endereços com mais registros",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AppColors.TextSecondary,
+                )
+                topEnderecos.forEach { (endereco, lista) ->
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            lista.first().endereco,
+                            fontSize = 12.sp,
+                            color = AppColors.TextPrimary,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            "${lista.size}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.Blue500,
+                        )
+                    }
+                }
+            }
+        }
+    }
+    Spacer(Modifier.height(8.dp))
+}
+
+@Composable
+private fun SetorBar(label: String, count: Int, total: Int, color: androidx.compose.ui.graphics.Color) {
+    val fraction = count.toFloat() / total.toFloat()
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, fontSize = 12.sp, color = AppColors.TextSecondary)
+            Text("$count", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = AppColors.Navy800)
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(AppColors.Divider),
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(color),
+            )
         }
     }
 }

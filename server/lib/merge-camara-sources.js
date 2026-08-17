@@ -68,7 +68,7 @@ function mergeMateria(wp, html) {
     tipo: base.tipo || other.tipo,
     slug: base.slug || other.slug,
     url: base.url || other.url,
-    autor: base.autor || other.autor,
+    autor: html.autor || wp.autor || base.autor || other.autor || '',
     dataPublicacao: base.dataPublicacao || other.dataPublicacao,
     pdfUrl: base.pdfUrl || other.pdfUrl,
     resumo: base.resumo || other.resumo,

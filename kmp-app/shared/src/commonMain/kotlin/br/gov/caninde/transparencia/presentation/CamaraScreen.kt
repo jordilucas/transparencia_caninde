@@ -472,6 +472,7 @@ fun LazyListScope.materiasItems(materias: List<Materia>, onClick: (Materia) -> U
             title = m.titulo.ifEmpty { "Matéria" },
             subtitle = listOfNotNull(
                 m.tipo.takeIf { it.isNotBlank() },
+                m.autor.takeIf { it.isNotBlank() },
                 m.dataPublicacao.takeIf { it.isNotBlank() },
             ).joinToString(" · "),
             trailing = {

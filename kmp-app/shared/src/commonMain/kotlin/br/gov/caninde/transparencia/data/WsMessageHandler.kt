@@ -76,7 +76,16 @@ class WsMessageHandler(
         } else {
             previous.gestores
         },
-        diariosOficiais = DataMerge.mergeDiarios(previous.diariosOficiais, p.diariosOficiais ?: emptyList()),
+        diariosOficiais = if ((p.diariosOficiais ?: emptyList()).isNotEmpty()) {
+            p.diariosOficiais ?: emptyList()
+        } else {
+            previous.diariosOficiais
+        },
+        diarios = if ((p.diarios ?: emptyList()).isNotEmpty()) {
+            p.diarios ?: emptyList()
+        } else {
+            previous.diarios
+        },
         publicacoes = DataMerge.mergePublicacoes(previous.publicacoes, p.publicacoes ?: emptyList()),
         obras = if ((p.obras ?: emptyList()).isNotEmpty()) p.obras ?: emptyList() else previous.obras,
         lrf = if ((p.lrf ?: emptyList()).isNotEmpty()) p.lrf ?: emptyList() else previous.lrf,
@@ -86,6 +95,7 @@ class WsMessageHandler(
         } else {
             previous.linksTransparencia
         },
+        resumoFinanceiro = p.resumoFinanceiro ?: previous.resumoFinanceiro,
         graficos = p.graficos ?: previous.graficos,
         resumo = DataMerge.mergeResumoPrefeitura(
             previous.resumo,

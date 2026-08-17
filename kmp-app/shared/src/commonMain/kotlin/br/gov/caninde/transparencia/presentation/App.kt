@@ -34,6 +34,7 @@ sealed class AppRoute {
     data class PaginaPortal(val pageId: String) : AppRoute()
     data class DocumentoCamara(val pageId: String) : AppRoute()
     data object Gestores : AppRoute()
+    data class Obra(val id: String) : AppRoute()
     data class Institucional(val camara: Boolean) : AppRoute()
 }
 
@@ -342,6 +343,10 @@ private fun AppRouteContent(
                 onGestoresClick = { onNavigate(AppRoute.Gestores) },
                 onInstitucionalClick = { onNavigate(AppRoute.Institucional(false)) },
                 onPublicacaoClick = { onNavigate(routeFromPublicacao(it)) },
+                onObraClick = { o ->
+                    val id = o.id.ifBlank { o.titulo }
+                    if (id.isNotBlank()) onNavigate(AppRoute.Obra(id))
+                },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
                 onSobreClick = onSobreClick,
             )
@@ -405,6 +410,7 @@ private fun AppRouteContent(
         is AppRoute.Licitacao -> LicitacaoDetailScreen(viewModel, route.numero, onNavigateBack)
         is AppRoute.Sessao -> SessaoDetailScreen(viewModel, route.id, onNavigateBack)
         is AppRoute.Publicacao -> PublicacaoDetailScreen(viewModel, route.id, onNavigateBack)
+        is AppRoute.Obra -> ObraDetailScreen(prefeituraState.obras, route.id, onNavigateBack)
         is AppRoute.PaginaPortal -> PaginaPortalDetailScreen(viewModel, route.pageId, onNavigateBack)
         is AppRoute.DocumentoCamara -> DocumentoCamaraDetailScreen(viewModel, route.pageId, onNavigateBack)
         AppRoute.Gestores -> GestoresDetailScreen(viewModel, onNavigateBack)

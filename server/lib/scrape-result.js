@@ -9,12 +9,14 @@ function buildPrefeituraPayload({
   contratos = [],
   licitacoes = [],
   diariosOficiais = [],
+  diarios = [],
   secretarias = [],
   publicacoes = [],
   obras = [],
   lrf = [],
   gestores = [],
   linksTransparencia = [],
+  resumoFinanceiro = null,
   fonte,
   scrapeError = null,
   fontesUtilizadas = [],
@@ -22,7 +24,9 @@ function buildPrefeituraPayload({
   const missing = [];
   if (contratos.length === 0) missing.push('contratos');
   if (licitacoes.length === 0) missing.push('licitações');
-  if (diariosOficiais.length === 0 && publicacoes.length === 0) missing.push('diário oficial');
+  if (diariosOficiais.length === 0 && publicacoes.length === 0 && diarios.length === 0) {
+    missing.push('diário oficial');
+  }
   if (secretarias.length === 0) missing.push('secretarias');
 
   const partial =
@@ -44,12 +48,14 @@ function buildPrefeituraPayload({
     contratos,
     licitacoes,
     diariosOficiais,
+    diarios,
     secretarias,
     publicacoes,
     obras,
     lrf,
     gestores,
     linksTransparencia,
+    resumoFinanceiro,
     resumo: {
       totalContratos: contratos.length,
       totalLicitacoes: licitacoes.length,

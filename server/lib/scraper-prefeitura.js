@@ -50,12 +50,43 @@ function scrapeLicitacoes() {
   return [];
 }
 
+function resolveUrl(href) {
+  if (!href || typeof href !== 'string') return '';
+  const t = href.trim();
+  if (!t) return '';
+  if (/^https?:\/\//i.test(t)) return t;
+  return `${BASE}${t.startsWith('/') ? '' : '/'}${t}`;
+}
+
 function scrapeDiarios($d, limit = 15) {
   const diarios = [];
   $d('table tbody tr, .lista-publicacoes li, ul.publicacoes li').each((i, el) => {
     if (i >= limit) return false;
     const txt = $d(el).text().trim();
     if (txt.length > 5) diarios.push(txt.substring(0, 200));
+  });
+  return diarios;
+}
+
+function scrapeDiariosEstruturados($d, limit = 30) {
+  const diarios = [];
+  $d("a.list-group-item[href*='diario/']").each((i, el) => {
+    if (i >= limit) return false;
+    const href = $d(el).attr('href') || '';
+    const pdfUrl = resolveUrl(href);
+    const text = $d(el).text().replace(/\s+/g, ' ').trim();
+    const numM = text.match(/DIÁRIO:\s*(\d+\/\d+)/i);
+    const dateM = text.match(/(\d{2}\/\d{2}\/\d{4})/);
+    const idM = href.match(/diario\/(\d+)\//);
+    if (!pdfUrl) return;
+    diarios.push({
+      id: idM ? idM[1] : String(i + 1),
+      titulo: numM ? `Diário ${numM[1]}` : text.substring(0, 120),
+      numero: numM ? numM[1] : '',
+      data: dateM ? dateM[1] : '',
+      pdfUrl,
+      url: pdfUrl,
+    });
   });
   return diarios;
 }
@@ -84,6 +115,7 @@ async function scrapePrefeituraHtml(http, cheerio, limits = {}) {
     gestores: tag(scrapeGestoresFromHtml(htmlGestores, cheerio)),
     secretarias: tag(scrapeSecretariasFromHtml($m).slice(0, maxSecretarias)),
     diarios: scrapeDiarios(cheerio.load(htmlDiario), maxDiarios),
+    diariosEstruturados: scrapeDiariosEstruturados(cheerio.load(htmlDiario), maxDiarios),
     fonte: `${BASE}/acessoainformacao.php (HTML)`,
   };
 }
@@ -94,5 +126,6 @@ module.exports = {
   scrapeContratos,
   scrapeLicitacoes,
   scrapeDiarios,
+  scrapeDiariosEstruturados,
   scrapePrefeituraHtml,
 };

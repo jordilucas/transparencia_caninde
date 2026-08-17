@@ -784,3 +784,35 @@ fun ChartBarSection(series: ChartSeries) {
         Text("$value", fontSize = 10.sp, color = AppColors.TextTertiary, modifier = Modifier.padding(start = 106.dp))
     }
 }
+
+@Composable
+fun ObraDetailScreen(obras: List<Obra>, id: String, onBack: () -> Unit) {
+    val obra = obras.find { it.id == id || it.titulo == id }
+    DetailScaffold(
+        title = truncateToolbarTitle(obra?.titulo ?: "Obra"),
+        onBack = onBack,
+    ) {
+        if (obra == null) {
+            EmptyState("Obra não encontrada na listagem atual.")
+            return@DetailScaffold
+        }
+        if (obra.secretaria.isNotBlank()) DetailField("Secretaria", obra.secretaria)
+        if (obra.situacao.isNotBlank()) DetailField("Situação", obra.situacao)
+        if (obra.valor.isNotBlank()) DetailField("Valor", obra.valor)
+        if (obra.data.isNotBlank()) DetailField("Data", obra.data)
+        if (obra.descricao.isNotBlank()) {
+            DetailSectionHeader("Descrição")
+            DetailBodyText(obra.descricao)
+        }
+        val docUrl = obra.url
+        if (docUrl.isNotBlank()) {
+            DetailLinkAction(
+                label = "Documento / portal",
+                url = docUrl,
+                baseUrl = PREFEITURA_PORTAL_BASE,
+                actionText = "Abrir no portal oficial",
+                usePdfIcon = docUrl.contains(".pdf", ignoreCase = true),
+            )
+        }
+    }
+}

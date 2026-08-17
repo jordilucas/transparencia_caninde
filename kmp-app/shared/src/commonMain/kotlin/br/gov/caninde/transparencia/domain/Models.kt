@@ -19,11 +19,13 @@ data class WsPayload(
     val contratos: List<Contrato>? = null,
     val licitacoes: List<Licitacao>? = null,
     val diariosOficiais: List<String>? = null,
+    val diarios: List<DiarioOficial>? = null,
     val secretarias: List<Secretaria>? = null,
     val publicacoes: List<Publicacao>? = null,
     val obras: List<Obra>? = null,
     val lrf: List<LrfDocumento>? = null,
     val linksTransparencia: List<LinkExterno>? = null,
+    val resumoFinanceiro: ResumoFinanceiroPortal? = null,
     val resumo: ResumoPrefeitura? = null,
     val resumoCamara: ResumoCamara? = null,
     val scrapedAt: String? = null,
@@ -130,6 +132,27 @@ data class Licitacao(
     val camposExtras: List<DetalheCampo> = emptyList(),
     val anexos: List<DetalheAnexo> = emptyList(),
     val andamentos: List<String> = emptyList(),
+)
+
+@Serializable
+data class DiarioOficial(
+    val id: String = "",
+    val titulo: String = "",
+    val numero: String = "",
+    val data: String = "",
+    val pdfUrl: String = "",
+    val url: String = "",
+)
+
+@Serializable
+data class ResumoFinanceiroPortal(
+    val totalContratosValor: String = "",
+    val totalContratos: Int = 0,
+    val licitacoesAbertas: Int = 0,
+    val exercicio: Int = 0,
+    val gtReceitasUrl: String = "",
+    val gtDespesasUrl: String = "",
+    val aviso: String = "",
 )
 
 @Serializable
@@ -363,11 +386,13 @@ data class PrefeituraUiState(
     val licitacoes: List<Licitacao> = emptyList(),
     val gestores: List<Gestor> = emptyList(),
     val diariosOficiais: List<String> = emptyList(),
+    val diarios: List<DiarioOficial> = emptyList(),
     val publicacoes: List<Publicacao> = emptyList(),
     val obras: List<Obra> = emptyList(),
     val lrf: List<LrfDocumento> = emptyList(),
     val secretarias: List<Secretaria> = emptyList(),
     val linksTransparencia: List<LinkExterno> = emptyList(),
+    val resumoFinanceiro: ResumoFinanceiroPortal? = null,
     val graficos: GraficosPayload? = null,
     val resumo: ResumoPrefeitura = ResumoPrefeitura(),
     val lastUpdated: String = "",

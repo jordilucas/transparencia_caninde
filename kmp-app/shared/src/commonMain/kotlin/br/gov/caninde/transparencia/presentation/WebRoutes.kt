@@ -18,6 +18,7 @@ fun AppRoute.toWebPath(): String = when (this) {
     is AppRoute.Licitacao -> "/licitacao/${encodeUriSegment(numero)}"
     is AppRoute.Sessao -> "/sessao/${encodeUriSegment(id)}"
     is AppRoute.Publicacao -> "/publicacao/${encodeUriSegment(id)}"
+    is AppRoute.Obra -> "/obra/${encodeUriSegment(id)}"
     is AppRoute.PaginaPortal -> "/pagina/${encodeUriSegment(pageId)}"
     is AppRoute.DocumentoCamara -> "/documento-camara/${encodeUriSegment(pageId)}"
     AppRoute.Gestores -> "/gestores"
@@ -48,6 +49,7 @@ fun parseWebPath(path: String): AppRoute? {
         "licitacao" -> segments.getOrNull(1)?.let { AppRoute.Licitacao(decodeUriSegment(it)) }
         "sessao" -> segments.getOrNull(1)?.let { AppRoute.Sessao(decodeUriSegment(it)) }
         "publicacao" -> segments.getOrNull(1)?.let { AppRoute.Publicacao(decodeUriSegment(it)) }
+        "obra" -> segments.getOrNull(1)?.let { AppRoute.Obra(decodeUriSegment(it)) }
         "pagina" -> segments.getOrNull(1)?.let { AppRoute.PaginaPortal(decodeUriSegment(it)) }
         "documento-camara" -> segments.getOrNull(1)?.let { AppRoute.DocumentoCamara(decodeUriSegment(it)) }
         "gestores" -> AppRoute.Gestores

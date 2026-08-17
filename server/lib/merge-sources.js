@@ -291,6 +291,7 @@ function mergePrefeituraSources(jsonBundle, htmlBundle) {
     lrf: (jsonBundle?.lrf || []).map((d) => ({ ...d, fonteOrigem: 'json' })),
     gestores: gestores.items,
     diariosOficiais: publicacoesToDiariosStrings(mergedPublicacoes),
+    diarios: (htmlBundle?.diariosEstruturados || []).slice(0, 30),
     fontesUtilizadas: [...allSources],
   };
 }
