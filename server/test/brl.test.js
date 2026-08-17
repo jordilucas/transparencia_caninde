@@ -21,6 +21,11 @@ describe('brl', () => {
     assert.equal(parseBRLNumber('2004257.55'), 2004257.55);
   });
 
+  it('parseBRLNumber ignora data colada antes do valor', () => {
+    assert.equal(parseBRLNumber('24/07/2026 R$ 3.479.365,46'), 3479365.46);
+    assert.equal(parseBRLNumber('12/06/202665.000,00'), 65000);
+  });
+
   it('buildResumoFinanceiro não infla totais de contratos JSON', () => {
     const contratos = mapContratos([
       { Id: 1, NumeroContrato: '2025.12.17.04', ValorGlobal: 2004257.55, Objeto: 'Teste' },

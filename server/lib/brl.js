@@ -4,7 +4,11 @@
 function parseBRLNumber(value) {
   if (value == null || value === '') return 0;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
-  const s = String(value).trim().replace(/[^\d,.-]/g, '');
+  let raw = String(value).trim();
+  const rsMatch = raw.match(/R\$\s*[\d.,]+/i);
+  if (rsMatch) raw = rsMatch[0];
+  else raw = raw.replace(/^\d{2}\/\d{2}\/\d{4}\s*/, '');
+  const s = raw.replace(/[^\d,.-]/g, '');
   if (!s) return 0;
   if (s.includes(',')) {
     const n = parseFloat(s.replace(/\./g, '').replace(',', '.'));

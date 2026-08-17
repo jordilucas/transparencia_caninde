@@ -24,6 +24,12 @@ describe('contrato-html', () => {
     assert.equal(valor, 'R$ 65.000,00');
   });
 
+  it('separa data e valor com R$ explícito', () => {
+    const { data, valor } = splitDataValor('24/07/2026 R$ 3.479.365,46');
+    assert.equal(data, '24/07/2026');
+    assert.equal(valor, 'R$ 3.479.365,46');
+  });
+
   it('separa empresa e CNPJ', () => {
     const { empresa, cnpjCredor } = splitEmpresaCnpj(
       'J SOLUÇÃO E PRESTAÇÃO DE SERVIÇOS LTDA 27.782.897/0001-09',

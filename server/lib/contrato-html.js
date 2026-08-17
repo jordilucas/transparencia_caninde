@@ -1,5 +1,7 @@
 'use strict';
 
+const { parseBRLNumber } = require('./brl');
+
 const DESC_START = /(?:NOVO )?CONTRATAÇÃO|AQUISIÇÃO|LOCAÇÃO|REGISTRO|CREDENCIAMENTO|REFORMA|MANUNTENÇÃO|EXERCUÇÃO/i;
 
 function formatBRLFromRaw(raw) {
@@ -33,6 +35,10 @@ function splitSecretariaObjeto(text) {
 
 function splitDataValor(text) {
   const t = String(text || '').trim();
+  const dateRs = t.match(/^(\d{2}\/\d{2}\/\d{4})\s+(R\$\s*.+)$/i);
+  if (dateRs) {
+    return { data: dateRs[1], valor: dateRs[2].trim() };
+  }
   const glued = t.match(/^(\d{2}\/\d{2}\/\d{4})([\d.,]+)$/);
   if (glued) {
     return { data: glued[1], valor: formatBRLFromRaw(glued[2]) };
@@ -65,12 +71,15 @@ function parseContratoHtmlRow(cols, link) {
   const vigencia = formatVigencia(cols[4]);
   const dataLabel = [data, vigencia].filter(Boolean).join(' · ');
 
+  const valorNumerico = parseBRLNumber(valor);
+
   return {
     id: idFromPortalUrl(link, 'contratos'),
     numero,
     secretaria,
     objeto,
     valor,
+    valorNumerico: valorNumerico > 0 ? valorNumerico : undefined,
     empresa,
     cnpjCredor,
     data: dataLabel,

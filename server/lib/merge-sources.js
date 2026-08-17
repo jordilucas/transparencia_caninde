@@ -2,6 +2,7 @@
 
 const { filterValidLicitacoes } = require('./licitacao-html');
 const { enrichSecretarias } = require('./secretaria-enrich');
+const { parseBRLNumber } = require('./brl');
 
 function parseBrazilianDate(str) {
   if (!str || typeof str !== 'string') return 0;
@@ -83,8 +84,19 @@ function mergeEntityLists(listA, listB, { getKey, getRecency, mergePair, tieBrea
   return { items: merged, sourcesUsed: [...sources] };
 }
 
+function normalizeContratoNumero(numero) {
+  let n = String(numero || '').trim().toLowerCase();
+  n = n.replace(/\s+contrato original\s*$/i, '').trim();
+  const slash = n.indexOf('/');
+  if (slash > 0) {
+    const prefix = n.slice(0, slash);
+    if (/^[\d.]+$/.test(prefix)) return prefix;
+  }
+  return n;
+}
+
 function contratoKey(c) {
-  const n = String(c.numero || '').trim().toLowerCase();
+  const n = normalizeContratoNumero(c.numero);
   if (n) return `n:${n}`;
   const id = String(c.id || '').trim();
   return id ? `id:${id}` : '';
@@ -97,6 +109,13 @@ function contratoRecency(c) {
 function mergeContratoPair(winner, loser) {
   const merged = mergeObjects(winner, loser);
   merged.fonteOrigem = winner.fonteOrigem || loser.fonteOrigem || '';
+  const jsonSide = winner.fonteOrigem === 'json' ? winner : loser.fonteOrigem === 'json' ? loser : null;
+  if (typeof jsonSide?.valorNumerico === 'number' && jsonSide.valorNumerico > 0) {
+    merged.valorNumerico = jsonSide.valorNumerico;
+  } else {
+    const parsed = parseBRLNumber(merged.valor);
+    if (parsed > 0) merged.valorNumerico = parsed;
+  }
   return merged;
 }
 
@@ -298,6 +317,7 @@ function mergePrefeituraSources(jsonBundle, htmlBundle) {
 
 module.exports = {
   parseBrazilianDate,
+  normalizeContratoNumero,
   mergeContratos,
   mergeLicitacoes,
   mergeSecretarias,

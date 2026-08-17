@@ -44,6 +44,27 @@ describe('merge-sources', () => {
     assert.equal(items[0].numero, 'B');
   });
 
+  it('mergeContratos deduplica JSON e HTML com sufixo /ano', () => {
+    const json = [{
+      numero: '202608140001',
+      objeto: 'Objeto JSON',
+      data: '14/08/2026',
+      valorNumerico: 1500000,
+      fonteOrigem: 'json',
+    }];
+    const html = [{
+      numero: '202608140001/2026',
+      objeto: 'Objeto HTML',
+      data: '14/08/2026 · Vigente',
+      valor: '14/08/2026 R$ 1.500.000,00',
+      valorNumerico: 1500000,
+      fonteOrigem: 'html',
+    }];
+    const { items } = mergeContratos(json, html);
+    assert.equal(items.length, 1);
+    assert.equal(items[0].valorNumerico, 1500000);
+  });
+
   it('mergePrefeituraSources combina publicações JSON e diários HTML', () => {
     const merged = mergePrefeituraSources(
       {
