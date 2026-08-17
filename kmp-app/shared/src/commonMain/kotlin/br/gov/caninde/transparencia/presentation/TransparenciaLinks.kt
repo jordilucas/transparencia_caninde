@@ -47,6 +47,8 @@ fun LazyListScope.transparenciaLinksItems(
 fun TransparenciaLinkRow(link: LinkExterno, onClick: (LinkExterno) -> Unit = {}) {
     val icon = when (link.categoria) {
         "financeiro" -> Icons.Default.AccountBalance
+        "receita" -> Icons.Default.TrendingUp
+        "despesa" -> Icons.Default.TrendingDown
         "compras" -> Icons.Default.ShoppingCart
         "obras" -> Icons.Default.Construction
         "emendas" -> Icons.Default.HowToVote

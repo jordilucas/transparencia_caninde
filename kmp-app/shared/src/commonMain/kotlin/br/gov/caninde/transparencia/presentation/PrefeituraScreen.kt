@@ -44,7 +44,7 @@ fun PrefeituraScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     var contratoFilter by remember { mutableStateOf(ContratoListFilter.Todos) }
     var licitacaoFilter by remember { mutableStateOf(LicitacaoListFilter.Todas) }
-    val tabs = listOf("Contratos", "Licitações", "Publicações", "Secretarias", "Obras/LRF", "Transparência")
+    val tabs = listOf("Finanças", "Contratos", "Licitações", "Publicações", "Secretarias", "Obras/LRF", "Transparência")
 
     Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
 
@@ -124,23 +124,53 @@ fun PrefeituraScreen(
                         loading = state.isLoading,
                     )
                 }
+                state.resumoFinanceiro?.let { resumo ->
+                    if (resumo.gtDisponivel) {
+                        item {
+                            FinancasHeroCard(
+                                resumo = resumo,
+                                onLinkClick = onTransparenciaLinkClick,
+                            )
+                        }
+                    }
+                }
                 item {
-                    Row(
-                        Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        MetricCard(
-                            label = "Contratos",
-                            value = "${state.resumo.totalContratos}",
-                            delta = "Exercício ${state.resumo.exercicio}",
-                            modifier = Modifier.weight(1f)
-                        )
-                        MetricCard(
-                            label = "Licitações",
-                            value = "${state.resumo.totalLicitacoes}",
-                            delta = "no exercício",
-                            modifier = Modifier.weight(1f)
-                        )
+                    if (state.resumoFinanceiro?.gtDisponivel != true) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            MetricCard(
+                                label = "Contratos",
+                                value = "${state.resumo.totalContratos}",
+                                delta = "Exercício ${state.resumo.exercicio}",
+                                modifier = Modifier.weight(1f)
+                            )
+                            MetricCard(
+                                label = "Licitações",
+                                value = "${state.resumo.totalLicitacoes}",
+                                delta = "no exercício",
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    } else {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            MetricCard(
+                                label = "Contratos publicados",
+                                value = "${state.resumo.totalContratos}",
+                                delta = "portal municipal",
+                                modifier = Modifier.weight(1f)
+                            )
+                            MetricCard(
+                                label = "Licitações",
+                                value = "${state.resumo.totalLicitacoes}",
+                                delta = "no exercício",
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                     if (state.resumo.totalPublicacoes > 0) {
                         Row(
@@ -188,26 +218,34 @@ fun PrefeituraScreen(
                 // Conteúdo por tab
                 when (selectedTab) {
                     0 -> {
+                        state.resumoFinanceiro?.let { resumo ->
+                            item { ResumoFinanceiroCard(resumo) }
+                            financasLinksItems(
+                                links = resumo.linksFinanceiros,
+                                onClick = onTransparenciaLinkClick,
+                            )
+                        } ?: item {
+                            EmptyState("Dados financeiros indisponíveis no momento. Tente atualizar.")
+                        }
+                    }
+                    1 -> {
                         contratosFilterItems(contratoFilter) { contratoFilter = it }
                         contratosItems(
                             state.contratos.filter { it.matchesListFilter(contratoFilter) },
                             onContratoClick,
                         )
                     }
-                    1 -> {
+                    2 -> {
                         licitacoesFilterItems(licitacaoFilter) { licitacaoFilter = it }
                         licitacoesItems(
                             state.licitacoes.filter { it.matchesListFilter(licitacaoFilter) },
                             onLicitacaoClick,
                         )
                     }
-                    2 -> publicacoesItems(state.publicacoes, state.diarios, state.diariosOficiais, onPublicacaoClick)
-                    3 -> secretariasItems(state.secretarias, onSecretariaClick)
-                    4 -> obrasLrfItems(state.obras, state.lrf, onObraClick, onLrfClick)
-                    5 -> {
-                        state.resumoFinanceiro?.let { resumo ->
-                            item { ResumoFinanceiroCard(resumo) }
-                        }
+                    3 -> publicacoesItems(state.publicacoes, state.diarios, state.diariosOficiais, onPublicacaoClick)
+                    4 -> secretariasItems(state.secretarias, onSecretariaClick)
+                    5 -> obrasLrfItems(state.obras, state.lrf, onObraClick, onLrfClick)
+                    6 -> {
                         item { TransparenciaDestaquesCard(state.linksTransparencia) }
                         item { TransparenciaLinksIntro("a Prefeitura") }
                         transparenciaLinksItems(state.linksTransparencia, onClick = onTransparenciaLinkClick)
@@ -621,6 +659,170 @@ fun LazyListScope.obrasLrfItems(
 }
 
 @Composable
+fun FinancasHeroCard(
+    resumo: ResumoFinanceiroPortal,
+    onLinkClick: (LinkExterno) -> Unit = {},
+) {
+    val progress = remember(resumo.percentualArrecadacao) {
+        resumo.percentualArrecadacao
+            .replace("%", "")
+            .replace(".", "")
+            .replace(",", ".")
+            .toFloatOrNull()
+            ?.div(100f)
+            ?.coerceIn(0f, 1f)
+            ?: 0f
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.Navy800),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text(
+                        "Execução orçamentária",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Blue100,
+                    )
+                    Text(
+                        "Exercício ${resumo.exercicio} · Governo Transparente",
+                        fontSize = 11.sp,
+                        color = AppColors.Blue300,
+                    )
+                    val metaDatas = formatFinanceMeta(
+                        resumo.periodoReferencia,
+                        resumo.dadosAtualizadosEm,
+                        resumo.consultadoEm,
+                    )
+                    if (metaDatas.isNotBlank()) {
+                        Text(
+                            metaDatas,
+                            fontSize = 10.sp,
+                            color = AppColors.Blue300.copy(alpha = 0.85f),
+                            lineHeight = 14.sp,
+                        )
+                    }
+                }
+                Icon(
+                    Icons.Default.AccountBalance,
+                    contentDescription = null,
+                    tint = AppColors.Blue300,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (resumo.receitaArrecadada.isNotBlank()) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Receita arrecadada", fontSize = 10.sp, color = AppColors.Blue300)
+                        Text(
+                            resumo.receitaArrecadada,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.Green100,
+                            lineHeight = 20.sp,
+                        )
+                    }
+                }
+                if (resumo.despesaPaga.isNotBlank()) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Despesa paga", fontSize = 10.sp, color = AppColors.Blue300)
+                        Text(
+                            resumo.despesaPaga,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.Blue100,
+                            lineHeight = 20.sp,
+                        )
+                    }
+                }
+            }
+
+            if (resumo.percentualArrecadacao.isNotBlank()) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                        color = AppColors.Green100,
+                        trackColor = AppColors.Navy700,
+                    )
+                    Text(
+                        "${resumo.percentualArrecadacao} do orçamento previsto (${resumo.receitaPrevista})",
+                        fontSize = 11.sp,
+                        color = AppColors.Blue300,
+                        lineHeight = 15.sp,
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (resumo.gtReceitasPainelUrl.isNotBlank()) {
+                    FilledTonalButton(
+                        onClick = { openExternalUrl(resumo.gtReceitasPainelUrl) },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = AppColors.Navy700,
+                            contentColor = AppColors.Blue100,
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    ) {
+                        Icon(Icons.Default.TrendingUp, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Receitas", fontSize = 12.sp)
+                    }
+                }
+                if (resumo.gtDespesasPainelUrl.isNotBlank()) {
+                    FilledTonalButton(
+                        onClick = { openExternalUrl(resumo.gtDespesasPainelUrl) },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = AppColors.Navy700,
+                            contentColor = AppColors.Blue100,
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    ) {
+                        Icon(Icons.Default.TrendingDown, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Despesas", fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun LazyListScope.financasLinksItems(
+    links: List<LinkExterno>,
+    onClick: (LinkExterno) -> Unit = {},
+) {
+    val receitas = links.filter { it.categoria == "receita" || (it.categoria == "financeiro" && it.titulo.contains("receita", ignoreCase = true)) }
+    val despesas = links.filter { it.categoria == "despesa" || (it.categoria == "financeiro" && it.titulo.contains("despesa", ignoreCase = true)) }
+
+    if (receitas.isNotEmpty()) {
+        item { SectionHeader(title = "Consultas de receita (GT)", action = "") }
+        items(receitas) { link ->
+            TransparenciaLinkRow(link, onClick)
+            HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+        }
+    }
+    if (despesas.isNotEmpty()) {
+        item { SectionHeader(title = "Consultas de despesa (GT)", action = "") }
+        items(despesas) { link ->
+            TransparenciaLinkRow(link, onClick)
+            HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+        }
+    }
+}
+
+@Composable
 fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
     Card(
         modifier = Modifier
@@ -636,6 +838,19 @@ fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.Navy800,
             )
+            val metaDatas = formatFinanceMeta(
+                resumo.periodoReferencia,
+                resumo.dadosAtualizadosEm,
+                resumo.consultadoEm,
+            )
+            if (metaDatas.isNotBlank()) {
+                Text(
+                    metaDatas,
+                    fontSize = 11.sp,
+                    color = AppColors.TextSecondary,
+                    lineHeight = 15.sp,
+                )
+            }
             if (resumo.gtDisponivel && (resumo.receitaArrecadada.isNotBlank() || resumo.despesaPaga.isNotBlank())) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (resumo.receitaArrecadada.isNotBlank()) {

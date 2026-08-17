@@ -271,6 +271,16 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Finanças em destaque",
+            data = "17/08/2026",
+            itens = listOf(
+                "Nova aba Finanças na Prefeitura com receitas e despesas do Governo Transparente",
+                "Card de execução orçamentária sempre visível no topo",
+                "Período acumulado e data de atualização do Governo Transparente",
+                "Atalhos para receita arrecadada, despesas pagas e consultas detalhadas",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Governo Transparente",
             data = "17/08/2026",
             itens = listOf(

@@ -45,6 +45,28 @@ function parseDespesaTotalFromTitle(html) {
   return parseBRL(match[1]);
 }
 
+function parsePeriodoPortal(html) {
+  const text = String(html || '');
+  const match = text.match(/\(\s*(\d{2}\/\d{2}\/\d{4})\s+a\s+(\d{2}\/\d{2}\/\d{4})\s*\)/);
+  if (!match) return { inicio: '', fim: '' };
+  return { inicio: match[1], fim: match[2] };
+}
+
+function parseDadosAtualizados(html) {
+  const text = String(html || '');
+  const match = text.match(/Dados atualizados\s+(\d{2}\/\d{2}\/\d{4})/i);
+  return match ? match[1] : '';
+}
+
+function buildPeriodoExercicio(exercicio, dataFim) {
+  if (!dataFim) return `Exercício ${exercicio}`;
+  const fimAno = dataFim.slice(-4);
+  if (String(exercicio) === fimAno) {
+    return `01/01/${exercicio} a ${dataFim}`;
+  }
+  return `Exercício ${exercicio}`;
+}
+
 function mapTopFornecedores(rows, limit = 8) {
   if (!Array.isArray(rows)) return [];
   return rows
@@ -71,20 +93,95 @@ async function fetchGtJson(http, path) {
   return res.data;
 }
 
+function calcPercentualArrecadacao(arrecadada, prevista) {
+  if (!prevista || prevista <= 0 || !arrecadada) return '';
+  const pct = (arrecadada / prevista) * 100;
+  return `${pct.toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 })}%`;
+}
+
+function buildGtFinanceLinks(id = GT_PREFEITURA_ID) {
+  const base = `${GT_BASE}/transparencia/${id}`;
+  const q = '?clean=false';
+  return [
+    {
+      titulo: 'Painel de receitas',
+      url: `${GT_BASE}/transparencia/receitas/${id}${q}`,
+      categoria: 'financeiro',
+    },
+    {
+      titulo: 'Receita orçamentária arrecadada',
+      url: `${base}/consultarrecorcarrecadada${q}`,
+      categoria: 'receita',
+    },
+    {
+      titulo: 'Receita prevista × arrecadada',
+      url: `${base}/consultarrecprevar${q}`,
+      categoria: 'receita',
+    },
+    {
+      titulo: 'Receita extraorçamentária',
+      url: `${base}/consultarrecextraorc${q}&tipotrans=N`,
+      categoria: 'receita',
+    },
+    {
+      titulo: 'Transferências intragovernamentais (entradas)',
+      url: `${base}/consultarrecextraorc${q}&tipotrans=S`,
+      categoria: 'receita',
+    },
+    {
+      titulo: 'Painel de despesas',
+      url: `${GT_BASE}/transparencia/despesas/opcoes/${id}${q}`,
+      categoria: 'financeiro',
+    },
+    {
+      titulo: 'Despesas empenhadas',
+      url: `${base}/consultarempenho${q}`,
+      categoria: 'despesa',
+    },
+    {
+      titulo: 'Despesas liquidadas',
+      url: `${base}/consultarliqdesporc${q}`,
+      categoria: 'despesa',
+    },
+    {
+      titulo: 'Despesas pagas',
+      url: `${base}/consultarpagdesporc${q}`,
+      categoria: 'despesa',
+    },
+    {
+      titulo: 'Despesas por fornecedor',
+      url: `${base}/consultardespesafornecedor${q}`,
+      categoria: 'despesa',
+    },
+    {
+      titulo: 'Lista de fornecedores',
+      url: `${base}/consultarlistadefornecedores${q}`,
+      categoria: 'despesa',
+    },
+  ];
+}
+
 async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
   const exer = yearToExer(exercicio);
   const empty = {
     receitaArrecadada: '',
     receitaPrevista: '',
     despesaPaga: '',
+    percentualArrecadacao: '',
+    periodoReferencia: '',
+    dadosAtualizadosEm: '',
+    consultadoEm: '',
     topFornecedores: [],
+    linksFinanceiros: buildGtFinanceLinks(),
+    gtReceitasPainelUrl: `${GT_BASE}/transparencia/receitas/${GT_PREFEITURA_ID}?clean=false`,
+    gtDespesasPainelUrl: `${GT_BASE}/transparencia/despesas/opcoes/${GT_PREFEITURA_ID}?clean=false`,
     gtDadosAbertosUrl: GT_DADOS_ABERTOS_URL,
     gtFonte: 'Governo Transparente',
     gtDisponivel: false,
   };
 
   try {
-    const [receitasSettled, fornecedoresSettled, despesaSettled] = await Promise.allSettled([
+    const [receitasSettled, fornecedoresSettled, despesaSettled, portalSettled] = await Promise.allSettled([
       fetchGtJson(http, `/portal/api/v2/json/receitasprevarrec/${GT_PREFEITURA_ID}?exer=${exer}`),
       fetchGtJson(http, `/portal/api/v1/json/totalporfornecedor/${GT_PREFEITURA_ID}?exer=${exer}`),
       http.get(
@@ -95,15 +192,25 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
           validateStatus: (status) => status >= 200 && status < 400,
         },
       ),
+      http.get(GT_DADOS_ABERTOS_URL, {
+        headers: { Referer: GT_REFERER, Accept: 'text/html' },
+        timeout: 30_000,
+        validateStatus: (status) => status >= 200 && status < 400,
+      }),
     ]);
 
     const receitasRows = receitasSettled.status === 'fulfilled' ? receitasSettled.value : [];
     const fornecedoresRows = fornecedoresSettled.status === 'fulfilled' ? fornecedoresSettled.value : [];
     const despesaHtml = despesaSettled.status === 'fulfilled' ? despesaSettled.value?.data : '';
+    const portalHtml = portalSettled.status === 'fulfilled' ? portalSettled.value?.data : '';
 
     const { arrecadada, prevista } = sumReceitasTopLevel(receitasRows);
     const despesaPaga = parseDespesaTotalFromTitle(despesaHtml);
     const topFornecedores = mapTopFornecedores(fornecedoresRows);
+    const dadosAtualizadosEm = parseDadosAtualizados(portalHtml)
+      || parsePeriodoPortal(portalHtml).fim
+      || parsePeriodoPortal(despesaHtml).fim;
+    const periodoReferencia = buildPeriodoExercicio(exercicio, dadosAtualizadosEm);
 
     const hasReceita = arrecadada > 0;
     const hasDespesa = despesaPaga > 0;
@@ -117,7 +224,14 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
       receitaArrecadada: hasReceita ? formatBRL(arrecadada) : '',
       receitaPrevista: prevista > 0 ? formatBRL(prevista) : '',
       despesaPaga: hasDespesa ? formatBRL(despesaPaga) : '',
+      percentualArrecadacao: calcPercentualArrecadacao(arrecadada, prevista),
+      periodoReferencia,
+      dadosAtualizadosEm,
+      consultadoEm: new Date().toISOString(),
       topFornecedores,
+      linksFinanceiros: buildGtFinanceLinks(),
+      gtReceitasPainelUrl: `${GT_BASE}/transparencia/receitas/${GT_PREFEITURA_ID}?clean=false`,
+      gtDespesasPainelUrl: `${GT_BASE}/transparencia/despesas/opcoes/${GT_PREFEITURA_ID}?clean=false`,
       gtDadosAbertosUrl: GT_DADOS_ABERTOS_URL,
       gtFonte: 'Governo Transparente',
       gtDisponivel: true,
@@ -137,6 +251,11 @@ module.exports = {
   formatBRL,
   sumReceitasTopLevel,
   parseDespesaTotalFromTitle,
+  parsePeriodoPortal,
+  parseDadosAtualizados,
+  buildPeriodoExercicio,
   mapTopFornecedores,
+  calcPercentualArrecadacao,
+  buildGtFinanceLinks,
   scrapeGtResumo,
 };

@@ -6,7 +6,12 @@ const {
   yearToExer,
   sumReceitasTopLevel,
   parseDespesaTotalFromTitle,
+  parsePeriodoPortal,
+  parseDadosAtualizados,
+  buildPeriodoExercicio,
   mapTopFornecedores,
+  calcPercentualArrecadacao,
+  buildGtFinanceLinks,
 } = require('../lib/scraper-governo-transparente');
 const { buildResumoFinanceiro } = require('../lib/finance-summary');
 
@@ -42,6 +47,39 @@ describe('scraper-governo-transparente', () => {
     assert.equal(top.length, 2);
     assert.equal(top[0].nome, 'EMPRESA XYZ');
     assert.equal(top[1].nome, 'EMPRESA ABC LTDA');
+  });
+
+  it('calcPercentualArrecadacao formata percentual', () => {
+    assert.equal(calcPercentualArrecadacao(307475962, 520000000), '59,1%');
+  });
+
+  it('buildGtFinanceLinks inclui receitas e despesas', () => {
+    const links = buildGtFinanceLinks();
+    assert.ok(links.some((l) => l.titulo.includes('receitas')));
+    assert.ok(links.some((l) => l.categoria === 'receita'));
+    assert.ok(links.some((l) => l.categoria === 'despesa'));
+  });
+
+  it('parseDadosAtualizados extrai data do portal', () => {
+    const html = '<p>Dados atualizados 17/08/2026. Para consultar</p>';
+    assert.equal(parseDadosAtualizados(html), '17/08/2026');
+  });
+
+  it('buildPeriodoExercicio monta intervalo do ano corrente', () => {
+    assert.equal(buildPeriodoExercicio(2026, '17/08/2026'), '01/01/2026 a 17/08/2026');
+    assert.equal(buildPeriodoExercicio(2024, '17/08/2026'), 'Exercício 2024');
+  });
+
+  it('buildResumoFinanceiro inclui datas GT', () => {
+    const resumo = buildResumoFinanceiro([], [], 2026, {
+      gtDisponivel: true,
+      periodoReferencia: '01/01/2026 a 17/08/2026',
+      dadosAtualizadosEm: '17/08/2026',
+      consultadoEm: '2026-08-17T19:00:00Z',
+    });
+    assert.equal(resumo.periodoReferencia, '01/01/2026 a 17/08/2026');
+    assert.equal(resumo.dadosAtualizadosEm, '17/08/2026');
+    assert.ok(resumo.consultadoEm.includes('2026'));
   });
 
   it('buildResumoFinanceiro inclui dados GT quando disponíveis', () => {

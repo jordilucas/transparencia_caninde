@@ -48,6 +48,26 @@ fun formatRelativeUpdated(isoTimestamp: String): String {
     }
 }
 
+fun formatFinanceMeta(
+    periodoReferencia: String,
+    dadosAtualizadosEm: String,
+    consultadoEm: String,
+): String = buildList {
+    if (periodoReferencia.isNotBlank()) add("Período: $periodoReferencia")
+    if (dadosAtualizadosEm.isNotBlank()) add("GT atualizado em $dadosAtualizadosEm")
+    if (consultadoEm.isNotBlank()) {
+        val relative = formatRelativeUpdated(consultadoEm)
+        if (relative.isNotBlank()) {
+            add("Consultado $relative")
+        } else {
+            val br = Regex("""(\d{4})-(\d{2})-(\d{2})""").find(consultadoEm)
+            if (br != null) {
+                add("Consultado em ${br.groupValues[3]}/${br.groupValues[2]}/${br.groupValues[1]}")
+            }
+        }
+    }
+}.joinToString(" · ")
+
 fun exercicioYearOptions(anchor: Int = currentCalendarYear()): List<Int> =
     (0..2).map { anchor - it }
 
