@@ -12,6 +12,8 @@ const {
   mapTopFornecedores,
   calcPercentualArrecadacao,
   buildGtFinanceLinks,
+  buildGtPortalLinks,
+  mapFolhaGtSetores,
 } = require('../lib/scraper-governo-transparente');
 const { buildResumoFinanceiro } = require('../lib/finance-summary');
 
@@ -58,6 +60,15 @@ describe('scraper-governo-transparente', () => {
     assert.ok(links.some((l) => l.titulo.includes('receitas')));
     assert.ok(links.some((l) => l.categoria === 'receita'));
     assert.ok(links.some((l) => l.categoria === 'despesa'));
+  });
+
+  it('mapFolhaGtSetores ignora fornecedores que não são folha', () => {
+    const setores = mapFolhaGtSetores([
+      { nome: 'FOLHA DE PAGAMENTO-INATIVOS', valor: 100 },
+      { nome: 'CONSTRUTORA XYZ', valor: 99999 },
+    ]);
+    assert.equal(setores.length, 1);
+    assert.match(setores[0].secretaria, /INATIVOS/);
   });
 
   it('parseDadosAtualizados extrai data do portal', () => {

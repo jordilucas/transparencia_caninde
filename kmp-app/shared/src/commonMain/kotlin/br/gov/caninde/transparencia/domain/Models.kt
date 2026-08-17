@@ -175,6 +175,7 @@ data class ResumoFinanceiroPortal(
     val gtDadosAbertosUrl: String = "",
     val gtFonte: String = "",
     val gtDisponivel: Boolean = false,
+    val linksPortal: List<LinkExterno> = emptyList(),
     val aviso: String = "",
 )
 
@@ -203,8 +204,11 @@ data class FolhaPagamentoResumo(
     val porSetor: List<FolhaSetorResumo> = emptyList(),
     val totalPagoSetores: String = "",
     val avisoPrivacidade: String = "",
+    val avisoDados: String = "",
+    val fontePorSetor: String = "",
     val fonteUrl: String = "",
     val fontePagamentosUrl: String = "",
+    val gtConsultaUrl: String = "",
 )
 
 @Serializable

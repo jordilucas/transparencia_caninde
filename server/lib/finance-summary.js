@@ -3,6 +3,7 @@
 const GT_PREFEITURA_ID = '11979490';
 const GT_BASE = 'https://www.governotransparente.com.br';
 const { parseBRLNumber, formatBRL } = require('./brl');
+const { buildGtPortalLinks } = require('./scraper-governo-transparente');
 
 function parseValorContrato(c) {
   if (typeof c.valorNumerico === 'number' && c.valorNumerico > 0) return c.valorNumerico;
@@ -55,6 +56,7 @@ function buildResumoFinanceiro(
     gtDadosAbertosUrl: gt?.gtDadosAbertosUrl || `${GT_BASE}/dadosabertos/${GT_PREFEITURA_ID}?clean=false`,
     gtFonte: gt?.gtFonte || '',
     gtDisponivel: Boolean(gt),
+    linksPortal: (gtResumo?.linksPortal?.length ? gtResumo.linksPortal : buildGtPortalLinks()),
     aviso,
   };
 }

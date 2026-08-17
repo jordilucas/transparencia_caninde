@@ -27,6 +27,7 @@ const { buildResumoFinanceiro } = require('./lib/finance-summary');
 const scrapeFolha = require('./lib/scraper-folha-pagamento');
 const scrapeGt = require('./lib/scraper-governo-transparente');
 const mergeSources = require('./lib/merge-sources');
+const mergeFolha = require('./lib/folha-gt-merge');
 const camaraWp = require('./lib/scraper-camara-wp');
 const camaraPortal = require('./lib/scraper-camara-portal');
 const mergeCamara = require('./lib/merge-camara-sources');
@@ -106,8 +107,14 @@ async function scrapePrefeituraInner() {
 
     const jsonBundle = jsonResult.status === 'fulfilled' ? jsonResult.value : null;
     const htmlBundle = htmlResult.status === 'fulfilled' ? htmlResult.value : null;
-    const folhaPagamento = folhaResult.status === 'fulfilled' ? folhaResult.value : null;
+    const folhaRaw = folhaResult.status === 'fulfilled' ? folhaResult.value : null;
     const gtResumo = gtResult.status === 'fulfilled' ? gtResult.value : null;
+    const folhaPagamento = mergeFolha.mergeFolhaPagamento(
+      folhaRaw,
+      gtResumo?.folhaPorSetor,
+      year,
+      { gtFolhaConsultaUrl: gtResumo?.gtFolhaConsultaUrl },
+    );
 
     if (jsonResult.status === 'rejected') {
       console.warn('[Prefeitura] dados abertos indisponível:', jsonResult.reason?.message || jsonResult.reason);

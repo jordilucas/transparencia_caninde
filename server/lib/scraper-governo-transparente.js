@@ -7,6 +7,7 @@ const GT_REFERER = GT_DADOS_ABERTOS_URL;
 
 const TOP_RECEITA_CODIGO = /^\d{3}\.0\.0\.0\.00\.0\.0\.00\.00\.00$/;
 const FOLHA_FORNECEDOR = /folha de pagamento/i;
+const FOLHA_LABEL_PREFIX = /^folha de pagamento\s*-?\s*/i;
 
 function yearToExer(year) {
   return Number(year) - 2009;
@@ -78,6 +79,43 @@ function mapTopFornecedores(rows, limit = 8) {
       cnpj: String(row.cpfcnpj || '').trim(),
       valor: formatBRL(Number(row.valor) || 0),
     }));
+}
+
+function mapFolhaGtSetores(rows) {
+  if (!Array.isArray(rows)) return [];
+  const map = new Map();
+
+  for (const row of rows) {
+    if (!row || !FOLHA_FORNECEDOR.test(String(row.nome || ''))) continue;
+    const valor = Number(row.valor) || 0;
+    if (valor <= 0) continue;
+
+    const label = String(row.nome || '')
+      .replace(FOLHA_LABEL_PREFIX, '')
+      .replace(/\s+/g, ' ')
+      .trim() || 'Folha de pagamento';
+    const key = label.toUpperCase();
+    const codigoMatch = label.match(/^(\d{2})\s*-/) || label.match(/^(\d{2})\b/);
+    const current = map.get(key) || {
+      secretaria: label,
+      codigoOrgao: codigoMatch ? codigoMatch[1] : '',
+      totalPagoNumerico: 0,
+      quantidadePagamentos: 0,
+    };
+    current.totalPagoNumerico += valor;
+    current.quantidadePagamentos += 1;
+    map.set(key, current);
+  }
+
+  return [...map.values()]
+    .map((item) => ({
+      secretaria: item.secretaria,
+      codigoOrgao: item.codigoOrgao,
+      totalPago: formatBRL(item.totalPagoNumerico),
+      totalPagoNumerico: Math.round(item.totalPagoNumerico * 100) / 100,
+      quantidadePagamentos: item.quantidadePagamentos,
+    }))
+    .sort((a, b) => b.totalPagoNumerico - a.totalPagoNumerico);
 }
 
 async function fetchGtJson(http, path) {
@@ -161,9 +199,88 @@ function buildGtFinanceLinks(id = GT_PREFEITURA_ID) {
   ];
 }
 
+function buildGtPortalLinks(id = GT_PREFEITURA_ID) {
+  const base = `${GT_BASE}/transparencia/${id}`;
+  const q = '?clean=false';
+  return [
+    {
+      titulo: 'Portal Governo Transparente',
+      url: `${GT_BASE}/${id}${q}`,
+      categoria: 'portal',
+    },
+    {
+      titulo: 'Receitas',
+      url: `${GT_BASE}/transparencia/receitas/${id}${q}`,
+      categoria: 'financeiro',
+    },
+    {
+      titulo: 'Despesas detalhadas',
+      url: `${GT_BASE}/transparencia/despesas/opcoes/${id}${q}`,
+      categoria: 'financeiro',
+    },
+    {
+      titulo: 'Despesas pagas',
+      url: `${base}/consultarpagdesporc${q}`,
+      categoria: 'despesa',
+    },
+    {
+      titulo: 'Ordem cronológica de pagamentos',
+      url: `${base}/consultarpagdesporc${q}`,
+      categoria: 'despesa',
+    },
+    {
+      titulo: 'Despesas por fornecedor',
+      url: `${base}/consultardespesafornecedor${q}`,
+      categoria: 'despesa',
+    },
+    {
+      titulo: 'Licitações, contratos e convênios',
+      url: `${GT_BASE}/${id}${q}`,
+      categoria: 'compras',
+    },
+    {
+      titulo: 'Convênios',
+      url: `${base}/consultarconvenio${q}`,
+      categoria: 'compras',
+    },
+    {
+      titulo: 'Obras e serviços de engenharia',
+      url: `${GT_BASE}/transparencia/obras/${id}${q}`,
+      categoria: 'obras',
+    },
+    {
+      titulo: 'Projetos',
+      url: `${GT_BASE}/transparencia/projetos/${id}${q}`,
+      categoria: 'obras',
+    },
+    {
+      titulo: 'Emendas parlamentares',
+      url: `${GT_BASE}/acessoinfo/${id}/consultaremendas${q}`,
+      categoria: 'emendas',
+    },
+    {
+      titulo: 'Recursos federais (Lei 9.452/97)',
+      url: `${base}/consultarrecursosfederais${q}`,
+      categoria: 'financeiro',
+    },
+    {
+      titulo: 'Dados abertos (exportar planilhas)',
+      url: `${GT_BASE}/dadosabertos/${id}${q}`,
+      categoria: 'dadosabertos',
+    },
+    {
+      titulo: 'Folha — despesas por fornecedor (GT)',
+      url: `${base}/consultardespesafornecedor${q}`,
+      categoria: 'pessoal',
+    },
+  ];
+}
+
 async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
   const exer = yearToExer(exercicio);
-  const empty = {
+  const gtFolhaConsultaUrl =
+    `${GT_BASE}/transparencia/${GT_PREFEITURA_ID}/consultardespesafornecedor?clean=false`;
+  const basePayload = {
     receitaArrecadada: '',
     receitaPrevista: '',
     despesaPaga: '',
@@ -172,10 +289,13 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
     dadosAtualizadosEm: '',
     consultadoEm: '',
     topFornecedores: [],
+    folhaPorSetor: [],
     linksFinanceiros: buildGtFinanceLinks(),
+    linksPortal: buildGtPortalLinks(),
     gtReceitasPainelUrl: `${GT_BASE}/transparencia/receitas/${GT_PREFEITURA_ID}?clean=false`,
     gtDespesasPainelUrl: `${GT_BASE}/transparencia/despesas/opcoes/${GT_PREFEITURA_ID}?clean=false`,
     gtDadosAbertosUrl: GT_DADOS_ABERTOS_URL,
+    gtFolhaConsultaUrl,
     gtFonte: 'Governo Transparente',
     gtDisponivel: false,
   };
@@ -207,6 +327,7 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
     const { arrecadada, prevista } = sumReceitasTopLevel(receitasRows);
     const despesaPaga = parseDespesaTotalFromTitle(despesaHtml);
     const topFornecedores = mapTopFornecedores(fornecedoresRows);
+    const folhaPorSetor = mapFolhaGtSetores(fornecedoresRows);
     const dadosAtualizadosEm = parseDadosAtualizados(portalHtml)
       || parsePeriodoPortal(portalHtml).fim
       || parsePeriodoPortal(despesaHtml).fim;
@@ -215,9 +336,10 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
     const hasReceita = arrecadada > 0;
     const hasDespesa = despesaPaga > 0;
     const hasFornecedores = topFornecedores.length > 0;
+    const hasFolha = folhaPorSetor.length > 0;
 
-    if (!hasReceita && !hasDespesa && !hasFornecedores) {
-      return empty;
+    if (!hasReceita && !hasDespesa && !hasFornecedores && !hasFolha) {
+      return basePayload;
     }
 
     return {
@@ -229,16 +351,19 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
       dadosAtualizadosEm,
       consultadoEm: new Date().toISOString(),
       topFornecedores,
+      folhaPorSetor,
       linksFinanceiros: buildGtFinanceLinks(),
+      linksPortal: buildGtPortalLinks(),
       gtReceitasPainelUrl: `${GT_BASE}/transparencia/receitas/${GT_PREFEITURA_ID}?clean=false`,
       gtDespesasPainelUrl: `${GT_BASE}/transparencia/despesas/opcoes/${GT_PREFEITURA_ID}?clean=false`,
       gtDadosAbertosUrl: GT_DADOS_ABERTOS_URL,
+      gtFolhaConsultaUrl,
       gtFonte: 'Governo Transparente',
-      gtDisponivel: true,
+      gtDisponivel: hasReceita || hasDespesa || hasFornecedores,
     };
   } catch (err) {
     console.warn('[GT] resumo indisponível:', err.message);
-    return empty;
+    return basePayload;
   }
 }
 
@@ -255,7 +380,9 @@ module.exports = {
   parseDadosAtualizados,
   buildPeriodoExercicio,
   mapTopFornecedores,
+  mapFolhaGtSetores,
   calcPercentualArrecadacao,
   buildGtFinanceLinks,
+  buildGtPortalLinks,
   scrapeGtResumo,
 };

@@ -89,7 +89,7 @@ async function scrapeFolhaPagamento(http, cheerio, year) {
 
   const [folhaSettled, pagSettled] = await Promise.allSettled([
     http.get(`${BASE}/folhadepagamento.php`, { responseType: 'text', transformResponse: [(r) => r] }),
-    http.get(`${BASE}/lcpagamentos.php?exe=${exercicio}`, { responseType: 'text', transformResponse: [(r) => r] }),
+    http.get(`${BASE}/lcpagamentos.php?ANO=${exercicio}`, { responseType: 'text', transformResponse: [(r) => r] }),
   ]);
 
   let competencias = [];
@@ -123,7 +123,7 @@ async function scrapeFolhaPagamento(http, cheerio, year) {
       + 'Nomes, matrículas e contracheques individuais não são replicados neste app (LGPD). '
       + 'Consulte o portal oficial para detalhes nominais.',
     fonteUrl: `${BASE}/folhadepagamento.php`,
-    fontePagamentosUrl: `${BASE}/lcpagamentos.php?exe=${exercicio}`,
+    fontePagamentosUrl: `${BASE}/lcpagamentos.php?ANO=${exercicio}`,
   };
 }
 

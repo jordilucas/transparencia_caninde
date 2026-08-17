@@ -361,7 +361,8 @@ private fun AppRouteContent(
             Screen.Folha -> FolhaPagamentoScreen(
                 prefeituraState = prefeituraState,
                 connectionState = connectionState,
-                onRefresh = { viewModel.refreshPrefeitura() },
+                onRefresh = { viewModel.refreshPrefeitura(prefeituraState.resumo.exercicio) },
+                onExercicioChange = { year -> viewModel.refreshPrefeitura(year) },
                 onSobreClick = onSobreClick,
             )
             Screen.Camara -> CamaraScreen(

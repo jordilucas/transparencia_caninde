@@ -24,11 +24,18 @@ fun FolhaPagamentoScreen(
     prefeituraState: PrefeituraUiState,
     connectionState: ConnectionState,
     onRefresh: () -> Unit,
+    onExercicioChange: (Int) -> Unit = {},
     onSobreClick: () -> Unit = {},
 ) {
     val folha = prefeituraState.folhaPagamento
+    val exercicio = folha?.exercicio?.takeIf { it > 0 } ?: prefeituraState.resumo.exercicio
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Por secretaria", "Por mês")
+    val fontePorSetorLabel = when (folha?.fontePorSetor) {
+        "governo_transparente" -> "Governo Transparente"
+        "portal_municipal" -> "Portal municipal"
+        else -> ""
+    }
 
     Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
         Box(Modifier.fillMaxWidth().background(AppColors.Navy800)) {
@@ -50,7 +57,10 @@ fun FolhaPagamentoScreen(
                             color = AppColors.Blue100,
                         )
                         Text(
-                            "Totais por secretaria · Exercício ${folha?.exercicio ?: prefeituraState.resumo.exercicio}",
+                            buildString {
+                                append("Totais por secretaria · Exercício $exercicio")
+                                if (fontePorSetorLabel.isNotBlank()) append(" · $fontePorSetorLabel")
+                            },
                             fontSize = 11.sp,
                             color = AppColors.Blue300,
                         )
@@ -86,33 +96,62 @@ fun FolhaPagamentoScreen(
             return@Column
         }
 
-        if (folha == null || (folha.porSetor.isEmpty() && folha.competencias.isEmpty())) {
-            EmptyState(
-                "Dados de folha ainda não carregados. Atualize ou consulte o portal oficial.",
-            )
-            FolhaPortalLinks(folha)
-            return@Column
-        }
-
-        folha.avisoPrivacidade.takeIf { it.isNotBlank() }?.let { aviso ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = AppColors.Blue100),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Icon(Icons.Default.Shield, null, tint = AppColors.Navy800, modifier = Modifier.size(20.dp))
-                    Text(aviso, fontSize = 11.sp, lineHeight = 16.sp, color = AppColors.Navy800)
-                }
-            }
-        }
-
         LazyColumn(
             contentPadding = PaddingValues(bottom = 88.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            item {
+                ExercicioSelector(
+                    selected = exercicio,
+                    onSelected = onExercicioChange,
+                    loading = prefeituraState.isLoading,
+                )
+            }
+
+            if (folha == null || (folha.porSetor.isEmpty() && folha.competencias.isEmpty())) {
+                item {
+                    EmptyState(
+                        "Dados de folha ainda não carregados. Atualize ou consulte o portal oficial.",
+                    )
+                }
+                item { FolhaPortalLinks(folha) }
+                return@LazyColumn
+            }
+
+            folha.avisoPrivacidade.takeIf { it.isNotBlank() }?.let { aviso ->
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = AppColors.Blue100),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(Icons.Default.Shield, null, tint = AppColors.Navy800, modifier = Modifier.size(20.dp))
+                            Text(aviso, fontSize = 11.sp, lineHeight = 16.sp, color = AppColors.Navy800)
+                        }
+                    }
+                }
+            }
+
+            folha.avisoDados.takeIf { it.isNotBlank() }?.let { aviso ->
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = AppColors.Card),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(Icons.Default.Info, null, tint = AppColors.Blue500, modifier = Modifier.size(18.dp))
+                            Text(aviso, fontSize = 11.sp, lineHeight = 16.sp, color = AppColors.TextSecondary)
+                        }
+                    }
+                }
+            }
+
             item {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -152,7 +191,11 @@ fun FolhaPagamentoScreen(
                 1 -> {
                     item { SectionHeader("Totais mensais (${folha.competencias.size})") }
                     if (folha.competencias.isEmpty()) {
-                        item { EmptyState("Competências mensais indisponíveis no portal.") }
+                        item {
+                            EmptyState(
+                                "Competências mensais indisponíveis no portal municipal para este exercício.",
+                            )
+                        }
                     } else {
                         items(folha.competencias, key = { it.competencia }) { comp ->
                             FolhaCompetenciaRow(comp)
@@ -223,7 +266,7 @@ private fun FolhaPortalLinks(folha: FolhaPagamentoResumo?) {
             color = AppColors.Navy800,
         )
         Text(
-            "Detalhes com nomes de servidores ficam apenas no site da Prefeitura.",
+            "Detalhes com nomes de servidores ficam apenas no site da Prefeitura ou no Governo Transparente.",
             fontSize = 11.sp,
             color = AppColors.TextSecondary,
         )
@@ -238,7 +281,14 @@ private fun FolhaPortalLinks(folha: FolhaPagamentoResumo?) {
             OutlinedButton(onClick = { openExternalUrl(pagUrl) }, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Pagamentos por órgão", fontSize = 12.sp)
+                Text("Pagamentos por órgão (Prefeitura)", fontSize = 12.sp)
+            }
+        }
+        folha?.gtConsultaUrl?.takeIf { it.isNotBlank() }?.let { gtUrl ->
+            OutlinedButton(onClick = { openExternalUrl(gtUrl) }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Folha no Governo Transparente", fontSize = 12.sp)
             }
         }
     }

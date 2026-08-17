@@ -226,6 +226,10 @@ fun PrefeituraScreen(
                                 links = resumo.linksFinanceiros,
                                 onClick = onTransparenciaLinkClick,
                             )
+                            gtPortalLinksItems(
+                                links = resumo.linksPortal,
+                                onClick = onTransparenciaLinkClick,
+                            )
                         } ?: item {
                             EmptyState("Dados financeiros indisponíveis no momento. Tente atualizar.")
                         }
@@ -251,6 +255,11 @@ fun PrefeituraScreen(
                         item { TransparenciaDestaquesCard(state.linksTransparencia) }
                         item { TransparenciaLinksIntro("a Prefeitura") }
                         transparenciaLinksItems(state.linksTransparencia, onClick = onTransparenciaLinkClick)
+                        state.resumoFinanceiro?.linksPortal?.let { portalLinks ->
+                            if (portalLinks.isNotEmpty()) {
+                                gtPortalLinksItems(portalLinks, onClick = onTransparenciaLinkClick)
+                            }
+                        }
                     }
                 }
 
@@ -818,6 +827,34 @@ fun LazyListScope.financasLinksItems(
     if (despesas.isNotEmpty()) {
         item { SectionHeader(title = "Consultas de despesa (GT)", action = "") }
         items(despesas) { link ->
+            TransparenciaLinkRow(link, onClick)
+            HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+        }
+    }
+}
+
+fun LazyListScope.gtPortalLinksItems(
+    links: List<LinkExterno>,
+    onClick: (LinkExterno) -> Unit = {},
+) {
+    if (links.isEmpty()) return
+
+    val grupos = listOf(
+        "portal" to "Portal Governo Transparente",
+        "financeiro" to "Finanças e recursos",
+        "despesa" to "Despesas e pagamentos",
+        "compras" to "Licitações, contratos e convênios",
+        "obras" to "Obras e projetos",
+        "emendas" to "Emendas parlamentares",
+        "pessoal" to "Pessoal e folha",
+        "dadosabertos" to "Dados abertos",
+    )
+
+    for ((categoria, tituloSecao) in grupos) {
+        val secao = links.filter { it.categoria == categoria }
+        if (secao.isEmpty()) continue
+        item { SectionHeader(title = tituloSecao, action = "") }
+        items(secao, key = { it.url.ifBlank { it.titulo } }) { link ->
             TransparenciaLinkRow(link, onClick)
             HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
         }
