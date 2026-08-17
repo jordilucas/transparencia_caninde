@@ -156,6 +156,7 @@ data class GtFornecedorResumo(
 data class ResumoFinanceiroPortal(
     val totalContratosValor: String = "",
     val totalContratos: Int = 0,
+    val contratosPeriodoReferencia: String = "",
     val licitacoesAbertas: Int = 0,
     val exercicio: Int = 0,
     val gtReceitasUrl: String = "",

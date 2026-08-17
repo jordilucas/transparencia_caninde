@@ -2,6 +2,7 @@
 
 const BASE = 'https://www.caninde.ce.gov.br';
 const EXPORT_URL = `${BASE}/dadosabertosexportar.php`;
+const { parseBRLNumber, formatBRL } = require('./brl');
 
 function resolveUrl(href) {
   if (!href || typeof href !== 'string') return '';
@@ -9,13 +10,6 @@ function resolveUrl(href) {
   if (!t) return '';
   if (/^https?:\/\//i.test(t)) return t;
   return `${BASE}${t.startsWith('/') ? '' : '/'}${t}`;
-}
-
-function formatBRL(value) {
-  if (value == null || value === '') return '';
-  const n = typeof value === 'number' ? value : parseFloat(String(value).replace(/\./g, '').replace(',', '.'));
-  if (Number.isNaN(n)) return String(value);
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function isEmptyResponse(body) {
@@ -45,7 +39,7 @@ async function fetchDataset(http, dataset, ano) {
 function mapContratos(rows) {
   return rows.map((r) => {
     const pdf = resolveUrl(r.Arquivo || r.DemaisArquivos || '');
-    const valorNumerico = parseFloat(String(r.ValorGlobal || '').replace(/\./g, '').replace(',', '.')) || 0;
+    const valorNumerico = parseBRLNumber(r.ValorGlobal);
     return {
       id: String(r.Id ?? ''),
       numero: String(r.NumeroContrato || r.NumeroProcesso || r.Id || '').trim(),

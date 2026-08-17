@@ -2,18 +2,11 @@
 
 const GT_PREFEITURA_ID = '11979490';
 const GT_BASE = 'https://www.governotransparente.com.br';
-
-function formatBRL(value) {
-  if (value == null || Number.isNaN(value)) return '';
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
+const { parseBRLNumber, formatBRL } = require('./brl');
 
 function parseValorContrato(c) {
   if (typeof c.valorNumerico === 'number' && c.valorNumerico > 0) return c.valorNumerico;
-  const raw = String(c.valor || '').replace(/[^\d,.-]/g, '');
-  if (!raw) return 0;
-  const n = parseFloat(raw.replace(/\./g, '').replace(',', '.'));
-  return Number.isNaN(n) ? 0 : n;
+  return parseBRLNumber(c.valor);
 }
 
 function buildResumoFinanceiro(
@@ -23,6 +16,8 @@ function buildResumoFinanceiro(
   gtResumo = null,
 ) {
   const totalValor = contratos.reduce((sum, c) => sum + parseValorContrato(c), 0);
+  const contratosPeriodoReferencia =
+    `Exercício ${exercicio} · ${contratos.length} contrato${contratos.length === 1 ? '' : 's'} no portal municipal`;
   const licitacoesAbertas = licitacoes.filter((l) => {
     const s = String(l.situacao || '').toLowerCase();
     return s.includes('abert') || s.includes('andamento') || s.includes('public') || s.includes('pregão');
@@ -30,17 +25,18 @@ function buildResumoFinanceiro(
 
   const gt = gtResumo && gtResumo.gtDisponivel ? gtResumo : null;
   let aviso =
-    'Contratos: soma dos valores publicados no portal municipal. '
+    `Contratos: soma dos ${contratos.length} publicados no portal municipal (${contratosPeriodoReferencia}). `
     + 'Receitas e despesas executadas vêm do Governo Transparente quando disponíveis.';
   if (!gt) {
     aviso =
-      'Valores somados dos contratos publicados no portal municipal (dados abertos). '
+      `Soma dos contratos publicados no portal municipal (${contratosPeriodoReferencia}). `
       + 'Receitas e despesas detalhadas estão no Governo Transparente.';
   }
 
   return {
     totalContratosValor: formatBRL(totalValor),
     totalContratos: contratos.length,
+    contratosPeriodoReferencia,
     licitacoesAbertas,
     exercicio,
     gtReceitasUrl: `${GT_BASE}/transparencia/receitas/${GT_PREFEITURA_ID}?clean=false`,

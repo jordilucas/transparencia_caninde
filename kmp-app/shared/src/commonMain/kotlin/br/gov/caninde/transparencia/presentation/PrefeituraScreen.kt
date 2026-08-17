@@ -161,7 +161,9 @@ fun PrefeituraScreen(
                             MetricCard(
                                 label = "Contratos publicados",
                                 value = "${state.resumo.totalContratos}",
-                                delta = "portal municipal",
+                                delta = state.resumoFinanceiro?.contratosPeriodoReferencia
+                                    ?.ifBlank { "Exercício ${state.resumo.exercicio}" }
+                                    ?: "Exercício ${state.resumo.exercicio}",
                                 modifier = Modifier.weight(1f)
                             )
                             MetricCard(
@@ -878,13 +880,15 @@ fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MetricCard(
-                    "Contratos",
+                    "Contratos (portal)",
                     resumo.totalContratosValor.ifBlank { "${resumo.totalContratos}" },
+                    delta = resumo.contratosPeriodoReferencia.ifBlank { "Exercício ${resumo.exercicio}" },
                     modifier = Modifier.weight(1f),
                 )
                 MetricCard(
                     "Licitações abertas",
                     "${resumo.licitacoesAbertas}",
+                    delta = "Exercício ${resumo.exercicio}",
                     modifier = Modifier.weight(1f),
                 )
             }

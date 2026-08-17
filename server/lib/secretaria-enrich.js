@@ -56,21 +56,7 @@ function matchByText(text, matchers) {
   return best;
 }
 
-function parseBRLNumber(value) {
-  if (value == null || value === '') return 0;
-  if (typeof value === 'number' && !Number.isNaN(value)) return value;
-  const s = String(value).trim();
-  if (!s) return 0;
-  const cleaned = s.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
-  const n = parseFloat(cleaned);
-  return Number.isNaN(n) ? 0 : n;
-}
-
-function formatBRL(value) {
-  const n = typeof value === 'number' ? value : parseBRLNumber(value);
-  if (!n) return '';
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
+const { parseBRLNumber, formatBRL } = require('./brl');
 
 function isLicitacaoEmAndamento(lic) {
   const sit = normalizeText(lic.situacao || '');
