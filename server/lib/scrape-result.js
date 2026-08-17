@@ -18,6 +18,7 @@ function buildPrefeituraPayload({
   linksTransparencia = [],
   resumoFinanceiro = null,
   folhaPagamento = null,
+  saaeResumo = null,
   fonte,
   scrapeError = null,
   fontesUtilizadas = [],
@@ -59,6 +60,7 @@ function buildPrefeituraPayload({
     linksTransparencia,
     resumoFinanceiro,
     folhaPagamento,
+    saaeResumo,
     resumo: {
       totalContratos: contratos.length,
       totalLicitacoes: licitacoes.length,

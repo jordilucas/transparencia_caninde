@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,6 +32,7 @@ import org.koin.compose.koinInject
 
 @Composable
 fun ReclamacaoAguaScreen(
+    embedded: Boolean = false,
     onSobreClick: () -> Unit = {},
     viewModel: ReclamacaoAguaViewModel = koinInject(),
 ) {
@@ -42,51 +44,67 @@ fun ReclamacaoAguaScreen(
         if (tab == 1) viewModel.carregarDashboard()
     }
 
-    Column(Modifier.fillMaxSize().background(AppColors.Surface)) {
-        Box(Modifier.fillMaxWidth().background(AppColors.Navy800)) {
-            Column {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.padding(start = 16.dp, top = 14.dp, bottom = 8.dp)) {
-                        Text(
-                            "Falta de água",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AppColors.Blue100,
-                        )
-                        Text(
-                            "Registre e acompanhe reclamações em Canindé/CE",
-                            fontSize = 11.sp,
-                            color = AppColors.Blue300,
-                        )
-                    }
-                    Row(modifier = Modifier.padding(end = 4.dp)) {
-                        IconButton(onClick = {
-                            AppAnalytics.logShare("reclamacao_agua")
-                            shareContent("Falta de água — Canindé", ShareTexts.reclamacaoAgua())
-                        }) {
-                            Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = AppColors.Blue100)
+    Column(Modifier.fillMaxSize().background(if (embedded) Color.Transparent else AppColors.Surface)) {
+        if (!embedded) {
+            Box(Modifier.fillMaxWidth().background(AppColors.Navy800)) {
+                Column {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.padding(start = 16.dp, top = 14.dp, bottom = 8.dp)) {
+                            Text(
+                                "Falta de água",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.Blue100,
+                            )
+                            Text(
+                                "Registre e acompanhe reclamações em Canindé/CE",
+                                fontSize = 11.sp,
+                                color = AppColors.Blue300,
+                            )
                         }
-                        IconButton(onClick = onSobreClick) {
-                            Icon(Icons.Default.Info, contentDescription = "Sobre", tint = AppColors.Blue100)
+                        Row(modifier = Modifier.padding(end = 4.dp)) {
+                            IconButton(onClick = {
+                                AppAnalytics.logShare("reclamacao_agua")
+                                shareContent("Falta de água — Canindé", ShareTexts.reclamacaoAgua())
+                            }) {
+                                Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = AppColors.Blue100)
+                            }
+                            IconButton(onClick = onSobreClick) {
+                                Icon(Icons.Default.Info, contentDescription = "Sobre", tint = AppColors.Blue100)
+                            }
+                        }
+                    }
+                    TabRow(
+                        selectedTabIndex = tab,
+                        containerColor = AppColors.Navy800,
+                        contentColor = AppColors.Blue100,
+                    ) {
+                        tabs.forEachIndexed { index, label ->
+                            Tab(
+                                selected = tab == index,
+                                onClick = { tab = index },
+                                text = { Text(label, fontSize = 12.sp) },
+                            )
                         }
                     }
                 }
-                TabRow(
-                    selectedTabIndex = tab,
-                    containerColor = AppColors.Navy800,
-                    contentColor = AppColors.Blue100,
-                ) {
-                    tabs.forEachIndexed { index, label ->
-                        Tab(
-                            selected = tab == index,
-                            onClick = { tab = index },
-                            text = { Text(label, fontSize = 12.sp) },
-                        )
-                    }
+            }
+        } else {
+            TabRow(
+                selectedTabIndex = tab,
+                containerColor = AppColors.Surface,
+                contentColor = AppColors.Navy800,
+            ) {
+                tabs.forEachIndexed { index, label ->
+                    Tab(
+                        selected = tab == index,
+                        onClick = { tab = index },
+                        text = { Text(label, fontSize = 12.sp) },
+                    )
                 }
             }
         }

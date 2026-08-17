@@ -328,6 +328,7 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
     const despesaPaga = parseDespesaTotalFromTitle(despesaHtml);
     const topFornecedores = mapTopFornecedores(fornecedoresRows);
     const folhaPorSetor = mapFolhaGtSetores(fornecedoresRows);
+    const fornecedoresRowsRaw = Array.isArray(fornecedoresRows) ? fornecedoresRows : [];
     const dadosAtualizadosEm = parseDadosAtualizados(portalHtml)
       || parsePeriodoPortal(portalHtml).fim
       || parsePeriodoPortal(despesaHtml).fim;
@@ -352,6 +353,7 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
       consultadoEm: new Date().toISOString(),
       topFornecedores,
       folhaPorSetor,
+      fornecedoresRows: fornecedoresRowsRaw,
       linksFinanceiros: buildGtFinanceLinks(),
       linksPortal: buildGtPortalLinks(),
       gtReceitasPainelUrl: `${GT_BASE}/transparencia/receitas/${GT_PREFEITURA_ID}?clean=false`,

@@ -281,6 +281,16 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Aba SAAE em destaque",
+            data = "17/08/2026",
+            itens = listOf(
+                "Nova aba SAAE com transparência financeira do serviço de água e esgoto",
+                "Folha, despesas, contratos e licitações filtrados para o órgão 044",
+                "Reclamações de falta de água integradas na mesma aba",
+                "Atalhos para consultas no Governo Transparente",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Governo Transparente ampliado",
             data = "17/08/2026",
             itens = listOf(

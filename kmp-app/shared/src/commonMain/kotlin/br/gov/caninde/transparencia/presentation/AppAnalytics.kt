@@ -10,7 +10,7 @@ fun AppRoute.analyticsScreenName(): String = when (this) {
         Screen.Camara -> "camara"
         Screen.Graficos -> "graficos"
         Screen.Busca -> "busca"
-        Screen.Agua -> "agua"
+        Screen.Agua -> "saae"
         Screen.Sobre -> "sobre"
     }
     is AppRoute.Vereador -> "detalhe_vereador"

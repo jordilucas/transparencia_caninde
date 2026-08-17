@@ -1009,13 +1009,13 @@ fun AguaPromoCard(onClick: () -> Unit) {
             }
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Falta de água? Registre aqui",
+                    "SAAE — água, esgoto e transparência",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = AppColors.Navy800,
                 )
                 Text(
-                    "Ajude a mapear o rodízio do SAAE em Canindé",
+                    "Folha, contratos, licitações e registro de falta de água",
                     fontSize = 11.sp,
                     color = AppColors.TextSecondary,
                 )

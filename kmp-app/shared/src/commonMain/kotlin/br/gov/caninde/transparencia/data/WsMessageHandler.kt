@@ -97,6 +97,7 @@ class WsMessageHandler(
         },
         resumoFinanceiro = p.resumoFinanceiro ?: previous.resumoFinanceiro,
         folhaPagamento = p.folhaPagamento ?: previous.folhaPagamento,
+        saaeResumo = p.saaeResumo ?: previous.saaeResumo,
         graficos = p.graficos ?: previous.graficos,
         resumo = DataMerge.mergeResumoPrefeitura(
             previous.resumo,

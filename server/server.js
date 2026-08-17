@@ -28,6 +28,7 @@ const scrapeFolha = require('./lib/scraper-folha-pagamento');
 const scrapeGt = require('./lib/scraper-governo-transparente');
 const mergeSources = require('./lib/merge-sources');
 const mergeFolha = require('./lib/folha-gt-merge');
+const saaeScraper = require('./lib/scraper-saae');
 const camaraWp = require('./lib/scraper-camara-wp');
 const camaraPortal = require('./lib/scraper-camara-portal');
 const mergeCamara = require('./lib/merge-camara-sources');
@@ -142,6 +143,13 @@ async function scrapePrefeituraInner() {
     const gestores = merged.gestores.slice(0, 4);
 
     const resumoFinanceiro = buildResumoFinanceiro(merged.contratos, merged.licitacoes, year, gtResumo);
+    const saaeResumo = saaeScraper.buildSaaeResumo(
+      year,
+      merged.contratos,
+      merged.licitacoes,
+      gtResumo?.fornecedoresRows,
+      { dadosAtualizadosEm: gtResumo?.dadosAtualizadosEm },
+    );
 
     const fonteParts = [
       jsonBundle?.fonte,
@@ -170,6 +178,7 @@ async function scrapePrefeituraInner() {
         linksTransparencia: camaraTransp.buildLinksTransparenciaPrefeitura(),
         resumoFinanceiro,
         folhaPagamento,
+        saaeResumo,
         fonte: fonteParts.join(' + ') || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
         fontesUtilizadas: merged.fontesUtilizadas,
         exercicio: year,
@@ -182,6 +191,7 @@ async function scrapePrefeituraInner() {
     cache.lastUpdated.prefeitura = now();
     console.log(`[Prefeitura] OK — ${contratos.length} contratos, ${licitacoes.length} licitações`
       + (folhaPagamento?.porSetor?.length ? `, folha ${folhaPagamento.porSetor.length} setores` : '')
+      + (saaeResumo?.disponivel ? ', SAAE OK' : '')
       + (gtResumo?.gtDisponivel ? ', GT financeiro OK' : ''));
     if (result.error) console.warn(`[Prefeitura] aviso: ${result.error}`);
     return result;

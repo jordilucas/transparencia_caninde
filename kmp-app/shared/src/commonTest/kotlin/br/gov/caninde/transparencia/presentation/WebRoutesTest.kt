@@ -12,6 +12,7 @@ class WebRoutesTest {
         assertEquals(AppRoute.Main(Screen.Camara), parseWebPath("/camara"))
         assertEquals(AppRoute.Main(Screen.Folha), parseWebPath("/folha"))
         assertEquals(AppRoute.Main(Screen.Agua), parseWebPath("/agua"))
+        assertEquals(AppRoute.Main(Screen.Agua), parseWebPath("/saae"))
         assertEquals(AppRoute.Contrato("1073"), parseWebPath("/contrato/1073"))
         assertEquals(AppRoute.Vereador("joao-silva"), parseWebPath("/vereador/joao-silva"))
         assertEquals(AppRoute.Lrf("rreo-2025"), parseWebPath("/lrf/rreo-2025"))
@@ -31,7 +32,7 @@ class WebRoutesTest {
     }
 
     @Test
-    fun toWebPath_detalheContrato() {
-        assertEquals("/contrato/1073", AppRoute.Contrato("1073").toWebPath())
+    fun toWebPath_abaSaae() {
+        assertEquals("/saae", AppRoute.Main(Screen.Agua).toWebPath())
     }
 }

@@ -9,7 +9,7 @@ fun AppRoute.toWebPath(): String = when (this) {
         Screen.Camara -> "/camara"
         Screen.Graficos -> "/graficos"
         Screen.Busca -> "/busca"
-        Screen.Agua -> "/agua"
+        Screen.Agua -> "/saae"
         Screen.Sobre -> "/sobre"
     }
     is AppRoute.Vereador -> "/vereador/${encodeUriSegment(slug)}"
@@ -43,7 +43,7 @@ fun parseWebPath(path: String): AppRoute? {
         "folha" -> AppRoute.Main(Screen.Folha)
         "graficos" -> AppRoute.Main(Screen.Graficos)
         "busca" -> AppRoute.Main(Screen.Busca)
-        "agua" -> AppRoute.Main(Screen.Agua)
+        "agua", "saae" -> AppRoute.Main(Screen.Agua)
         "sobre" -> AppRoute.Main(Screen.Sobre)
         "vereador" -> segments.getOrNull(1)?.let { AppRoute.Vereador(decodeUriSegment(it)) }
         "materia" -> segments.getOrNull(1)?.let { AppRoute.Materia(decodeUriSegment(it)) }

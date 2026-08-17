@@ -48,7 +48,7 @@ val navItems: List<NavItem> by lazy {
         NavItem(Screen.Camara, "Câmara", Icons.Default.Groups),
         NavItem(Screen.Graficos, "Gráficos", Icons.Default.BarChart),
         NavItem(Screen.Busca, "Busca", Icons.Default.Search),
-        NavItem(Screen.Agua, "Água", Icons.Default.WaterDrop),
+        NavItem(Screen.Agua, "SAAE", Icons.Default.WaterDrop),
         NavItem(Screen.Sobre, "Sobre", Icons.Default.Info),
     )
 }
@@ -415,7 +415,15 @@ private fun AppRouteContent(
                 },
                 onSobreClick = onSobreClick,
             )
-            Screen.Agua -> ReclamacaoAguaScreen(onSobreClick = onSobreClick)
+            Screen.Agua -> SaaeScreen(
+                prefeituraState = prefeituraState,
+                connectionState = connectionState,
+                onRefresh = { viewModel.refreshPrefeitura(prefeituraState.resumo.exercicio) },
+                onExercicioChange = { year -> viewModel.refreshPrefeitura(year) },
+                onContratoClick = { onNavigate(AppRoute.Contrato(contratoDetailId(it))) },
+                onLicitacaoClick = { onNavigate(AppRoute.Licitacao(licitacaoDetailId(it))) },
+                onSobreClick = onSobreClick,
+            )
             Screen.Sobre -> SobreScreen(
                 prefeituraState = prefeituraState,
                 camaraState = camaraState,
