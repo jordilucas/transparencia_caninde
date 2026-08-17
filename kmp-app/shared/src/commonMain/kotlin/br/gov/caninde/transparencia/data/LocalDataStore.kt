@@ -10,6 +10,8 @@ expect object LocalDataStore {
     fun loadPrefeitura(): String?
     fun saveCamara(json: String)
     fun loadCamara(): String?
+    fun saveRecentSearches(json: String)
+    fun loadRecentSearches(): String?
 }
 
 object LocalCache {

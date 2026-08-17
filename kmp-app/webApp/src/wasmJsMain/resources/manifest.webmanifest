@@ -1,0 +1,19 @@
+{
+  "name": "Transparência Canindé",
+  "short_name": "Transparência",
+  "description": "Portal de transparência pública — Prefeitura e Câmara Municipal de Canindé, CE.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d2137",
+  "theme_color": "#0d2137",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

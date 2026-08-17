@@ -91,3 +91,67 @@ html, body {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+#consent-banner {
+    display: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(13, 33, 55, 0.96);
+    box-sizing: border-box;
+    justify-content: center;
+}
+
+.consent-card {
+    max-width: 520px;
+    width: 100%;
+    background: #f5f7fa;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.consent-title {
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0d2137;
+}
+
+.consent-text {
+    margin: 0 0 14px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: #4a5568;
+}
+
+.consent-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.consent-decline,
+.consent-accept {
+    appearance: none;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 10px 16px;
+    cursor: pointer;
+}
+
+.consent-decline {
+    background: transparent;
+    color: #4a5568;
+    border: 1px solid #cbd5e0;
+}
+
+.consent-accept {
+    background: #378add;
+    color: #fff;
+}

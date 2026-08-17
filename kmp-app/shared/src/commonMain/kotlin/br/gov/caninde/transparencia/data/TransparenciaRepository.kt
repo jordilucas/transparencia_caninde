@@ -131,7 +131,7 @@ class TransparenciaRepository(
         connect(scope)
     }
 
-    suspend fun refreshSource(source: String) {
+    suspend fun refreshSource(source: String, exercicio: Int? = null) {
         setLoadingForSource(source, loading = true)
 
         if (!isConnected()) {
@@ -146,7 +146,8 @@ class TransparenciaRepository(
             }
         }
 
-        val sent = sendFrame("""{"type":"REQUEST_REFRESH","source":"$source"}""")
+        val exercicioJson = exercicio?.let { ""","exercicio":$it""" } ?: ""
+        val sent = sendFrame("""{"type":"REQUEST_REFRESH","source":"$source"$exercicioJson}""")
         if (!sent) {
             forceReconnect()
             setLoadingForSource(source, loading = false)

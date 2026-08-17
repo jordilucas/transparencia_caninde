@@ -90,6 +90,12 @@ sealed class SearchHit {
         override val section = "Transparência Câmara"
     }
 
+    data class LinkPrefeituraHit(val item: LinkExterno) : SearchHit() {
+        override val title get() = item.titulo
+        override val subtitle get() = item.categoria.replaceFirstChar { it.uppercase() }
+        override val section = "Transparência Prefeitura"
+    }
+
     data class DocumentoCamaraHit(val item: DocumentoCamara) : SearchHit() {
         override val title get() = item.titulo
         override val subtitle get() = listOfNotNull(
@@ -147,6 +153,9 @@ object SearchIndex {
             prefeitura.gestores.filter {
                 matchesAnySearch(q, it.nome, it.cargo)
             }.forEach { hits.add(SearchHit.GestorHit(it)) }
+            prefeitura.linksTransparencia.filter {
+                matchesAnySearch(q, it.titulo, it.categoria, it.url)
+            }.forEach { hits.add(SearchHit.LinkPrefeituraHit(it)) }
         }
         if (showCam && allow(SearchEntityFilter.Vereadores)) {
             camara.parlamentares.filter {

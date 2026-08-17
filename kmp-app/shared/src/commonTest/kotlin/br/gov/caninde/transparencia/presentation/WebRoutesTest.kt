@@ -13,6 +13,7 @@ class WebRoutesTest {
         assertEquals(AppRoute.Main(Screen.Agua), parseWebPath("/agua"))
         assertEquals(AppRoute.Contrato("1073"), parseWebPath("/contrato/1073"))
         assertEquals(AppRoute.Vereador("joao-silva"), parseWebPath("/vereador/joao-silva"))
+        assertEquals(AppRoute.Lrf("rreo-2025"), parseWebPath("/lrf/rreo-2025"))
     }
 
     @Test

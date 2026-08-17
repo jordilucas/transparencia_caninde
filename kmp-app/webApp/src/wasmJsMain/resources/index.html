@@ -12,16 +12,11 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
     <link rel="canonical" href="https://transparenciacaninde.com.br/">
+    <meta name="theme-color" content="#0d2137">
+    <link rel="manifest" href="manifest.webmanifest">
     <title>Transparência Canindé</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRKC3S7WK7"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag("js", new Date());
-        gtag("config", "G-JRKC3S7WK7", { send_page_view: false, anonymize_ip: true });
-    </script>
     <script>
         (function () {
             var path = window.location.pathname || "/";
@@ -31,6 +26,51 @@
                 document.head.appendChild(tag);
             }
         })();
+        window.transparenciaDownloadText = function (fileName, content, mimeType) {
+            var blob = new Blob([content], { type: mimeType || "text/csv;charset=utf-8" });
+            var url = URL.createObjectURL(blob);
+            var anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = fileName || "download.csv";
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            URL.revokeObjectURL(url);
+        };
+
+        var ANALYTICS_CONSENT_KEY = "tc_analytics_consent";
+
+        function hasAnalyticsConsent() {
+            try { return localStorage.getItem(ANALYTICS_CONSENT_KEY) === "1"; } catch (e) { return false; }
+        }
+
+        function enableAnalytics() {
+            if (window.__tcAnalyticsLoaded) return;
+            window.__tcAnalyticsLoaded = true;
+            var script = document.createElement("script");
+            script.async = true;
+            script.src = "https://www.googletagmanager.com/gtag/js?id=G-JRKC3S7WK7";
+            document.head.appendChild(script);
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            window.gtag = gtag;
+            gtag("js", new Date());
+            gtag("config", "G-JRKC3S7WK7", { send_page_view: false, anonymize_ip: true });
+        }
+
+        window.transparenciaAcceptAnalytics = function () {
+            try { localStorage.setItem(ANALYTICS_CONSENT_KEY, "1"); } catch (e) { /* ignore */ }
+            var banner = document.getElementById("consent-banner");
+            if (banner) banner.style.display = "none";
+            enableAnalytics();
+        };
+
+        window.transparenciaDeclineAnalytics = function () {
+            try { localStorage.setItem(ANALYTICS_CONSENT_KEY, "0"); } catch (e) { /* ignore */ }
+            var banner = document.getElementById("consent-banner");
+            if (banner) banner.style.display = "none";
+        };
+
         window.transparenciaShareContent = function (title, text) {
             if (navigator.share) {
                 navigator.share({ title: title, text: text }).catch(function () {
@@ -53,6 +93,7 @@
             if (el) el.style.display = "none";
         };
         window.transparenciaLogScreen = function (screenName) {
+            if (!hasAnalyticsConsent()) return;
             if (typeof gtag === "function" && screenName) {
                 gtag("event", "screen_view", {
                     screen_name: screenName,
@@ -61,6 +102,7 @@
             }
         };
         window.transparenciaLogEvent = function (name, paramsJson) {
+            if (!hasAnalyticsConsent()) return;
             if (typeof gtag !== "function" || !name) return;
             var params = {};
             try {
@@ -195,6 +237,17 @@
                 return;
             }
 
+            if (hasAnalyticsConsent()) {
+                enableAnalytics();
+            } else {
+                var banner = document.getElementById("consent-banner");
+                if (banner) banner.style.display = "flex";
+            }
+
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.register("sw.js").catch(function () { /* ignore */ });
+            }
+
             loadAppScript();
 
             setTimeout(function () {
@@ -229,6 +282,19 @@
             <p id="boot-error-title" class="loader-title">Erro</p>
             <p id="boot-error-subtitle" class="loader-subtitle"></p>
             <button id="boot-error-retry" class="loader-retry" type="button">Tentar novamente</button>
+        </div>
+    </div>
+    <div id="consent-banner" role="dialog" aria-live="polite" aria-label="Consentimento de cookies">
+        <div class="consent-card">
+            <p class="consent-title">Privacidade</p>
+            <p class="consent-text">
+                Usamos cookies de analytics (Google Analytics, IP anonimizado) para entender o uso do portal e melhorar o serviço.
+                Você pode aceitar ou continuar sem estatísticas. Dados públicos exibidos seguem as fontes oficiais.
+            </p>
+            <div class="consent-actions">
+                <button type="button" class="consent-decline" onclick="transparenciaDeclineAnalytics()">Recusar</button>
+                <button type="button" class="consent-accept" onclick="transparenciaAcceptAnalytics()">Aceitar</button>
+            </div>
         </div>
     </div>
     <div id="ComposeTarget"></div>

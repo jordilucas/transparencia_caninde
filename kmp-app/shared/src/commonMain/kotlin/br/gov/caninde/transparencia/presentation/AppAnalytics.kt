@@ -20,6 +20,7 @@ fun AppRoute.analyticsScreenName(): String = when (this) {
     is AppRoute.Sessao -> "detalhe_sessao"
     is AppRoute.Publicacao -> "detalhe_publicacao"
     is AppRoute.Obra -> "detalhe_obra"
+    is AppRoute.Lrf -> "detalhe_lrf"
     is AppRoute.PaginaPortal -> "detalhe_pagina_portal"
     is AppRoute.DocumentoCamara -> "detalhe_documento_camara"
     AppRoute.Gestores -> "detalhe_gestores"

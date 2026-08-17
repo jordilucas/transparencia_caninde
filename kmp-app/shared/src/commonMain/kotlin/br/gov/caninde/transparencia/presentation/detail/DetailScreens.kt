@@ -816,3 +816,35 @@ fun ObraDetailScreen(obras: List<Obra>, id: String, onBack: () -> Unit) {
         }
     }
 }
+
+@Composable
+fun LrfDetailScreen(lrf: List<LrfDocumento>, id: String, onBack: () -> Unit) {
+    val doc = lrf.find { it.id == id || it.titulo == id }
+    DetailScaffold(
+        title = truncateToolbarTitle(doc?.titulo ?: "Documento LRF"),
+        onBack = onBack,
+    ) {
+        if (doc == null) {
+            EmptyState("Documento LRF não encontrado na listagem atual.")
+            return@DetailScaffold
+        }
+        if (doc.tipo.isNotBlank()) DetailField("Tipo", doc.tipo)
+        if (doc.exercicio.isNotBlank()) DetailField("Exercício", doc.exercicio)
+        if (doc.data.isNotBlank()) DetailField("Data", doc.data)
+        if (doc.url.isNotBlank()) {
+            DetailLinkAction(
+                label = "Documento oficial",
+                url = doc.url,
+                baseUrl = PREFEITURA_PORTAL_BASE,
+                actionText = if (doc.url.contains(".pdf", ignoreCase = true)) {
+                    "Visualizar PDF no portal"
+                } else {
+                    "Abrir no portal oficial"
+                },
+                usePdfIcon = doc.url.contains(".pdf", ignoreCase = true),
+            )
+        } else {
+            EmptyState("Nenhum link de documento disponível para este item.")
+        }
+    }
+}

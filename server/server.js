@@ -61,6 +61,7 @@ let cache = {
   camara: null,
   lastUpdated: { prefeitura: null, camara: null }
 };
+let pendingPrefeituraExercicio = null;
 
 const detailHandler = createDetailHandler({
   http: scrapeHttp,
@@ -91,7 +92,8 @@ async function scrapePrefeitura() {
 async function scrapePrefeituraInner() {
   console.log('[Prefeitura] iniciando scraping...');
   try {
-    const year = new Date().getFullYear();
+    const year = pendingPrefeituraExercicio || new Date().getFullYear();
+    pendingPrefeituraExercicio = null;
 
     const [jsonResult, htmlResult] = await Promise.allSettled([
       dadosAbertos.scrapePrefeituraDadosAbertos(scrapeHttp, year),
@@ -120,7 +122,7 @@ async function scrapePrefeituraInner() {
     const diariosStrings = merged.diariosOficiais.slice(0, 15);
     const gestores = merged.gestores.slice(0, 4);
 
-    const resumoFinanceiro = buildResumoFinanceiro(merged.contratos, merged.licitacoes);
+    const resumoFinanceiro = buildResumoFinanceiro(merged.contratos, merged.licitacoes, year);
 
     const fonteParts = [
       jsonBundle?.fonte,
@@ -150,6 +152,7 @@ async function scrapePrefeituraInner() {
         resumoFinanceiro,
         fonte: fonteParts.join(' + ') || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
         fontesUtilizadas: merged.fontesUtilizadas,
+        exercicio: year,
       }),
       scrapedAt: now(),
     };
@@ -238,15 +241,18 @@ async function scrapeCamaraInner() {
   }
 }
 
-async function payloadForSource(source, forceScrape) {
+async function payloadForSource(source, forceScrape, exercicio) {
   if (forceScrape && !refreshGuard.canRefresh(source)) {
     const waitSec = Math.ceil(refreshGuard.remainingMs(source) / 1000);
     console.warn(`[WS] refresh ignorado (${source}): aguarde ${waitSec}s (cooldown)`);
     forceScrape = false;
   }
   if (source === 'prefeitura') {
-    if (forceScrape || !cache.prefeitura) {
+    const cachedYear = cache.prefeitura?.resumo?.exercicio;
+    const needsYear = exercicio && cachedYear && Number(cachedYear) !== Number(exercicio);
+    if (forceScrape || !cache.prefeitura || needsYear) {
       if (forceScrape) refreshGuard.markRefreshed('prefeitura');
+      if (exercicio) pendingPrefeituraExercicio = Number(exercicio);
       return scrapePrefeitura();
     }
     return cache.prefeitura;
@@ -368,7 +374,7 @@ wss.on('connection', (ws, req) => {
             };
           }
         } else if (r.source) {
-          payload = await payloadForSource(r.source, r.forceScrape);
+          payload = await payloadForSource(r.source, r.forceScrape, r.exercicio);
         }
         const envelope = { type: r.type, timestamp: r.timestamp || now() };
         if (payload !== undefined) envelope.payload = payload;

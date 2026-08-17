@@ -23,11 +23,19 @@ function handleWsMessage(msg) {
 
     case 'REQUEST_REFRESH': {
       const refreshSource = msg.source || 'all';
-      const out = [{ type: 'REFRESHING', payload: { source: refreshSource }, timestamp }];
+      const exercicio = msg.exercicio || msg.payload?.exercicio || null;
+      const out = [{ type: 'REFRESHING', payload: { source: refreshSource, exercicio }, timestamp }];
       const refreshPref = !refreshSource || refreshSource === 'all' || refreshSource === 'prefeitura';
       const refreshCam = !refreshSource || refreshSource === 'all' || refreshSource === 'camara';
       if (refreshPref) {
-        out.push({ type: 'PREFEITURA_DATA', timestamp, source: 'prefeitura', broadcast: true, forceScrape: true });
+        out.push({
+          type: 'PREFEITURA_DATA',
+          timestamp,
+          source: 'prefeitura',
+          broadcast: true,
+          forceScrape: true,
+          exercicio,
+        });
       }
       if (refreshCam) {
         out.push({ type: 'CAMARA_DATA', timestamp, source: 'camara', broadcast: true, forceScrape: true });

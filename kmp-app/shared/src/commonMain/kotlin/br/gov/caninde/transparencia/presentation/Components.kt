@@ -336,9 +336,14 @@ fun ProgressRow(label: String, pct: Float, color: Color) {
 @Composable
 fun LastUpdatedText(ts: String) {
     if (ts.isEmpty()) return
-    val display = ts.take(19).replace("T", " ")
+    val relative = br.gov.caninde.transparencia.domain.formatRelativeUpdated(ts)
+    val absolute = ts.take(19).replace("T", " ")
+    val label = when {
+        relative.isNotBlank() -> "Atualizado $relative"
+        else -> "Atualizado: $absolute"
+    }
     Text(
-        "Atualizado: $display",
+        label,
         fontSize = 10.sp, color = AppColors.TextTertiary,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
     )

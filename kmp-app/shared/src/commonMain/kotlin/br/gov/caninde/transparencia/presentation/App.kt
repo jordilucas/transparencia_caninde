@@ -35,6 +35,7 @@ sealed class AppRoute {
     data class DocumentoCamara(val pageId: String) : AppRoute()
     data object Gestores : AppRoute()
     data class Obra(val id: String) : AppRoute()
+    data class Lrf(val id: String) : AppRoute()
     data class Institucional(val camara: Boolean) : AppRoute()
 }
 
@@ -335,6 +336,8 @@ private fun AppRouteContent(
                 state = prefeituraState,
                 connectionState = connectionState,
                 onRefresh = { viewModel.refreshPrefeitura() },
+                onExercicioChange = { year -> viewModel.refreshPrefeitura(year) },
+                onAguaClick = { onMainScreenSelect(Screen.Agua) },
                 onContratoClick = { onNavigate(AppRoute.Contrato(contratoDetailId(it))) },
                 onLicitacaoClick = { onNavigate(AppRoute.Licitacao(licitacaoDetailId(it))) },
                 onSecretariaClick = { s ->
@@ -346,6 +349,10 @@ private fun AppRouteContent(
                 onObraClick = { o ->
                     val id = o.id.ifBlank { o.titulo }
                     if (id.isNotBlank()) onNavigate(AppRoute.Obra(id))
+                },
+                onLrfClick = { doc ->
+                    val id = lrfDetailId(doc)
+                    if (id.isNotBlank()) onNavigate(AppRoute.Lrf(id))
                 },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
                 onSobreClick = onSobreClick,
@@ -390,6 +397,14 @@ private fun AppRouteContent(
                 onSessaoClick = { idx, s -> onNavigate(AppRoute.Sessao(sessaoRouteId(s, idx))) },
                 onTransparenciaLinkClick = { onNavigate(routeFromLink(it)) },
                 onDocumentoClick = { doc -> onNavigate(AppRoute.DocumentoCamara(documentoCamaraRouteId(doc))) },
+                onObraClick = { o ->
+                    val id = o.id.ifBlank { o.titulo }
+                    if (id.isNotBlank()) onNavigate(AppRoute.Obra(id))
+                },
+                onLrfClick = { doc ->
+                    val id = lrfDetailId(doc)
+                    if (id.isNotBlank()) onNavigate(AppRoute.Lrf(id))
+                },
                 onSobreClick = onSobreClick,
             )
             Screen.Agua -> ReclamacaoAguaScreen(onSobreClick = onSobreClick)
@@ -411,6 +426,7 @@ private fun AppRouteContent(
         is AppRoute.Sessao -> SessaoDetailScreen(viewModel, route.id, onNavigateBack)
         is AppRoute.Publicacao -> PublicacaoDetailScreen(viewModel, route.id, onNavigateBack)
         is AppRoute.Obra -> ObraDetailScreen(prefeituraState.obras, route.id, onNavigateBack)
+        is AppRoute.Lrf -> LrfDetailScreen(prefeituraState.lrf, route.id, onNavigateBack)
         is AppRoute.PaginaPortal -> PaginaPortalDetailScreen(viewModel, route.pageId, onNavigateBack)
         is AppRoute.DocumentoCamara -> DocumentoCamaraDetailScreen(viewModel, route.pageId, onNavigateBack)
         AppRoute.Gestores -> GestoresDetailScreen(viewModel, onNavigateBack)

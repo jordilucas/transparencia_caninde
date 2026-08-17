@@ -20,6 +20,7 @@ function buildPrefeituraPayload({
   fonte,
   scrapeError = null,
   fontesUtilizadas = [],
+  exercicio = new Date().getFullYear(),
 }) {
   const missing = [];
   if (contratos.length === 0) missing.push('contratos');
@@ -62,7 +63,7 @@ function buildPrefeituraPayload({
       totalPublicacoes: publicacoes.length,
       totalObras: obras.length,
       totalLrf: lrf.length,
-      exercicio: new Date().getFullYear(),
+      exercicio,
       fontesUtilizadas,
     },
     error,

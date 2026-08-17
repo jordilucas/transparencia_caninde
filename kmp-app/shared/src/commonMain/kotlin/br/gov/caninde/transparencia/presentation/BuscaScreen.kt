@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.domain.*
+import br.gov.caninde.transparencia.data.RecentSearchStore
 import kotlinx.coroutines.delay
 
 @Composable
@@ -33,12 +34,15 @@ fun BuscaScreen(
     onSessaoClick: (Int, Sessao) -> Unit = { _, _ -> },
     onTransparenciaLinkClick: (LinkExterno) -> Unit = {},
     onDocumentoClick: (DocumentoCamara) -> Unit = {},
+    onObraClick: (Obra) -> Unit = {},
+    onLrfClick: (LrfDocumento) -> Unit = {},
     onSobreClick: () -> Unit = {},
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var scope by remember { mutableStateOf(SearchScope.Tudo) }
     var entityFilter by remember { mutableStateOf(SearchEntityFilter.Todos) }
     val sectionLimits = remember { mutableStateMapOf<String, Int>() }
+    var recentSearches by remember { mutableStateOf(RecentSearchStore.load()) }
 
     val hits = remember(prefeitura, camara, searchQuery, scope, entityFilter) {
         SearchIndex.search(prefeitura, camara, searchQuery, scope, entityFilter)
@@ -138,6 +142,22 @@ fun BuscaScreen(
                     color = AppColors.TextTertiary,
                     modifier = Modifier.padding(top = 8.dp),
                 )
+                if (recentSearches.isNotEmpty()) {
+                    Spacer(Modifier.height(20.dp))
+                    Text("Buscas recentes", fontSize = 12.sp, color = AppColors.TextSecondary)
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        recentSearches.forEach { term ->
+                            SuggestionChip(
+                                onClick = { searchQuery = term },
+                                label = { Text(term, fontSize = 11.sp) },
+                            )
+                        }
+                    }
+                }
                 if (prefeitura.contratos.isEmpty() && camara.parlamentares.isEmpty()) {
                     Text(
                         "Aguarde o carregamento dos dados ou verifique a conexão.",
@@ -151,8 +171,11 @@ fun BuscaScreen(
             LaunchedEffect(searchQuery, scope, entityFilter, hits.size) {
                 if (searchQuery.length < 2) return@LaunchedEffect
                 val queryLength = searchQuery.length
+                val querySnapshot = searchQuery.trim()
                 delay(600)
                 if (searchQuery.length >= 2) {
+                    RecentSearchStore.add(querySnapshot)
+                    recentSearches = RecentSearchStore.load()
                     AppAnalytics.logSearch(
                         queryLength = queryLength,
                         resultsCount = hits.size,
@@ -179,8 +202,20 @@ fun BuscaScreen(
 
                     item { SectionHeader("$section (${sectionHits.size})") }
                     items(visible, key = { "${section}-${it.hashCode()}" }) { hit ->
-                        SearchHitRow(hit, onContratoClick, onLicitacaoClick, onPublicacaoClick, onSecretariaClick,
-                            onVereadorClick, onMateriaClick, onSessaoClick, onTransparenciaLinkClick, onDocumentoClick)
+                        SearchHitRow(
+                            hit,
+                            onContratoClick,
+                            onLicitacaoClick,
+                            onPublicacaoClick,
+                            onSecretariaClick,
+                            onVereadorClick,
+                            onMateriaClick,
+                            onSessaoClick,
+                            onTransparenciaLinkClick,
+                            onDocumentoClick,
+                            onObraClick,
+                            onLrfClick,
+                        )
                         HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     }
                     if (sectionHits.size > limit) {
@@ -220,6 +255,8 @@ private fun SearchHitRow(
     onSessaoClick: (Int, Sessao) -> Unit,
     onTransparenciaLinkClick: (LinkExterno) -> Unit,
     onDocumentoClick: (DocumentoCamara) -> Unit,
+    onObraClick: (Obra) -> Unit,
+    onLrfClick: (LrfDocumento) -> Unit,
 ) {
     when (hit) {
         is SearchHit.ContratoHit -> ContratosRow(hit.item, onClick = { onContratoClick(hit.item) })
@@ -242,13 +279,15 @@ private fun SearchHitRow(
             icon = { IconContainer(AppColors.Amber100) { Icon(Icons.Default.Construction, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp)) } },
             title = hit.title,
             subtitle = hit.subtitle,
-            trailing = {},
+            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
+            onClick = { onObraClick(hit.item) },
         )
         is SearchHit.LrfHit -> ListRow(
             icon = { IconContainer(AppColors.Blue100) { Icon(Icons.Default.Description, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp)) } },
             title = hit.title,
             subtitle = hit.subtitle,
-            trailing = {},
+            trailing = { Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp)) },
+            onClick = { onLrfClick(hit.item) },
         )
         is SearchHit.GestorHit -> ListRow(
             icon = { IconContainer(AppColors.Purple100) { Icon(Icons.Default.Person, null, tint = AppColors.Purple700, modifier = Modifier.size(18.dp)) } },
@@ -278,6 +317,7 @@ private fun SearchHitRow(
             trailing = {},
         )
         is SearchHit.LinkCamaraHit -> TransparenciaLinkRow(hit.item, onClick = onTransparenciaLinkClick)
+        is SearchHit.LinkPrefeituraHit -> TransparenciaLinkRow(hit.item, onClick = onTransparenciaLinkClick)
         is SearchHit.DocumentoCamaraHit -> ListRow(
             icon = { IconContainer(AppColors.Amber100) { Icon(Icons.Default.Description, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp)) } },
             title = hit.title,

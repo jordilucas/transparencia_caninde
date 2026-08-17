@@ -67,6 +67,11 @@ fun licitacaoDetailId(licitacao: Licitacao): String {
     return licitacao.numero
 }
 
+fun lrfDetailId(doc: LrfDocumento): String {
+    if (doc.id.isNotBlank()) return doc.id
+    return doc.titulo
+}
+
 private val vereadorSlugRegex = Regex("/vereadores/([^/?#]+)", RegexOption.IGNORE_CASE)
 
 fun parlamentarSlug(parlamentar: Parlamentar): String {

@@ -266,6 +266,19 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Experiência e transparência",
+            data = "17/08/2026",
+            itens = listOf(
+                "Card na Prefeitura para registrar falta de água",
+                "Atualizado há X min/horas nas abas Prefeitura e Câmara",
+                "Seletor de exercício para contratos e licitações anteriores",
+                "Detalhe nativo de documentos LRF com link ao PDF",
+                "Busca inclui links da Prefeitura e buscas recentes",
+                "Exportar reclamações de água em CSV no painel",
+                "Instalação como app (PWA) e aviso de cookies antes do analytics",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Dados e aba Água",
             data = "17/08/2026",
             itens = listOf(

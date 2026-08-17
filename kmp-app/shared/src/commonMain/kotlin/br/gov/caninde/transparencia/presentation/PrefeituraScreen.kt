@@ -28,6 +28,8 @@ fun PrefeituraScreen(
     state: PrefeituraUiState,
     connectionState: ConnectionState,
     onRefresh: () -> Unit,
+    onExercicioChange: (Int) -> Unit = {},
+    onAguaClick: () -> Unit = {},
     onContratoClick: (Contrato) -> Unit = {},
     onLicitacaoClick: (Licitacao) -> Unit = {},
     onSecretariaClick: (Secretaria) -> Unit = {},
@@ -35,6 +37,7 @@ fun PrefeituraScreen(
     onInstitucionalClick: () -> Unit = {},
     onPublicacaoClick: (Publicacao) -> Unit = {},
     onObraClick: (Obra) -> Unit = {},
+    onLrfClick: (LrfDocumento) -> Unit = {},
     onTransparenciaLinkClick: (LinkExterno) -> Unit = {},
     onSobreClick: () -> Unit = {},
 ) {
@@ -113,6 +116,14 @@ fun PrefeituraScreen(
             ShimmerContent()
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
+                item { AguaPromoCard(onClick = onAguaClick) }
+                item {
+                    ExercicioSelector(
+                        selected = state.resumo.exercicio,
+                        onSelected = onExercicioChange,
+                        loading = state.isLoading,
+                    )
+                }
                 item {
                     Row(
                         Modifier.fillMaxWidth().padding(12.dp),
@@ -192,11 +203,12 @@ fun PrefeituraScreen(
                     }
                     2 -> publicacoesItems(state.publicacoes, state.diarios, state.diariosOficiais, onPublicacaoClick)
                     3 -> secretariasItems(state.secretarias, onSecretariaClick)
-                    4 -> obrasLrfItems(state.obras, state.lrf, onObraClick)
+                    4 -> obrasLrfItems(state.obras, state.lrf, onObraClick, onLrfClick)
                     5 -> {
                         state.resumoFinanceiro?.let { resumo ->
                             item { ResumoFinanceiroCard(resumo) }
                         }
+                        item { TransparenciaDestaquesCard(state.linksTransparencia) }
                         item { TransparenciaLinksIntro("a Prefeitura") }
                         transparenciaLinksItems(state.linksTransparencia, onClick = onTransparenciaLinkClick)
                     }
@@ -542,6 +554,7 @@ fun LazyListScope.obrasLrfItems(
     obras: List<Obra>,
     lrf: List<LrfDocumento>,
     onObraClick: (Obra) -> Unit = {},
+    onLrfClick: (LrfDocumento) -> Unit = {},
 ) {
     if (obras.isNotEmpty()) {
         item { SectionHeader("Obras (${obras.size})") }
@@ -592,7 +605,11 @@ fun LazyListScope.obrasLrfItems(
                             Icon(Icons.Default.ChevronRight, null, tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
                         }
                     },
-                    onClick = doc.url.takeIf { it.isNotBlank() }?.let { url -> ({ openExternalUrl(url) }) },
+                    onClick = {
+                        val docId = doc.id.ifBlank { doc.titulo }
+                        if (docId.isNotBlank()) onLrfClick(doc)
+                        else doc.url.takeIf { it.isNotBlank() }?.let { openExternalUrl(it) }
+                    },
                 )
                 HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
             }
@@ -651,6 +668,108 @@ fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
 }
 
 // ─── Estados auxiliares ───────────────────────────────────────────────────────
+
+@Composable
+fun AguaPromoCard(onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.Blue100),
+    ) {
+        Row(
+            Modifier.padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconContainer(AppColors.Navy800.copy(alpha = 0.12f)) {
+                Icon(Icons.Default.WaterDrop, null, tint = AppColors.Navy800, modifier = Modifier.size(22.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Falta de água? Registre aqui",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.Navy800,
+                )
+                Text(
+                    "Ajude a mapear o rodízio do SAAE em Canindé",
+                    fontSize = 11.sp,
+                    color = AppColors.TextSecondary,
+                )
+            }
+            Icon(Icons.Default.ChevronRight, null, tint = AppColors.Navy800, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+fun ExercicioSelector(
+    selected: Int,
+    onSelected: (Int) -> Unit,
+    loading: Boolean,
+) {
+    val options = remember { exercicioYearOptions() }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("Exercício:", fontSize = 11.sp, color = AppColors.TextSecondary)
+        options.forEach { year ->
+            FilterChip(
+                selected = selected == year,
+                onClick = { if (!loading && selected != year) onSelected(year) },
+                enabled = !loading,
+                label = { Text("$year", fontSize = 11.sp) },
+            )
+        }
+    }
+}
+
+@Composable
+fun TransparenciaDestaquesCard(links: List<LinkExterno>) {
+    val emendas = links.firstOrNull { it.categoria == "emendas" }
+    val convenios = links.firstOrNull { it.categoria == "compras" && it.titulo.contains("Convênio", ignoreCase = true) }
+        ?: links.firstOrNull { it.titulo.contains("Convênio", ignoreCase = true) }
+    if (emendas == null && convenios == null) return
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.Card),
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                "Emendas e convênios (Governo Transparente)",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.Navy800,
+            )
+            emendas?.let {
+                Text(
+                    "Emendas parlamentares repassadas ao município — consulta detalhada no portal estadual.",
+                    fontSize = 12.sp,
+                    color = AppColors.TextSecondary,
+                )
+            }
+            convenios?.let {
+                Text(
+                    "Convênios firmados pela Prefeitura — valores, parceiros e situação no Governo Transparente.",
+                    fontSize = 12.sp,
+                    color = AppColors.TextSecondary,
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun EmptyState(msg: String) {

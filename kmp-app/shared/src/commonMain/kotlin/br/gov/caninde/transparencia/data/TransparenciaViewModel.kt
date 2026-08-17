@@ -22,8 +22,8 @@ class TransparenciaViewModel(
         repository.disconnect()
     }
 
-    fun refreshPrefeitura() {
-        scope.launch { repository.refreshSource("prefeitura") }
+    fun refreshPrefeitura(exercicio: Int? = null) {
+        scope.launch { repository.refreshSource("prefeitura", exercicio) }
     }
 
     fun refreshCamara() {

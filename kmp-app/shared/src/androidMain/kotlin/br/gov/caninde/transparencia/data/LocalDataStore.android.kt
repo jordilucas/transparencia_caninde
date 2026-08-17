@@ -12,6 +12,7 @@ actual object LocalDataStore {
     private const val PREFS = "transparencia_cache"
     private const val KEY_PREF = "prefeitura"
     private const val KEY_CAM = "camara"
+    private const val KEY_RECENT = "recent_searches"
 
     private fun prefs() = appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -26,4 +27,10 @@ actual object LocalDataStore {
     }
 
     actual fun loadCamara(): String? = prefs()?.getString(KEY_CAM, null)
+
+    actual fun saveRecentSearches(json: String) {
+        prefs()?.edit()?.putString(KEY_RECENT, json)?.apply()
+    }
+
+    actual fun loadRecentSearches(): String? = prefs()?.getString(KEY_RECENT, null)
 }

@@ -382,10 +382,25 @@ private fun ReclamacaoDashboardTab(
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.Navy800,
             )
-            TextButton(onClick = onRefresh, enabled = !uiState.dashboardLoading) {
-                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Atualizar")
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (uiState.reclamacoes.isNotEmpty()) {
+                    TextButton(onClick = {
+                        AppAnalytics.logShare("reclamacao_agua_csv")
+                        br.gov.caninde.transparencia.platform.downloadTextFile(
+                            fileName = "reclamacoes-agua-caninde.csv",
+                            content = br.gov.caninde.transparencia.domain.reclamacoesAguaToCsv(uiState.reclamacoes),
+                        )
+                    }) {
+                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("CSV")
+                    }
+                }
+                TextButton(onClick = onRefresh, enabled = !uiState.dashboardLoading) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Atualizar")
+                }
             }
         }
 

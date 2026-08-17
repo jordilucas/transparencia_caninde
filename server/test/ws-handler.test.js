@@ -47,6 +47,12 @@ describe('handleWsMessage', () => {
     assert.equal(out[1].forceScrape, true);
   });
 
+  it('REQUEST_REFRESH prefeitura repassa exercicio', () => {
+    const out = handleWsMessage({ type: 'REQUEST_REFRESH', source: 'prefeitura', exercicio: 2024 });
+    assert.equal(out.length, 2);
+    assert.equal(out[1].exercicio, 2024);
+  });
+
   it('REQUEST_DETAIL retorna DETAIL_DATA com entity e id', () => {
     const out = handleWsMessage({
       type: 'REQUEST_DETAIL',

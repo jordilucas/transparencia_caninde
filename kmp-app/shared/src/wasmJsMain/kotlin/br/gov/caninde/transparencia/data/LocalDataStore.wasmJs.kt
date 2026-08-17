@@ -23,4 +23,12 @@ actual object LocalDataStore {
     }
 
     actual fun loadCamara(): String? = transparenciaCacheLoadJs(KEY_CAM)
+
+    private const val KEY_RECENT = "recent_searches"
+
+    actual fun saveRecentSearches(json: String) {
+        transparenciaCacheSaveJs(KEY_RECENT, json)
+    }
+
+    actual fun loadRecentSearches(): String? = transparenciaCacheLoadJs(KEY_RECENT)
 }

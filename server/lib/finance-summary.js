@@ -16,7 +16,7 @@ function parseValorContrato(c) {
   return Number.isNaN(n) ? 0 : n;
 }
 
-function buildResumoFinanceiro(contratos = [], licitacoes = []) {
+function buildResumoFinanceiro(contratos = [], licitacoes = [], exercicio = new Date().getFullYear()) {
   const totalValor = contratos.reduce((sum, c) => sum + parseValorContrato(c), 0);
   const licitacoesAbertas = licitacoes.filter((l) => {
     const s = String(l.situacao || '').toLowerCase();
@@ -27,7 +27,7 @@ function buildResumoFinanceiro(contratos = [], licitacoes = []) {
     totalContratosValor: formatBRL(totalValor),
     totalContratos: contratos.length,
     licitacoesAbertas,
-    exercicio: new Date().getFullYear(),
+    exercicio,
     gtReceitasUrl: `${GT_BASE}/transparencia/receitas/${GT_PREFEITURA_ID}?clean=false`,
     gtDespesasUrl: `${GT_BASE}/transparencia/despesas/opcoes/${GT_PREFEITURA_ID}?clean=false`,
     aviso:

@@ -5,4 +5,6 @@ actual object LocalDataStore {
     actual fun loadPrefeitura(): String? = null
     actual fun saveCamara(json: String) {}
     actual fun loadCamara(): String? = null
+    actual fun saveRecentSearches(json: String) {}
+    actual fun loadRecentSearches(): String? = null
 }
