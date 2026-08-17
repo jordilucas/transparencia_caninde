@@ -16,12 +16,27 @@ function parseValorContrato(c) {
   return Number.isNaN(n) ? 0 : n;
 }
 
-function buildResumoFinanceiro(contratos = [], licitacoes = [], exercicio = new Date().getFullYear()) {
+function buildResumoFinanceiro(
+  contratos = [],
+  licitacoes = [],
+  exercicio = new Date().getFullYear(),
+  gtResumo = null,
+) {
   const totalValor = contratos.reduce((sum, c) => sum + parseValorContrato(c), 0);
   const licitacoesAbertas = licitacoes.filter((l) => {
     const s = String(l.situacao || '').toLowerCase();
     return s.includes('abert') || s.includes('andamento') || s.includes('public') || s.includes('pregão');
   }).length;
+
+  const gt = gtResumo && gtResumo.gtDisponivel ? gtResumo : null;
+  let aviso =
+    'Contratos: soma dos valores publicados no portal municipal. '
+    + 'Receitas e despesas executadas vêm do Governo Transparente quando disponíveis.';
+  if (!gt) {
+    aviso =
+      'Valores somados dos contratos publicados no portal municipal (dados abertos). '
+      + 'Receitas e despesas detalhadas estão no Governo Transparente.';
+  }
 
   return {
     totalContratosValor: formatBRL(totalValor),
@@ -30,9 +45,14 @@ function buildResumoFinanceiro(contratos = [], licitacoes = [], exercicio = new 
     exercicio,
     gtReceitasUrl: `${GT_BASE}/transparencia/receitas/${GT_PREFEITURA_ID}?clean=false`,
     gtDespesasUrl: `${GT_BASE}/transparencia/despesas/opcoes/${GT_PREFEITURA_ID}?clean=false`,
-    aviso:
-      'Valores somados dos contratos publicados no portal municipal (dados abertos). '
-      + 'Receitas e despesas detalhadas estão no Governo Transparente.',
+    receitaArrecadada: gt?.receitaArrecadada || '',
+    receitaPrevista: gt?.receitaPrevista || '',
+    despesaPaga: gt?.despesaPaga || '',
+    topFornecedores: gt?.topFornecedores || [],
+    gtDadosAbertosUrl: gt?.gtDadosAbertosUrl || `${GT_BASE}/dadosabertos/${GT_PREFEITURA_ID}?clean=false`,
+    gtFonte: gt?.gtFonte || '',
+    gtDisponivel: Boolean(gt),
+    aviso,
   };
 }
 

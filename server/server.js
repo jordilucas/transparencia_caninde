@@ -25,6 +25,7 @@ const dadosAbertos = require('./lib/scraper-prefeitura-dadosabertos');
 const camaraTransp = require('./lib/scraper-camara-transparencia');
 const { buildResumoFinanceiro } = require('./lib/finance-summary');
 const scrapeFolha = require('./lib/scraper-folha-pagamento');
+const scrapeGt = require('./lib/scraper-governo-transparente');
 const mergeSources = require('./lib/merge-sources');
 const camaraWp = require('./lib/scraper-camara-wp');
 const camaraPortal = require('./lib/scraper-camara-portal');
@@ -96,15 +97,17 @@ async function scrapePrefeituraInner() {
     const year = pendingPrefeituraExercicio || new Date().getFullYear();
     pendingPrefeituraExercicio = null;
 
-    const [jsonResult, htmlResult, folhaResult] = await Promise.allSettled([
+    const [jsonResult, htmlResult, folhaResult, gtResult] = await Promise.allSettled([
       dadosAbertos.scrapePrefeituraDadosAbertos(scrapeHttp, year),
       scraperPrefeitura.scrapePrefeituraHtml(scrapeHttp, cheerio),
       scrapeFolha.scrapeFolhaPagamento(scrapeHttp, cheerio, year),
+      scrapeGt.scrapeGtResumo(scrapeHttp, year),
     ]);
 
     const jsonBundle = jsonResult.status === 'fulfilled' ? jsonResult.value : null;
     const htmlBundle = htmlResult.status === 'fulfilled' ? htmlResult.value : null;
     const folhaPagamento = folhaResult.status === 'fulfilled' ? folhaResult.value : null;
+    const gtResumo = gtResult.status === 'fulfilled' ? gtResult.value : null;
 
     if (jsonResult.status === 'rejected') {
       console.warn('[Prefeitura] dados abertos indisponível:', jsonResult.reason?.message || jsonResult.reason);
@@ -114,6 +117,9 @@ async function scrapePrefeituraInner() {
     }
     if (folhaResult.status === 'rejected') {
       console.warn('[Prefeitura] folha de pagamento indisponível:', folhaResult.reason?.message || folhaResult.reason);
+    }
+    if (gtResult.status === 'rejected') {
+      console.warn('[Prefeitura] Governo Transparente indisponível:', gtResult.reason?.message || gtResult.reason);
     }
 
     const merged = mergeSources.mergePrefeituraSources(jsonBundle || {}, htmlBundle || {});
@@ -128,7 +134,7 @@ async function scrapePrefeituraInner() {
     const diariosStrings = merged.diariosOficiais.slice(0, 15);
     const gestores = merged.gestores.slice(0, 4);
 
-    const resumoFinanceiro = buildResumoFinanceiro(merged.contratos, merged.licitacoes, year);
+    const resumoFinanceiro = buildResumoFinanceiro(merged.contratos, merged.licitacoes, year, gtResumo);
 
     const fonteParts = [
       jsonBundle?.fonte,
@@ -168,7 +174,8 @@ async function scrapePrefeituraInner() {
     cache.prefeitura = result;
     cache.lastUpdated.prefeitura = now();
     console.log(`[Prefeitura] OK — ${contratos.length} contratos, ${licitacoes.length} licitações`
-      + (folhaPagamento?.porSetor?.length ? `, folha ${folhaPagamento.porSetor.length} setores` : ''));
+      + (folhaPagamento?.porSetor?.length ? `, folha ${folhaPagamento.porSetor.length} setores` : '')
+      + (gtResumo?.gtDisponivel ? ', GT financeiro OK' : ''));
     if (result.error) console.warn(`[Prefeitura] aviso: ${result.error}`);
     return result;
   } catch (err) {

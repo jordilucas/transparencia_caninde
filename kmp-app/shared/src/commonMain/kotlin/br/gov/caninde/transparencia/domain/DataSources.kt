@@ -218,6 +218,11 @@ object DataSourcesInfo {
             descricao = "Consulta detalhada de despesas municipais.",
         ),
         FonteCaptura(
+            titulo = "Dados abertos — Governo Transparente (Prefeitura)",
+            url = "https://www.governotransparente.com.br/dadosabertos/11979490?clean=false",
+            descricao = "Exportação em massa de receitas, despesas, fornecedores e convênios.",
+        ),
+        FonteCaptura(
             titulo = "Receitas — Câmara (ID 11979588)",
             url = "https://www.governotransparente.com.br/transparencia/receitas/11979588",
             descricao = "Painel financeiro oficial da Câmara Municipal.",
@@ -265,6 +270,15 @@ object DataSourcesInfo {
     )
 
     val changelog: List<ChangelogEntry> = listOf(
+        ChangelogEntry(
+            titulo = "Governo Transparente",
+            data = "17/08/2026",
+            itens = listOf(
+                "Receita arrecadada e despesa paga do exercício no resumo financeiro",
+                "Ranking dos maiores fornecedores (empresas, sem folha nominal)",
+                "Link para exportar dados abertos do Governo Transparente",
+            ),
+        ),
         ChangelogEntry(
             titulo = "Folha de pagamento",
             data = "17/08/2026",

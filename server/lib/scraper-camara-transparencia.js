@@ -28,6 +28,7 @@ function buildLinksTransparenciaPrefeitura() {
     { titulo: 'Convênios', url: `${GT_BASE}/transparencia/${id}/consultarconvenio?clean=false`, categoria: 'compras' },
     { titulo: 'Obras', url: `${GT_BASE}/transparencia/obras/${id}?clean=false`, categoria: 'obras' },
     { titulo: 'Emendas parlamentares', url: `${GT_BASE}/acessoinfo/${id}/consultaremendas?clean=false`, categoria: 'emendas' },
+    { titulo: 'Dados abertos — Governo Transparente', url: `${GT_BASE}/dadosabertos/${id}?clean=false`, categoria: 'dadosabertos' },
     { titulo: 'Dados abertos (Prefeitura)', url: 'https://www.caninde.ce.gov.br/dadosabertos.php', categoria: 'dadosabertos' },
   ];
 }

@@ -636,6 +636,31 @@ fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.Navy800,
             )
+            if (resumo.gtDisponivel && (resumo.receitaArrecadada.isNotBlank() || resumo.despesaPaga.isNotBlank())) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (resumo.receitaArrecadada.isNotBlank()) {
+                        MetricCard(
+                            "Receita arrecadada",
+                            resumo.receitaArrecadada,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (resumo.despesaPaga.isNotBlank()) {
+                        MetricCard(
+                            "Despesa paga",
+                            resumo.despesaPaga,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+                if (resumo.receitaPrevista.isNotBlank()) {
+                    Text(
+                        "Previsto no orçamento: ${resumo.receitaPrevista}",
+                        fontSize = 11.sp,
+                        color = AppColors.TextSecondary,
+                    )
+                }
+            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MetricCard(
                     "Contratos",
@@ -647,6 +672,40 @@ fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
                     "${resumo.licitacoesAbertas}",
                     modifier = Modifier.weight(1f),
                 )
+            }
+            if (resumo.topFornecedores.isNotEmpty()) {
+                Text(
+                    "Maiores fornecedores (empresas)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AppColors.Navy800,
+                )
+                resumo.topFornecedores.take(5).forEach { fornecedor ->
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                            Text(
+                                fornecedor.nome,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp,
+                                color = AppColors.TextPrimary,
+                                maxLines = 2,
+                            )
+                            if (fornecedor.cnpj.isNotBlank()) {
+                                Text(fornecedor.cnpj, fontSize = 10.sp, color = AppColors.TextTertiary)
+                            }
+                        }
+                        Text(
+                            fornecedor.valor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.Navy800,
+                        )
+                    }
+                }
             }
             if (resumo.aviso.isNotBlank()) {
                 Text(resumo.aviso, fontSize = 11.sp, lineHeight = 16.sp, color = AppColors.TextTertiary)
@@ -660,6 +719,11 @@ fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
                 if (resumo.gtDespesasUrl.isNotBlank()) {
                     TextButton(onClick = { openExternalUrl(resumo.gtDespesasUrl) }) {
                         Text("Despesas no GT", fontSize = 12.sp)
+                    }
+                }
+                if (resumo.gtDadosAbertosUrl.isNotBlank()) {
+                    TextButton(onClick = { openExternalUrl(resumo.gtDadosAbertosUrl) }) {
+                        Text("Exportar dados", fontSize = 12.sp)
                     }
                 }
             }

@@ -146,6 +146,13 @@ data class DiarioOficial(
 )
 
 @Serializable
+data class GtFornecedorResumo(
+    val nome: String = "",
+    val cnpj: String = "",
+    val valor: String = "",
+)
+
+@Serializable
 data class ResumoFinanceiroPortal(
     val totalContratosValor: String = "",
     val totalContratos: Int = 0,
@@ -153,6 +160,13 @@ data class ResumoFinanceiroPortal(
     val exercicio: Int = 0,
     val gtReceitasUrl: String = "",
     val gtDespesasUrl: String = "",
+    val receitaArrecadada: String = "",
+    val receitaPrevista: String = "",
+    val despesaPaga: String = "",
+    val topFornecedores: List<GtFornecedorResumo> = emptyList(),
+    val gtDadosAbertosUrl: String = "",
+    val gtFonte: String = "",
+    val gtDisponivel: Boolean = false,
     val aviso: String = "",
 )
 
