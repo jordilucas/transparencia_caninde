@@ -2,6 +2,7 @@
 
 const { parseIsoMs } = require('./scraper-camara-wp');
 const { CAMARA_LIST_LIMIT } = require('./camara-limits');
+const { emptyContato, stripParlamentaresContato } = require('./privacy');
 
 function pickNewer(a, b, field = 'modifiedAt') {
   const aMs = parseIsoMs(a?.[field]);
@@ -32,13 +33,7 @@ function mergeParlamentar(wp, html) {
     totalMaterias: Math.max(html.totalMaterias || 0, wp.totalMaterias || 0),
     totalSessoes: Math.max(html.totalSessoes || 0, wp.totalSessoes || 0),
     modifiedAt: pickNewer(wp, html).modifiedAt || wp.modifiedAt || html.modifiedAt || '',
-    contato: {
-      email: html.contato?.email || wp.contato?.email || '',
-      telefone: html.contato?.telefone || wp.contato?.telefone || '',
-      whatsapp: html.contato?.whatsapp || wp.contato?.whatsapp || '',
-      endereco: html.contato?.endereco || wp.contato?.endereco || '',
-      horarioFuncionamento: html.contato?.horarioFuncionamento || wp.contato?.horarioFuncionamento || '',
-    },
+    contato: emptyContato(),
     biografia: html.biografia || wp.biografia || other.biografia || '',
   };
 }
@@ -100,14 +95,14 @@ function mergeCamaraSources(wpBundle = {}, htmlBundle = {}) {
   const wpParl = wpBundle.parlamentares || [];
   const htmlParl = htmlBundle.parlamentares || [];
 
-  const parlamentares = sortByModified(
+  const parlamentares = stripParlamentaresContato(sortByModified(
     mergeListByKey(
       wpParl,
       htmlParl,
       (p) => p.slug || p.nome,
       mergeParlamentar,
     ),
-  );
+  ));
 
   const sessoes = sortByModified(
     mergeListByKey(

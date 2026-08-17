@@ -253,6 +253,8 @@ data class Parlamentar(
     val biografia: String = "",
 )
 
+fun Parlamentar.withoutContato(): Parlamentar = copy(contato = Contato())
+
 @Serializable
 data class Sessao(
     val titulo: String = "",

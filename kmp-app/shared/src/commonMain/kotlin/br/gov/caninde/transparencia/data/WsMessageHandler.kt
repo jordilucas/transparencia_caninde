@@ -150,9 +150,14 @@ class WsMessageHandler(
         return previous.copy(
             isLoading = false,
             entityId = p.entityId ?: previous.entityId,
-            payload = p,
+            payload = sanitizeDetailPayload(p),
             error = err,
         )
+    }
+
+    private fun sanitizeDetailPayload(p: WsPayload): WsPayload {
+        val parlamentar = p.parlamentar?.withoutContato() ?: return p
+        return p.copy(parlamentar = parlamentar)
     }
 
     fun entityToWs(entity: DetailEntity): String = when (entity) {

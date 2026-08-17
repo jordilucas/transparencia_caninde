@@ -9,17 +9,12 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta name="description" content="Portal de transparência pública — Prefeitura e Câmara Municipal de Canindé, CE.">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
     <link rel="canonical" href="https://transparenciacaninde.com.br/">
     <title>Transparência Canindé</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRKC3S7WK7"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag("js", new Date());
-        gtag("config", "G-JRKC3S7WK7", { send_page_view: false, anonymize_ip: true });
-    </script>
     <script>
         (function () {
             var path = window.location.pathname || "/";
@@ -50,22 +45,8 @@
             var el = document.getElementById("app-loading");
             if (el) el.style.display = "none";
         };
-        window.transparenciaLogScreen = function (screenName) {
-            if (typeof gtag === "function" && screenName) {
-                gtag("event", "screen_view", {
-                    screen_name: screenName,
-                    firebase_screen: screenName,
-                });
-            }
-        };
-        window.transparenciaLogEvent = function (name, paramsJson) {
-            if (typeof gtag !== "function" || !name) return;
-            var params = {};
-            try {
-                if (paramsJson) params = JSON.parse(paramsJson);
-            } catch (e) { /* ignore */ }
-            gtag("event", name, params);
-        };
+        window.transparenciaLogScreen = function () { /* analytics desativado */ };
+        window.transparenciaLogEvent = function () { /* analytics desativado */ };
         window.transparenciaCacheSave = function (key, value) {
             try { localStorage.setItem("tc_" + key, value); } catch (e) { /* ignore */ }
         };

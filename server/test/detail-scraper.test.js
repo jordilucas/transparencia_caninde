@@ -10,7 +10,7 @@ const { scrapeSecretariaDetail, scrapeContratoDetail, scrapeLicitacaoDetail, mer
 const { scrapePublicacaoDetail, scrapePortalPage, mergePublicacaoDetail } = require('../lib/scraper-portal-page');
 
 describe('scraper-detail-camara', () => {
-  it('extrai contato do HTML de vereador', () => {
+  it('nao inclui contato do HTML de vereador', () => {
     const html = `
       <html><body>
         <h1>Karlinda Coelho</h1>
@@ -24,8 +24,9 @@ describe('scraper-detail-camara', () => {
     const r = scrapeVereadorDetail(html, cheerio, 'karlinda-coelho');
     assert.equal(r.entity, 'vereador');
     assert.ok(r.parlamentar.nome.includes('Karlinda'));
-    assert.equal(r.parlamentar.contato.email, 'vereador@cmcaninde.ce.gov.br');
-    assert.ok(r.parlamentar.contato.horarioFuncionamento.includes('Segunda'));
+    assert.equal(r.parlamentar.contato.email, '');
+    assert.equal(r.parlamentar.contato.telefone, '');
+    assert.equal(r.parlamentar.contato.whatsapp, '');
   });
 
   it('normalizeWhatsapp extrai número e rejeita URL de compartilhamento', () => {

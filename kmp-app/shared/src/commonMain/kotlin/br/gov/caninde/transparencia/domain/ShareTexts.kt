@@ -1,6 +1,7 @@
 package br.gov.caninde.transparencia.domain
 
 import br.gov.caninde.transparencia.presentation.AppRoute
+import br.gov.caninde.transparencia.presentation.Screen
 import br.gov.caninde.transparencia.presentation.contratoDetailId
 import br.gov.caninde.transparencia.presentation.licitacaoDetailId
 import br.gov.caninde.transparencia.presentation.materiaSlug
@@ -81,5 +82,19 @@ object ShareTexts {
     fun paginaPortal(titulo: String, pageId: String = ""): String {
         val link = if (pageId.isNotBlank()) AppRoute.PaginaPortal(pageId).shareUrl() else SITE_URL
         return "$titulo\n\n$link"
+    }
+
+    fun reclamacaoAgua(): String {
+        val link = AppRoute.Main(Screen.Agua).shareUrl()
+        return buildString {
+            append("💧 Falta de água em Canindé?\n\n")
+            append("Registre sua reclamação de forma anônima:\n")
+            append("• Endereço / bairro\n")
+            append("• Setor 1 ou 2 (rodízio SAAE)\n")
+            append("• Dias sem água\n")
+            append("• Foto ou vídeo como comprovante\n\n")
+            append("Acompanhe todas no painel público.\n\n")
+            append(link)
+        }
     }
 }

@@ -82,7 +82,7 @@ class WsMessageHandlerTest {
         )
         assertEquals(false, reduced.detail.isLoading)
         assertEquals("Karlinda Coelho", reduced.detail.payload?.parlamentar?.nome)
-        assertEquals("v@cmcaninde.ce.gov.br", reduced.detail.payload?.parlamentar?.contato?.email)
+        assertEquals("", reduced.detail.payload?.parlamentar?.contato?.email)
     }
 
     @Test

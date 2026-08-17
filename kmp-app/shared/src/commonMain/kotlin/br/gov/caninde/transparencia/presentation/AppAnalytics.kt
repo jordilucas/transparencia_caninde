@@ -1,8 +1,5 @@
 package br.gov.caninde.transparencia.presentation
 
-import br.gov.caninde.transparencia.platform.logAnalyticsEvent
-import br.gov.caninde.transparencia.platform.logAnalyticsScreen
-
 fun AppRoute.analyticsScreenName(): String = when (this) {
     is AppRoute.Main -> when (screen) {
         Screen.Prefeitura -> "prefeitura"
@@ -25,31 +22,25 @@ fun AppRoute.analyticsScreenName(): String = when (this) {
     is AppRoute.Institucional -> if (camara) "institucional_camara" else "institucional_prefeitura"
 }
 
+/** Eventos de uso — desativados (sem analytics/rastreamento). */
 object AppAnalytics {
     fun logScreen(route: AppRoute) {
-        logAnalyticsScreen(route.analyticsScreenName())
+        // Sem rastreamento
     }
 
     fun logSearch(queryLength: Int, resultsCount: Int, scope: String) {
-        logAnalyticsEvent(
-            "search",
-            mapOf(
-                "query_length" to queryLength.toString(),
-                "results_count" to resultsCount.toString(),
-                "scope" to scope,
-            ),
-        )
+        // Sem rastreamento
     }
 
     fun logShare(contentType: String) {
-        logAnalyticsEvent("share", mapOf("content_type" to contentType))
+        // Sem rastreamento
     }
 
     fun logConnectionError() {
-        logAnalyticsEvent("connection_error")
+        // Sem rastreamento
     }
 
     fun logRetryConnection() {
-        logAnalyticsEvent("retry_connection")
+        // Sem rastreamento
     }
 }

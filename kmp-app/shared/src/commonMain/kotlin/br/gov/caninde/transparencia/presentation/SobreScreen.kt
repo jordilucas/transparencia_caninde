@@ -204,14 +204,15 @@ fun SobreScreen(
                 SobreCard {
                     SobreParagraph(
                         "Este portal exibe dados institucionais e documentos públicos. Não vendemos nem comercializamos " +
-                            "informações pessoais. Dados de contato de gestores e vereadores são os mesmos já publicados " +
-                            "nos sites oficiais, nos termos da Lei nº 13.709/2018 (LGPD) aplicável à administração pública.",
+                            "informações pessoais. Dados de contato de secretarias e gestores são os mesmos já publicados " +
+                            "nos sites oficiais. Contatos pessoais de vereadores não são exibidos neste app — consulte o " +
+                            "site da Câmara, nos termos da Lei nº 13.709/2018 (LGPD) aplicável à administração pública.",
                     )
                     Spacer(Modifier.height(8.dp))
                     SobreParagraph(
-                        "Utilizamos Google Analytics (Firebase) para entender o uso do portal — telas visitadas, buscas " +
-                            "(sem armazenar o texto digitado), compartilhamentos e erros de conexão. O IP é anonimizado. " +
-                            "Esses dados ajudam a melhorar o serviço e não identificam você pessoalmente.",
+                        "Não utilizamos cookies de rastreamento nem ferramentas de analytics (Google Analytics, etc.). " +
+                            "O portal não registra telas visitadas, buscas ou compartilhamentos. Apenas o cache local do " +
+                            "navegador guarda dados públicos para uso offline.",
                     )
                 }
             }

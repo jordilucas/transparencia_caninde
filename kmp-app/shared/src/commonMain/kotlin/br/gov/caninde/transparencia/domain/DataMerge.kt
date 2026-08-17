@@ -25,7 +25,9 @@ object DataMerge {
         mergeByKey(existing, incoming, ::materiaKey, ::materiaRecency) { a, b -> mergeMateria(a, b) }
 
     fun mergeParlamentares(existing: List<Parlamentar>, incoming: List<Parlamentar>): List<Parlamentar> =
-        mergeByKey(existing, incoming, ::parlamentarKey, ::parlamentarRecency) { a, b -> mergeParlamentar(a, b) }
+        mergeByKey(existing, incoming, ::parlamentarKey, ::parlamentarRecency) { a, b ->
+            mergeParlamentar(a, b).withoutContato()
+        }.map { it.withoutContato() }
 
     fun mergeDiarios(existing: List<String>, incoming: List<String>): List<String> {
         val all = (existing + incoming).distinctBy { it.trim().lowercase() }
@@ -215,8 +217,6 @@ object DataMerge {
     private fun parlamentarRecency(p: Parlamentar): Long {
         var score = parseIsoDate(p.modifiedAt)
         if (p.biografia.isNotBlank()) score += 10_000
-        if (p.contato.email.isNotBlank()) score += 1_000
-        if (p.contato.whatsapp.isNotBlank()) score += 100
         if (p.foto.isNotBlank()) score += 10
         score += (p.totalMaterias + p.totalSessoes).toLong()
         return score
@@ -246,7 +246,7 @@ object DataMerge {
         },
         modifiedAt = preferred.modifiedAt.ifBlank { fallback.modifiedAt },
         biografia = preferred.biografia.ifBlank { fallback.biografia },
-        contato = mergeContato(preferred.contato, fallback.contato),
+        contato = Contato(),
     )
 
     private fun extractDateFromText(text: String): String {

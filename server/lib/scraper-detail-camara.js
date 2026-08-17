@@ -158,7 +158,7 @@ function scrapeVereadorDetail(html, cheerio, slug) {
       dataNascimento: extractFieldValue($, 'Data de Nascimento'),
       estadoCivil: extractFieldValue($, 'Estado Civil'),
       sessoesPresentes,
-      contato: parseContatoFromHtml($),
+      contato: emptyContato(),
       biografia: bio,
     },
   };

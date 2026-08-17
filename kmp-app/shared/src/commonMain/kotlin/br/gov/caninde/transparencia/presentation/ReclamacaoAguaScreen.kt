@@ -23,8 +23,10 @@ import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.data.ReclamacaoAguaViewModel
 import br.gov.caninde.transparencia.domain.ReclamacaoAgua
 import br.gov.caninde.transparencia.domain.ReclamacaoAguaStats
+import br.gov.caninde.transparencia.domain.ShareTexts
 import br.gov.caninde.transparencia.platform.openExternalUrl
 import br.gov.caninde.transparencia.platform.rememberMediaPicker
+import br.gov.caninde.transparencia.platform.shareContent
 import org.koin.compose.koinInject
 
 @Composable
@@ -61,8 +63,16 @@ fun ReclamacaoAguaScreen(
                             color = AppColors.Blue300,
                         )
                     }
-                    IconButton(onClick = onSobreClick, modifier = Modifier.padding(end = 8.dp)) {
-                        Icon(Icons.Default.Info, contentDescription = "Sobre", tint = AppColors.Blue100)
+                    Row(modifier = Modifier.padding(end = 4.dp)) {
+                        IconButton(onClick = {
+                            AppAnalytics.logShare("reclamacao_agua")
+                            shareContent("Falta de água — Canindé", ShareTexts.reclamacaoAgua())
+                        }) {
+                            Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = AppColors.Blue100)
+                        }
+                        IconButton(onClick = onSobreClick) {
+                            Icon(Icons.Default.Info, contentDescription = "Sobre", tint = AppColors.Blue100)
+                        }
                     }
                 }
                 TabRow(

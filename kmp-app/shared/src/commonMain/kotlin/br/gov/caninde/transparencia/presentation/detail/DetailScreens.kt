@@ -368,8 +368,6 @@ fun VereadorDetailScreen(viewModel: TransparenciaViewModel, slug: String, onBack
                     }
                 }
             }
-            DetailSectionHeader("Contato")
-            ContatoSection(vereador.contato)
             val biografia = sanitizeBiography(vereador.biografia)
             if (biografia.isNotBlank()) {
                 DetailSectionHeader("Biografia")

@@ -6,6 +6,7 @@ const detailPref = require('./scraper-detail-prefeitura');
 const portalPage = require('./scraper-portal-page');
 const camaraPortal = require('./scraper-camara-portal');
 const { mergeParlamentar, mergeMateria } = require('./merge-camara-sources');
+const { stripParlamentarContato } = require('./privacy');
 const { createDetailCache } = require('./detail-cache');
 const { assertAllowedOutboundUrl } = require('./allowed-hosts');
 
@@ -70,7 +71,12 @@ function createDetailHandler({ http, cheerio, getCache }) {
 
   async function loadDetail(entity, id) {
     const cached = detailCache.get(entity, id);
-    if (cached) return cached;
+    if (cached) {
+      if (entity === 'vereador' && cached.parlamentar) {
+        return { ...cached, parlamentar: stripParlamentarContato(cached.parlamentar) };
+      }
+      return cached;
+    }
 
     const cache = getCache();
     let result = null;
@@ -81,7 +87,11 @@ function createDetailHandler({ http, cheerio, getCache }) {
         result = detailCamara.scrapeVereadorDetail(html, cheerio, id);
         const listItem = (cache?.camara?.parlamentares || []).find((p) => p.slug === id);
         if (listItem && result?.parlamentar) {
-          result.parlamentar = mergeParlamentar(result.parlamentar, listItem);
+          result.parlamentar = stripParlamentarContato(
+            mergeParlamentar(result.parlamentar, listItem),
+          );
+        } else if (result?.parlamentar) {
+          result.parlamentar = stripParlamentarContato(result.parlamentar);
         }
         break;
       }

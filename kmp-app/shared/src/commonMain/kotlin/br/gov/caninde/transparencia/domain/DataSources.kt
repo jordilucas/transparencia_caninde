@@ -144,7 +144,7 @@ object DataSourcesInfo {
         FonteCaptura(
             titulo = "Perfil do vereador",
             url = "$CAMARA_PORTAL_BASE/vereadores/{slug}/",
-            descricao = "Biografia e contato ao abrir um vereador.",
+            descricao = "Biografia e produção legislativa ao abrir um vereador.",
         ),
         FonteCaptura(
             titulo = "Detalhe de matéria",
@@ -205,6 +205,16 @@ object DataSourcesInfo {
     )
 
     val changelog: List<ChangelogEntry> = listOf(
+        ChangelogEntry(
+            titulo = "Privacidade e vereadores",
+            data = "17/08/2026",
+            itens = listOf(
+                "Sem rastreamento: removido Google Analytics e cookies de monitoramento",
+                "Contatos pessoais de vereadores não aparecem mais no app",
+                "Política de privacidade atualizada na aba Sobre",
+                "Botão compartilhar na aba Água para divulgar o registro de reclamações",
+            ),
+        ),
         ChangelogEntry(
             titulo = "Falta de água — reclamações",
             data = "15/08/2026",
