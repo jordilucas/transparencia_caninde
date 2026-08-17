@@ -29,16 +29,38 @@ fun AppRoute.toWebPath(): String = when (this) {
 
 fun AppRoute.shareUrl(): String = "$SITE_BASE_URL#${toWebPath()}"
 
-fun parseWebPath(path: String): AppRoute? {
-    val normalized = path.trim().let { raw ->
+fun normalizeAppWebPath(path: String): String {
+    val trimmed = path.trim().let { raw ->
         when {
             raw.contains('#') -> raw.substringAfter('#')
             else -> raw
         }
-    }.ifBlank { "/" }
+    }.let { raw ->
+        when {
+            raw.isBlank() -> "/"
+            raw.startsWith("/") -> raw
+            else -> "/$raw"
+        }
+    }
+    val withoutBase = trimmed
+        .removePrefix("/transparencia_caninde")
+        .ifBlank { "/" }
+    return withoutBase.ifBlank { "/" }
+}
+
+/** Rota na abertura do app: Prefeitura na home; detalhes (contrato, vereador…) respeitam o link. */
+fun resolveInitialAppRoute(path: String): AppRoute {
+    val route = parseWebPath(normalizeAppWebPath(path))
+        ?: return AppRoute.Main(Screen.Prefeitura)
+    return if (route is AppRoute.Main) AppRoute.Main(Screen.Prefeitura) else route
+}
+
+fun parseWebPath(path: String): AppRoute? {
+    val normalized = normalizeAppWebPath(path)
     val segments = normalized.trim('/').split('/').filter { it.isNotBlank() }
     if (segments.isEmpty()) return AppRoute.Main(Screen.Prefeitura)
     return when (segments.first()) {
+        "prefeitura" -> AppRoute.Main(Screen.Prefeitura)
         "camara" -> AppRoute.Main(Screen.Camara)
         "folha" -> AppRoute.Main(Screen.Folha)
         "graficos" -> AppRoute.Main(Screen.Graficos)
@@ -68,10 +90,11 @@ fun parseWebPath(path: String): AppRoute? {
 fun readWebLocation(pathname: String, hash: String): String {
     val hashPath = hash.removePrefix("#").trim()
     if (hashPath.isNotEmpty() && hashPath != "/") {
-        return if (hashPath.startsWith("/")) hashPath else "/$hashPath"
+        return normalizeAppWebPath(hashPath)
     }
     val path = pathname.trim().ifBlank { "/" }
-    if (path != "/" && !path.contains('.')) return path
+    val normalizedPath = normalizeAppWebPath(path)
+    if (normalizedPath != "/" && !normalizedPath.contains('.')) return normalizedPath
     return "/"
 }
 

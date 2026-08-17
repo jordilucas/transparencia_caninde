@@ -9,6 +9,7 @@ class WebRoutesTest {
     @Test
     fun parseWebPath_rotasPrincipais() {
         assertEquals(AppRoute.Main(Screen.Prefeitura), parseWebPath("/"))
+        assertEquals(AppRoute.Main(Screen.Prefeitura), parseWebPath("/prefeitura"))
         assertEquals(AppRoute.Main(Screen.Camara), parseWebPath("/camara"))
         assertEquals(AppRoute.Main(Screen.Folha), parseWebPath("/folha"))
         assertEquals(AppRoute.Main(Screen.Agua), parseWebPath("/agua"))
@@ -34,5 +35,19 @@ class WebRoutesTest {
     @Test
     fun toWebPath_abaSaae() {
         assertEquals("/saae", AppRoute.Main(Screen.Agua).toWebPath())
+    }
+
+    @Test
+    fun resolveInitialAppRoute_homeEmPrefeitura() {
+        assertEquals(AppRoute.Main(Screen.Prefeitura), resolveInitialAppRoute("/"))
+        assertEquals(AppRoute.Main(Screen.Prefeitura), resolveInitialAppRoute("#/saae"))
+        assertEquals(AppRoute.Main(Screen.Prefeitura), resolveInitialAppRoute("/camara"))
+        assertEquals(AppRoute.Contrato("1073"), resolveInitialAppRoute("#/contrato/1073"))
+    }
+
+    @Test
+    fun readWebLocation_removeBaseGithubPages() {
+        assertEquals("/", readWebLocation("/transparencia_caninde/", ""))
+        assertEquals("/camara", readWebLocation("/transparencia_caninde/", "#/camara"))
     }
 }

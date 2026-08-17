@@ -281,6 +281,14 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Página inicial",
+            data = "17/08/2026",
+            itens = listOf(
+                "Ao abrir o site, a aba Prefeitura aparece primeiro",
+                "Links de contratos e vereadores continuam abrindo direto no detalhe",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Aba SAAE em destaque",
             data = "17/08/2026",
             itens = listOf(

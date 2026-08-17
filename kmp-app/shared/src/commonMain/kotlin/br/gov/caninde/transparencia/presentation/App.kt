@@ -58,7 +58,7 @@ fun TransparenciaApp(
     viewModel: TransparenciaViewModel,
     initialWebPath: String? = null,
 ) {
-    val parsedInitial = initialWebPath?.let { parseWebPath(it) }
+    val parsedInitial = initialWebPath?.let { resolveInitialAppRoute(it) }
     val routeStack = remember {
         mutableStateListOf(parsedInitial ?: AppRoute.Main(Screen.Prefeitura))
     }
@@ -259,13 +259,18 @@ private fun MainNavigationRail(
         modifier = Modifier.fillMaxHeight().width(88.dp),
     ) {
         Spacer(Modifier.height(16.dp))
-        Text(
-            "Canindé",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = AppColors.Navy800,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
+        TextButton(
+            onClick = { onScreenSelected(Screen.Prefeitura) },
+            modifier = Modifier.padding(bottom = 4.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+        ) {
+            Text(
+                "Canindé",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.Navy800,
+            )
+        }
         navItems.forEach { item ->
             NavigationRailItem(
                 selected = currentScreen == item.screen,
