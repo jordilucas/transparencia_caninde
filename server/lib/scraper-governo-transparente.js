@@ -276,7 +276,7 @@ function buildGtPortalLinks(id = GT_PREFEITURA_ID) {
   ];
 }
 
-async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
+async function scrapeGtResumo(http, exercicio = new Date().getFullYear(), gtExtHttp = null) {
   const exer = yearToExer(exercicio);
   const gtFolhaConsultaUrl =
     `${GT_BASE}/transparencia/${GT_PREFEITURA_ID}/consultardespesafornecedor?clean=false`;
@@ -334,8 +334,15 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
       || parsePeriodoPortal(despesaHtml).fim;
     const periodoReferencia = buildPeriodoExercicio(exercicio, dadosAtualizadosEm);
 
-    const { scrapeGtExtended } = require('./scraper-gt-extended');
-    const extended = await scrapeGtExtended(http, exercicio, receitasRows);
+    const { scrapeGtExtended, emptyGtExtended, mapReceitasTopRubricas } = require('./scraper-gt-extended');
+    let extended;
+    try {
+      extended = await scrapeGtExtended(gtExtHttp || http, exercicio, receitasRows);
+    } catch (err) {
+      console.warn('[GT] extended indisponível:', err.message);
+      extended = emptyGtExtended(exercicio);
+      extended.receitasPorRubrica = mapReceitasTopRubricas(receitasRows);
+    }
 
     const hasReceita = arrecadada > 0;
     const hasDespesa = despesaPaga > 0;

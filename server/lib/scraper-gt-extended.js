@@ -186,7 +186,7 @@ async function fetchGtJsonTryPaths(http, paths) {
       const url = path.startsWith('http') ? path : `${GT_BASE}${path}`;
       const res = await http.get(url, {
         headers: { Referer: GT_REFERER, Accept: 'application/json, text/plain, */*' },
-        timeout: 45_000,
+        timeout: 20_000,
         validateStatus: (status) => status >= 200 && status < 400,
       });
       if (res.data != null && typeof res.data === 'object') return res.data;
@@ -201,7 +201,7 @@ async function fetchGtHtml(http, path) {
   const url = path.startsWith('http') ? path : `${GT_BASE}${path}`;
   const res = await http.get(url, {
     headers: { Referer: GT_REFERER, Accept: 'text/html' },
-    timeout: 45_000,
+    timeout: 20_000,
     validateStatus: (status) => status >= 200 && status < 400,
   });
   return res.data;
@@ -250,7 +250,7 @@ async function scrapeGtExtended(http, exercicio = new Date().getFullYear(), rece
   const remessa = remessaData.status === 'fulfilled' ? parseRemessa(remessaData.value) : null;
   const orgaosRaw = orgaosData.status === 'fulfilled' ? orgaosData.value : null;
   const orgaos = Array.isArray(orgaosRaw) ? orgaosRaw : (Array.isArray(orgaosRaw?.Resultado) ? orgaosRaw.Resultado : []);
-  const saaeOrgao = findSaaeOrgaoId(orgs);
+  const saaeOrgao = findSaaeOrgaoId(orgaos);
 
   let pagamentosRaw = [];
   if (saaeOrgao?.id) {
@@ -286,6 +286,22 @@ async function scrapeGtExtended(http, exercicio = new Date().getFullYear(), rece
   };
 }
 
+function emptyGtExtended(exercicio = new Date().getFullYear()) {
+  return {
+    remessa: null,
+    convenios: [],
+    receitasPorRubrica: [],
+    pagamentosSaae: [],
+    totalPagamentosSaae: '',
+    quantidadePagamentosSaae: 0,
+    saaeOrgaoNome: '',
+    saaeOrgaoId: '',
+    dadosAtualizadosEm: '',
+    periodoReferencia: buildPeriodoExercicio(exercicio, ''),
+    gtConveniosUrl: `${GT_BASE}/transparencia/${GT_PREFEITURA_ID}/consultarconvenio?clean=false`,
+  };
+}
+
 module.exports = {
   TOP_RECEITA_CODIGO,
   exercicioDateRange,
@@ -295,5 +311,6 @@ module.exports = {
   mapPagamentosRows,
   sumPagamentos,
   parseConveniosHtml,
+  emptyGtExtended,
   scrapeGtExtended,
 };

@@ -56,6 +56,7 @@ const httpClient = axios.create({
 });
 
 const scrapeHttp = createGuardedHttp(httpClient, { minDelayMs: config.fetchMinDelayMs });
+const scrapeHttpGtExt = createGuardedHttp(httpClient, { minDelayMs: 100 });
 const refreshGuard = createRefreshGuard(config.refreshCooldownMs);
 const scrapeLock = createScrapeLock();
 
@@ -103,7 +104,7 @@ async function scrapePrefeituraInner() {
       dadosAbertos.scrapePrefeituraDadosAbertos(scrapeHttp, year),
       scraperPrefeitura.scrapePrefeituraHtml(scrapeHttp, cheerio),
       scrapeFolha.scrapeFolhaPagamento(scrapeHttp, cheerio, year),
-      scrapeGt.scrapeGtResumo(scrapeHttp, year),
+      scrapeGt.scrapeGtResumo(scrapeHttp, year, scrapeHttpGtExt),
     ]);
 
     const jsonBundle = jsonResult.status === 'fulfilled' ? jsonResult.value : null;
@@ -435,9 +436,16 @@ wss.on('connection', (ws, req) => {
 // ─── ciclos periódicos de scraping ───────────────────────────────────────────
 async function initAndSchedule() {
   console.log('[Init] fazendo scraping inicial...');
-  const [p, c] = await Promise.allSettled([scrapePrefeitura(), scrapeCamara()]);
-  if (p.status === 'fulfilled') cache.prefeitura = p.value;
-  if (c.status === 'fulfilled') cache.camara = c.value;
+  try {
+    cache.prefeitura = await scrapePrefeitura();
+  } catch (err) {
+    console.error('[Init] prefeitura falhou:', err.message);
+  }
+  try {
+    cache.camara = await scrapeCamara();
+  } catch (err) {
+    console.error('[Init] câmara falhou:', err.message);
+  }
   console.log('[Init] scraping inicial concluído.');
 
   setInterval(async () => {

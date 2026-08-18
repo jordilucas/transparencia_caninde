@@ -9,6 +9,7 @@ const {
   mapPagamentosRows,
   sumPagamentos,
   parseConveniosHtml,
+  scrapeGtExtended,
 } = require('../lib/scraper-gt-extended');
 const { buildResumoFinanceiro } = require('../lib/finance-summary');
 
@@ -88,5 +89,17 @@ describe('scraper-gt-extended', () => {
     assert.equal(resumo.convenios.length, 1);
     assert.equal(resumo.receitasPorRubrica.length, 1);
     assert.ok(resumo.gtConveniosUrl.includes('convenios'));
+  });
+
+  it('scrapeGtExtended não quebra com lista de órgãos vazia', async () => {
+    const http = {
+      get: async () => ({ data: [] }),
+    };
+    const result = await scrapeGtExtended(http, 2026, [
+      { codigo: '001.0.0.0.00.0.0.00.00.00', especificacao: 'Receitas correntes', arrecadado: 100 },
+    ]);
+    assert.ok(Array.isArray(result.convenios));
+    assert.equal(result.pagamentosSaae.length, 0);
+    assert.equal(result.receitasPorRubrica.length, 1);
   });
 });

@@ -261,6 +261,14 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Estabilidade dos dados",
+            data = "18/08/2026",
+            itens = listOf(
+                "Correção na sincronização com plataformas oficiais",
+                "Prefeitura e Câmara voltam a carregar normalmente após atualização",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Finanças e SAAE ampliados",
             data = "18/08/2026",
             itens = listOf(
