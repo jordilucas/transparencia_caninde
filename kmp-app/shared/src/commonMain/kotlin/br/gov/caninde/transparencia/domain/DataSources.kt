@@ -23,60 +23,40 @@ object DataSourcesInfo {
     const val CAMARA_SITE = "https://www.cmcaninde.ce.gov.br"
 
     val sobreDestaques: List<String> = listOf(
-        "Finanças — receita arrecadada, despesa paga e maiores fornecedores (Governo Transparente)",
+        "Finanças — receita arrecadada, despesa paga e maiores fornecedores",
         "Folha de pagamento — totais por secretaria e por mês, sem nomes (LGPD)",
         "Contratos, licitações, obras, LRF e diário oficial da Prefeitura",
         "Vereadores, sessões, matérias e transparência da Câmara",
-        "Água — registro anônimo de falta de abastecimento com painel público",
+        "SAAE — transparência de água e esgoto e registro de falta de abastecimento",
         "Busca unificada, gráficos, PWA (instalar como app) e seletor de exercício",
     )
 
-    val portaisOficiais: List<FonteCaptura> = listOf(
-        FonteCaptura(
-            titulo = "Prefeitura Municipal de Canindé",
-            url = PREFEITURA_SITE,
-            descricao = "Portal oficial do Executivo municipal — fonte primária de contratos, licitações, secretarias e publicações.",
-        ),
-        FonteCaptura(
-            titulo = "Câmara Municipal de Canindé",
-            url = CAMARA_SITE,
-            descricao = "Portal oficial do Legislativo municipal — vereadores, sessões, matérias e transparência legislativa.",
-        ),
-        FonteCaptura(
-            titulo = "Portal de transparência — Prefeitura",
-            url = "$PREFEITURA_PORTAL_BASE/acessoainformacao.php",
-            descricao = "Seção de acesso à informação e dados abertos da Prefeitura.",
-        ),
-        FonteCaptura(
-            titulo = "Canindé Transparente — Câmara",
-            url = "$CAMARA_PORTAL_BASE/caninde-transparente/",
-            descricao = "Portal de transparência legislativa da Câmara.",
-        ),
-    )
+    const val origemDadosResumo =
+        "Os dados de gestão municipal exibidos neste portal provêm de conjuntos abertos publicados em " +
+            "plataformas oficiais de transparência pública. Não inventamos nem alteramos informações: " +
+            "organizamos o que já é público para facilitar a consulta pelo cidadão."
 
     val comoFuncionaPassos: List<String> = listOf(
-        "Um servidor consulta, em intervalos regulares, apenas URLs públicas da Prefeitura e da Câmara — " +
-            "as mesmas páginas que qualquer cidadão pode abrir no navegador.",
-        "Contratos, licitações, vereadores, sessões e demais listagens são normalizados em JSON e enviados " +
-            "ao aplicativo via WebSocket (conexão em tempo real).",
-        "Ao abrir um item (contrato, vereador, matéria etc.), o servidor busca o detalhe na página oficial " +
-            "correspondente e exibe o conteúdo com link para o documento de origem.",
+        "Um servidor consulta periodicamente dados abertos disponibilizados em plataformas oficiais " +
+            "de transparência — o mesmo tipo de informação que qualquer cidadão pode consultar publicamente.",
+        "Contratos, licitações, vereadores, sessões e demais listagens são normalizados e enviados " +
+            "ao aplicativo via conexão em tempo real.",
+        "Ao abrir um item específico, o conteúdo detalhado é carregado sob demanda, com opção de " +
+            "abrir a consulta na plataforma oficial correspondente.",
         "O app guarda a última sincronização no cache local do dispositivo, permitindo consulta mesmo " +
             "com conexão instável — sempre com indicação de quando os dados foram atualizados.",
-        "Receitas, despesas e fornecedores da Prefeitura vêm do Governo Transparente (dados oficiais): " +
-            "o app exibe totais do exercício, período e data de atualização; consultas detalhadas abrem o painel oficial.",
-        "Folha de pagamento exibe apenas totais agregados por secretaria — sem nomes ou matrículas de servidores.",
-        "A aba Água funciona de forma distinta: reclamações de falta de água são registradas pelos próprios " +
-            "cidadãos (de forma anônima), com comprovantes em armazenamento seguro — não vêm dos portais oficiais.",
+        "Receitas, despesas e folha de pagamento exibem totais agregados do exercício — sem nomes " +
+            "ou matrículas de servidores, em conformidade com a LGPD.",
+        "Reclamações de falta de água são registradas pelos cidadãos (de forma anônima), com " +
+            "comprovantes em armazenamento seguro — não fazem parte dos dados abertos municipais.",
     )
 
     const val conformidadeLegalResumo =
         "Este portal não infringe a legislação brasileira. Exibe somente informações já tornadas públicas " +
             "pelos órgãos municipais, sem acesso a áreas restritas, sistemas internos ou dados sigilosos. " +
-            "Não alteramos o conteúdo oficial: facilitamos a consulta e indicamos sempre a fonte de origem. " +
             "A republicação de dados públicos para fins de transparência e controle social encontra amparo na " +
             "Constituição Federal, na Lei de Acesso à Informação (LAI) e nas normas de transparência fiscal. " +
-            "Trata-se de um projeto independente de facilitação — não substitui os sites oficiais da Prefeitura e da Câmara."
+            "Trata-se de um projeto independente de facilitação — não substitui os canais oficiais de consulta."
 
     val prefeituraJson: List<FonteCaptura> = listOf(
         FonteCaptura(
@@ -280,6 +260,15 @@ object DataSourcesInfo {
     )
 
     val changelog: List<ChangelogEntry> = listOf(
+        ChangelogEntry(
+            titulo = "Site e privacidade de fontes",
+            data = "18/08/2026",
+            itens = listOf(
+                "Portal restaurado após manutenção",
+                "Página Sobre simplificada — origem genérica em plataformas oficiais de dados abertos",
+                "Removido detalhamento técnico de URLs e endpoints de captura",
+            ),
+        ),
         ChangelogEntry(
             titulo = "Página inicial",
             data = "17/08/2026",

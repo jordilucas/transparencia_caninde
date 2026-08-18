@@ -557,7 +557,7 @@ fun LazyListScope.financasCamaraItems(
     item {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Text(
-                "Receitas e despesas oficiais no Governo Transparente. Totais detalhados ficam no portal externo.",
+                "Receitas e despesas oficiais em plataforma de transparência. Totais detalhados ficam na consulta externa.",
                 fontSize = 11.sp,
                 color = AppColors.TextSecondary,
             )

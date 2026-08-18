@@ -147,12 +147,12 @@ private fun SaaeTransparenciaContent(
         if (saae == null || !saae.disponivel) {
             item {
                 EmptyState(
-                    "Dados do SAAE ainda não carregados. Atualize ou consulte o Governo Transparente.",
+                    "Dados do SAAE ainda não carregados. Atualize ou consulte a plataforma oficial.",
                 )
             }
         } else {
             if (saae.linhasFinanceiras.isNotEmpty()) {
-                item { SectionHeader("Movimentação financeira (GT)") }
+                item { SectionHeader("Movimentação financeira") }
                 items(saae.linhasFinanceiras, key = { it.descricao }) { linha ->
                     SaaeLinhaRow(linha)
                     HorizontalDivider(
@@ -249,7 +249,7 @@ private fun SaaeHeroCard(saae: SaaeResumo?) {
                     Text(
                         buildString {
                             append("Órgão ${saae?.codigoOrgao?.ifBlank { "044" } ?: "044"}")
-                            saae?.dadosAtualizadosEm?.takeIf { it.isNotBlank() }?.let { append(" · GT $it") }
+                            saae?.dadosAtualizadosEm?.takeIf { it.isNotBlank() }?.let { append(" · Atualizado $it") }
                         },
                         fontSize = 11.sp,
                         color = AppColors.Blue100.copy(alpha = 0.85f),
@@ -268,7 +268,7 @@ private fun SaaeHeroCard(saae: SaaeResumo?) {
                     SaaeMetricChip("Folha de pessoal", saae.folhaPagamento, Modifier.weight(1f))
                 }
                 if (!saae?.totalDespesasGt.isNullOrBlank()) {
-                    SaaeMetricChip("Despesas (GT)", saae.totalDespesasGt, Modifier.weight(1f))
+                    SaaeMetricChip("Despesas", saae.totalDespesasGt, Modifier.weight(1f))
                 }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

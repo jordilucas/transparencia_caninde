@@ -5,15 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.gov.caninde.transparencia.domain.*
@@ -51,13 +48,19 @@ fun SobreScreen(
                 SobreCard {
                     SobreParagraph(
                         "Este portal agrega e exibe dados públicos da Prefeitura e da Câmara Municipal de Canindé (CE). " +
-                            "Nenhuma informação é inventada: tudo o que você vê sobre gestão municipal vem dos sites " +
-                            "oficiais indicados abaixo, atualizados periodicamente pelo nosso servidor.",
+                            "Nenhuma informação é inventada: o conteúdo reflete dados já disponibilizados publicamente.",
                     )
                     SobreParagraph(
-                        "Em caso de divergência, prevalece sempre a informação no portal oficial de origem. " +
-                            "Cada tela de detalhe inclui link para consultar o documento ou página publicada pelo órgão.",
+                        "Em caso de divergência, prevalece sempre a informação na plataforma oficial de origem. " +
+                            "Cada tela de detalhe pode incluir link para consulta externa, quando aplicável.",
                     )
+                }
+            }
+
+            item {
+                SobreSectionTitle("Origem dos dados")
+                SobreCard {
+                    SobreParagraph(DataSourcesInfo.origemDadosResumo)
                 }
             }
 
@@ -97,29 +100,6 @@ fun SobreScreen(
                         if (camaraState.lastUpdated.isNotBlank()) {
                             SobreMeta("Câmara atualizada", camaraState.lastUpdated)
                         }
-                    }
-                    val fontesAtivas = (prefeituraState.resumo.fontesUtilizadas + camaraState.resumo.fontesUtilizadas)
-                        .distinct()
-                        .filter { it.isNotBlank() }
-                    if (fontesAtivas.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
-                        SobreMeta(
-                            "Fontes usadas na última sincronização",
-                            fontesAtivas.joinToString(", "),
-                        )
-                    }
-                }
-            }
-
-            item {
-                SobreSectionTitle("Fontes oficiais")
-                SobreCard {
-                    SobreParagraph(
-                        "Todos os dados de transparência municipal exibidos neste app têm origem nos portais abaixo. " +
-                            "Toque em cada link para abrir o site oficial e conferir na fonte.",
-                    )
-                    DataSourcesInfo.portaisOficiais.forEach { fonte ->
-                        SobreFonteRow(fonte)
                     }
                 }
             }
@@ -165,83 +145,13 @@ fun SobreScreen(
             }
 
             item {
-                SobreSectionTitle("Detalhamento das fontes — Prefeitura (JSON)")
-                SobreCard {
-                    SobreParagraph("Endpoint principal de dados abertos (parâmetro a=ano do exercício):")
-                    DataSourcesInfo.prefeituraJson.forEach { fonte ->
-                        SobreFonteRow(fonte)
-                    }
-                }
-            }
-
-            item {
-                SobreSectionTitle("Detalhamento das fontes — Prefeitura (HTML)")
-                SobreCard {
-                    DataSourcesInfo.prefeituraHtml.forEach { fonte ->
-                        SobreFonteRow(fonte)
-                    }
-                }
-            }
-
-            item {
-                SobreSectionTitle("Detalhamento das fontes — Prefeitura (detalhes)")
-                SobreCard {
-                    SobreParagraph("Consultadas ao abrir um item específico no app:")
-                    DataSourcesInfo.prefeituraDetalhe.forEach { fonte ->
-                        SobreFonteRow(fonte)
-                    }
-                }
-            }
-
-            item {
-                SobreSectionTitle("Detalhamento das fontes — Câmara (API WordPress)")
-                SobreCard {
-                    DataSourcesInfo.camaraWp.forEach { fonte ->
-                        SobreFonteRow(fonte)
-                    }
-                }
-            }
-
-            item {
-                SobreSectionTitle("Detalhamento das fontes — Câmara (HTML)")
-                SobreCard {
-                    DataSourcesInfo.camaraHtml.forEach { fonte ->
-                        SobreFonteRow(fonte)
-                    }
-                }
-            }
-
-            item {
-                SobreSectionTitle("Detalhamento das fontes — Câmara (detalhes)")
-                SobreCard {
-                    DataSourcesInfo.camaraDetalhe.forEach { fonte ->
-                        SobreFonteRow(fonte)
-                    }
-                }
-            }
-
-            item {
-                SobreSectionTitle("Governo Transparente")
-                SobreCard {
-                    SobreParagraph(
-                        "Receitas, despesas e convênios detalhados ficam no painel do Governo Transparente. " +
-                            "O app integra totais oficiais do exercício (receita arrecadada, despesa paga, fornecedores) " +
-                            "e indica período e data de atualização; para consultas linha a linha, use os links abaixo.",
-                    )
-                    DataSourcesInfo.governoTransparente.forEach { fonte ->
-                        SobreFonteRow(fonte)
-                    }
-                }
-            }
-
-            item {
                 SobreSectionTitle("Privacidade")
                 SobreCard {
                     SobreParagraph(
                         "Este portal exibe dados institucionais e documentos públicos. Não vendemos nem comercializamos " +
                             "informações pessoais. Dados de contato de secretarias e gestores são os mesmos já publicados " +
-                            "nos sites oficiais. Contatos pessoais de vereadores não são exibidos neste app — consulte o " +
-                            "site da Câmara, nos termos da Lei nº 13.709/2018 (LGPD) aplicável à administração pública.",
+                            "oficialmente. Contatos pessoais de vereadores não são exibidos neste app — consulte os " +
+                            "canais oficiais, nos termos da Lei nº 13.709/2018 (LGPD) aplicável à administração pública.",
                     )
                     Spacer(Modifier.height(8.dp))
                     SobreParagraph(
@@ -256,7 +166,7 @@ fun SobreScreen(
                 SobreSectionTitle("Aviso")
                 SobreCard {
                     SobreParagraph(
-                        "Embora busquemos manter os dados atualizados, pode haver atraso em relação ao portal de origem. " +
+                        "Embora busquemos manter os dados atualizados, pode haver atraso em relação à publicação oficial. " +
                             "Este é um projeto independente e voluntário de facilitação do acesso à transparência municipal — " +
                             "sem vínculo oficial com a Prefeitura ou a Câmara, e sem fins comerciais.",
                     )
@@ -344,48 +254,6 @@ private fun SobreMeta(label: String, value: String) {
         Text(label, fontSize = 10.sp, color = AppColors.TextTertiary, fontWeight = FontWeight.Medium)
         Text(value, fontSize = 12.sp, color = AppColors.TextPrimary)
     }
-}
-
-@Composable
-private fun SobreFonteRow(fonte: FonteCaptura) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable { openExternalUrl(fonte.urlParaAbrir()) }
-            .padding(vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(
-                fonte.titulo,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = AppColors.Navy800,
-                modifier = Modifier.weight(1f),
-            )
-            Icon(
-                Icons.AutoMirrored.Filled.OpenInNew,
-                contentDescription = null,
-                tint = AppColors.Blue500,
-                modifier = Modifier.size(14.dp),
-            )
-        }
-        Text(
-            fonte.url,
-            fontSize = 11.sp,
-            color = AppColors.Blue500,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (fonte.descricao.isNotBlank()) {
-            Text(fonte.descricao, fontSize = 11.sp, color = AppColors.TextTertiary)
-        }
-    }
-    HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp)
 }
 
 @Composable

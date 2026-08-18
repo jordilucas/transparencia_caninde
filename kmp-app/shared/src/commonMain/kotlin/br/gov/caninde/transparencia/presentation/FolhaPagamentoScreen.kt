@@ -32,8 +32,7 @@ fun FolhaPagamentoScreen(
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Por secretaria", "Por mês")
     val fontePorSetorLabel = when (folha?.fontePorSetor) {
-        "governo_transparente" -> "Governo Transparente"
-        "portal_municipal" -> "Portal municipal"
+        "governo_transparente", "portal_municipal" -> "Plataforma oficial"
         else -> ""
     }
 
@@ -266,7 +265,7 @@ private fun FolhaPortalLinks(folha: FolhaPagamentoResumo?) {
             color = AppColors.Navy800,
         )
         Text(
-            "Detalhes com nomes de servidores ficam apenas no site da Prefeitura ou no Governo Transparente.",
+            "Detalhes com nomes de servidores ficam apenas nas plataformas oficiais de transparência.",
             fontSize = 11.sp,
             color = AppColors.TextSecondary,
         )
@@ -275,20 +274,20 @@ private fun FolhaPortalLinks(folha: FolhaPagamentoResumo?) {
         OutlinedButton(onClick = { openExternalUrl(folhaUrl) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Folha de pagamento (Prefeitura)", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("Consulta oficial de folha", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         folha?.fontePagamentosUrl?.takeIf { it.isNotBlank() }?.let { pagUrl ->
             OutlinedButton(onClick = { openExternalUrl(pagUrl) }, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Pagamentos por órgão (Prefeitura)", fontSize = 12.sp)
+                Text("Pagamentos por órgão", fontSize = 12.sp)
             }
         }
         folha?.gtConsultaUrl?.takeIf { it.isNotBlank() }?.let { gtUrl ->
             OutlinedButton(onClick = { openExternalUrl(gtUrl) }, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Folha no Governo Transparente", fontSize = 12.sp)
+                Text("Consulta oficial agregada", fontSize = 12.sp)
             }
         }
     }

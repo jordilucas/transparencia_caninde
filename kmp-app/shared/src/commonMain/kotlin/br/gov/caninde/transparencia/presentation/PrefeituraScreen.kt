@@ -706,7 +706,7 @@ fun FinancasHeroCard(
                         color = AppColors.Blue100,
                     )
                     Text(
-                        "Exercício ${resumo.exercicio} · Governo Transparente",
+                        "Exercício ${resumo.exercicio} · Dados oficiais abertos",
                         fontSize = 11.sp,
                         color = AppColors.Blue300,
                     )
@@ -840,7 +840,7 @@ fun LazyListScope.gtPortalLinksItems(
     if (links.isEmpty()) return
 
     val grupos = listOf(
-        "portal" to "Portal Governo Transparente",
+        "portal" to "Portal oficial",
         "financeiro" to "Finanças e recursos",
         "despesa" to "Despesas e pagamentos",
         "compras" to "Licitações, contratos e convênios",
@@ -1068,21 +1068,21 @@ fun TransparenciaDestaquesCard(links: List<LinkExterno>) {
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                "Emendas e convênios (Governo Transparente)",
+                "Emendas e convênios",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.Navy800,
             )
             emendas?.let {
                 Text(
-                    "Emendas parlamentares repassadas ao município — consulta detalhada no portal estadual.",
+                    "Emendas parlamentares repassadas ao município — consulta detalhada na plataforma oficial.",
                     fontSize = 12.sp,
                     color = AppColors.TextSecondary,
                 )
             }
             convenios?.let {
                 Text(
-                    "Convênios firmados pela Prefeitura — valores, parceiros e situação no Governo Transparente.",
+                    "Convênios firmados pela Prefeitura — valores, parceiros e situação conforme publicação oficial.",
                     fontSize = 12.sp,
                     color = AppColors.TextSecondary,
                 )
