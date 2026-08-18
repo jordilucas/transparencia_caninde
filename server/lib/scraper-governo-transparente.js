@@ -334,22 +334,29 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
       || parsePeriodoPortal(despesaHtml).fim;
     const periodoReferencia = buildPeriodoExercicio(exercicio, dadosAtualizadosEm);
 
+    const { scrapeGtExtended } = require('./scraper-gt-extended');
+    const extended = await scrapeGtExtended(http, exercicio, receitasRows);
+
     const hasReceita = arrecadada > 0;
     const hasDespesa = despesaPaga > 0;
     const hasFornecedores = topFornecedores.length > 0;
     const hasFolha = folhaPorSetor.length > 0;
 
-    if (!hasReceita && !hasDespesa && !hasFornecedores && !hasFolha) {
-      return basePayload;
+    if (!hasReceita && !hasDespesa && !hasFornecedores && !hasFolha
+      && !extended.convenios.length && !extended.receitasPorRubrica.length) {
+      return { ...basePayload, ...extended, remessa: extended.remessa || null };
     }
+
+    const dadosAtualizadosFinal = extended.dadosAtualizadosEm || dadosAtualizadosEm;
+    const periodoFinal = extended.periodoReferencia || buildPeriodoExercicio(exercicio, dadosAtualizadosFinal);
 
     return {
       receitaArrecadada: hasReceita ? formatBRL(arrecadada) : '',
       receitaPrevista: prevista > 0 ? formatBRL(prevista) : '',
       despesaPaga: hasDespesa ? formatBRL(despesaPaga) : '',
       percentualArrecadacao: calcPercentualArrecadacao(arrecadada, prevista),
-      periodoReferencia,
-      dadosAtualizadosEm,
+      periodoReferencia: periodoFinal,
+      dadosAtualizadosEm: dadosAtualizadosFinal,
       consultadoEm: new Date().toISOString(),
       topFornecedores,
       folhaPorSetor,
@@ -361,7 +368,17 @@ async function scrapeGtResumo(http, exercicio = new Date().getFullYear()) {
       gtDadosAbertosUrl: GT_DADOS_ABERTOS_URL,
       gtFolhaConsultaUrl,
       gtFonte: 'Governo Transparente',
-      gtDisponivel: hasReceita || hasDespesa || hasFornecedores,
+      gtDisponivel: hasReceita || hasDespesa || hasFornecedores
+        || extended.convenios.length > 0 || extended.receitasPorRubrica.length > 0,
+      remessa: extended.remessa,
+      convenios: extended.convenios,
+      receitasPorRubrica: extended.receitasPorRubrica,
+      pagamentosSaae: extended.pagamentosSaae,
+      totalPagamentosSaae: extended.totalPagamentosSaae,
+      quantidadePagamentosSaae: extended.quantidadePagamentosSaae,
+      saaeOrgaoNome: extended.saaeOrgaoNome,
+      saaeOrgaoId: extended.saaeOrgaoId,
+      gtConveniosUrl: extended.gtConveniosUrl,
     };
   } catch (err) {
     console.warn('[GT] resumo indisponível:', err.message);

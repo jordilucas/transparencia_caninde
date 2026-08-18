@@ -963,6 +963,77 @@ fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
                     }
                 }
             }
+            if (resumo.receitasPorRubrica.isNotEmpty()) {
+                Text(
+                    "Receitas por rubrica (principais)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AppColors.Navy800,
+                )
+                resumo.receitasPorRubrica.forEach { rubrica ->
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Text(
+                            rubrica.nome,
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp,
+                            color = AppColors.TextPrimary,
+                            modifier = Modifier.weight(1f).padding(end = 8.dp),
+                            maxLines = 2,
+                        )
+                        Text(
+                            rubrica.valorFormatado,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.Navy800,
+                        )
+                    }
+                }
+            }
+            if (resumo.ultimaRemessa.isNotBlank()) {
+                Text(
+                    "Última remessa ao Governo Transparente: ${resumo.ultimaRemessa}",
+                    fontSize = 11.sp,
+                    color = AppColors.TextSecondary,
+                )
+            }
+            if (resumo.convenios.isNotEmpty()) {
+                Text(
+                    "Convênios (${resumo.convenios.size})",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AppColors.Navy800,
+                )
+                resumo.convenios.take(5).forEach { convenio ->
+                    Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                        Text(
+                            convenio.numero.ifBlank { "Convênio" },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = AppColors.TextPrimary,
+                        )
+                        Text(
+                            listOfNotNull(
+                                convenio.objeto.take(90).takeIf { it.isNotBlank() },
+                                convenio.valor.takeIf { it.isNotBlank() },
+                                convenio.situacao.takeIf { it.isNotBlank() },
+                            ).joinToString(" · "),
+                            fontSize = 10.sp,
+                            lineHeight = 14.sp,
+                            color = AppColors.TextSecondary,
+                            maxLines = 2,
+                        )
+                    }
+                }
+                if (resumo.gtConveniosUrl.isNotBlank()) {
+                    TextButton(onClick = { openExternalUrl(resumo.gtConveniosUrl) }) {
+                        Text("Ver todos os convênios", fontSize = 12.sp)
+                    }
+                }
+            }
             if (resumo.aviso.isNotBlank()) {
                 Text(resumo.aviso, fontSize = 11.sp, lineHeight = 16.sp, color = AppColors.TextTertiary)
             }

@@ -163,6 +163,34 @@ private fun SaaeTransparenciaContent(
                 }
             }
 
+            if (saae.pagamentos.isNotEmpty()) {
+                item {
+                    SectionHeader(
+                        "Pagamentos do órgão (${saae.quantidadePagamentosOrgao})",
+                        action = "",
+                    )
+                }
+                items(saae.pagamentos, key = { "${it.data}|${it.credor}|${it.valor}" }) { pag ->
+                    ListRow(
+                        icon = {
+                            IconContainer(AppColors.Amber100) {
+                                Icon(Icons.Default.Payments, null, tint = AppColors.Amber700, modifier = Modifier.size(18.dp))
+                            }
+                        },
+                        title = pag.credor.ifBlank { "Pagamento" },
+                        subtitle = listOfNotNull(
+                            pag.data.takeIf { it.isNotBlank() },
+                            pag.natureza.take(60).takeIf { it.isNotBlank() },
+                            pag.documento.takeIf { it.isNotBlank() },
+                        ).joinToString(" · "),
+                        trailing = {
+                            Text(pag.valor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = AppColors.Navy800)
+                        },
+                    )
+                    HorizontalDivider(color = AppColors.Divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                }
+            }
+
             if (saae.contratos.isNotEmpty()) {
                 item { SectionHeader("Contratos relacionados (${saae.quantidadeContratos})") }
                 items(saae.contratos, key = { it.numero + it.id }) { contrato ->
@@ -267,7 +295,9 @@ private fun SaaeHeroCard(saae: SaaeResumo?) {
                 if (!saae?.folhaPagamento.isNullOrBlank()) {
                     SaaeMetricChip("Folha de pessoal", saae.folhaPagamento, Modifier.weight(1f))
                 }
-                if (!saae?.totalDespesasGt.isNullOrBlank()) {
+                if (!saae?.totalPagamentosOrgao.isNullOrBlank()) {
+                    SaaeMetricChip("Pagamentos", saae.totalPagamentosOrgao, Modifier.weight(1f))
+                } else if (!saae?.totalDespesasGt.isNullOrBlank()) {
                     SaaeMetricChip("Despesas", saae.totalDespesasGt, Modifier.weight(1f))
                 }
             }

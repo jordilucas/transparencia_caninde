@@ -41,7 +41,13 @@ describe('scraper-saae', () => {
       [{ numero: 'C1', objeto: 'SAAE oxigenio', valor: 'R$ 10.000,00', valorNumerico: 10000 }],
       [{ numero: 'L1', objeto: 'água e esgoto', situacao: 'Aberta' }],
       [{ nome: 'FOLHA DE PAGAMENTO-SAAE', valor: 3138789.15 }],
-      { dadosAtualizadosEm: '17/08/2026' },
+      {
+        dadosAtualizadosEm: '17/08/2026',
+        pagamentosSaae: [{ data: '10/08/2026', credor: 'CAGECE', valor: 'R$ 500,00' }],
+        totalPagamentosSaae: 'R$ 500,00',
+        quantidadePagamentosSaae: 1,
+        saaeOrgaoNome: '044 - SAAE',
+      },
     );
     assert.equal(resumo.exercicio, 2026);
     assert.equal(resumo.codigoOrgao, '044');
@@ -49,6 +55,9 @@ describe('scraper-saae', () => {
     assert.equal(resumo.quantidadeContratos, 1);
     assert.equal(resumo.quantidadeLicitacoes, 1);
     assert.ok(resumo.folhaPagamento.includes('3.138.789'));
+    assert.equal(resumo.pagamentos.length, 1);
+    assert.ok(resumo.totalPagamentosOrgao.includes('500'));
+    assert.equal(resumo.orgaoNome, '044 - SAAE');
     assert.ok(resumo.links.length >= 4);
   });
 });

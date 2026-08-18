@@ -91,6 +91,7 @@ function buildSaaeResumo(
   const contratosSaae = filterSaaeContratos(contratos);
   const licitacoesSaae = filterSaaeLicitacoes(licitacoes);
   const linhasFinanceiras = mapLinhasFinanceiras(fornecedoresRows);
+  const pagamentosSaae = Array.isArray(meta.pagamentosSaae) ? meta.pagamentosSaae : [];
 
   const folhaTotal = linhasFinanceiras
     .filter((l) => l.tipo === 'folha')
@@ -98,9 +99,10 @@ function buildSaaeResumo(
   const outrasDespesas = linhasFinanceiras
     .filter((l) => l.tipo !== 'folha')
     .reduce((sum, l) => sum + parseBRLNumber(l.valor), 0);
+  const pagamentosTotal = parseBRLNumber(meta.totalPagamentosSaae || '');
   const contratosTotal = contratosSaae.reduce((sum, c) => sum + parseValorContrato(c), 0);
 
-  const hasFinanceiro = folhaTotal > 0 || outrasDespesas > 0;
+  const hasFinanceiro = folhaTotal > 0 || outrasDespesas > 0 || pagamentosTotal > 0;
   const hasCompras = contratosSaae.length > 0 || licitacoesSaae.length > 0;
 
   return {
@@ -109,20 +111,24 @@ function buildSaaeResumo(
     codigoOrgao: '044',
     folhaPagamento: folhaTotal > 0 ? formatBRL(folhaTotal) : '',
     totalDespesasGt: outrasDespesas > 0 ? formatBRL(outrasDespesas) : '',
+    totalPagamentosOrgao: pagamentosTotal > 0 ? formatBRL(pagamentosTotal) : '',
+    quantidadePagamentosOrgao: meta.quantidadePagamentosSaae || pagamentosSaae.length,
     totalContratos: contratosTotal > 0 ? formatBRL(contratosTotal) : '',
     quantidadeContratos: contratosSaae.length,
     quantidadeLicitacoes: licitacoesSaae.length,
     linhasFinanceiras,
+    pagamentos: pagamentosSaae,
     contratos: contratosSaae.slice(0, 20),
     licitacoes: licitacoesSaae.slice(0, 20),
     links: buildSaaeLinks(exercicio),
-    fonte: 'Governo Transparente + Portal Municipal',
+    fonte: 'Dados abertos oficiais',
     aviso:
-      'Órgão 044 — Serviço Autônomo de Água e Esgoto de Canindé. '
-      + 'Valores agregados do Governo Transparente (exercício selecionado na Prefeitura). '
-      + 'Contratos e licitações filtrados por objeto relacionado a água, esgoto ou SAAE.',
+      'Órgão 044 — Serviço Autônomo de Água e Esgoto. '
+      + 'Valores agregados de plataformas oficiais de transparência (exercício selecionado). '
+      + 'Pagamentos listam movimentações filtradas por unidade quando disponíveis.',
     dadosAtualizadosEm: meta.dadosAtualizadosEm || '',
-    disponivel: hasFinanceiro || hasCompras || linhasFinanceiras.length > 0,
+    orgaoNome: meta.saaeOrgaoNome || '',
+    disponivel: hasFinanceiro || hasCompras || linhasFinanceiras.length > 0 || pagamentosSaae.length > 0,
   };
 }
 

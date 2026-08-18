@@ -57,6 +57,11 @@ function buildResumoFinanceiro(
     gtFonte: gt?.gtFonte || '',
     gtDisponivel: Boolean(gt),
     linksPortal: (gtResumo?.linksPortal?.length ? gtResumo.linksPortal : buildGtPortalLinks()),
+    remessa: gt?.remessa || null,
+    ultimaRemessa: gt?.remessa?.dataUltimaRemessa || gt?.dadosAtualizadosEm || '',
+    convenios: gt?.convenios || [],
+    gtConveniosUrl: gt?.gtConveniosUrl || `${GT_BASE}/transparencia/${GT_PREFEITURA_ID}/consultarconvenio?clean=false`,
+    receitasPorRubrica: gt?.receitasPorRubrica || [],
     aviso,
   };
 }

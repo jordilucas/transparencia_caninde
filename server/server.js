@@ -148,7 +148,13 @@ async function scrapePrefeituraInner() {
       merged.contratos,
       merged.licitacoes,
       gtResumo?.fornecedoresRows,
-      { dadosAtualizadosEm: gtResumo?.dadosAtualizadosEm },
+      {
+        dadosAtualizadosEm: gtResumo?.dadosAtualizadosEm,
+        pagamentosSaae: gtResumo?.pagamentosSaae,
+        totalPagamentosSaae: gtResumo?.totalPagamentosSaae,
+        quantidadePagamentosSaae: gtResumo?.quantidadePagamentosSaae,
+        saaeOrgaoNome: gtResumo?.saaeOrgaoNome,
+      },
     );
 
     const fonteParts = [

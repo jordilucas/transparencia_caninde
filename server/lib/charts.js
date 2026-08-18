@@ -49,6 +49,14 @@ function buildPrefeituraCharts(data) {
       valores: [data.secretarias.length],
     });
   }
+  const rubricas = data.resumoFinanceiro?.receitasPorRubrica || [];
+  if (rubricas.length) {
+    series.push({
+      titulo: 'Receitas por rubrica (top)',
+      labels: rubricas.map((r) => r.nome),
+      valores: rubricas.map((r) => Math.round(Number(r.valorNumerico ?? 0) / 1000) || 0),
+    });
+  }
   return { prefeitura: series, camara: [] };
 }
 

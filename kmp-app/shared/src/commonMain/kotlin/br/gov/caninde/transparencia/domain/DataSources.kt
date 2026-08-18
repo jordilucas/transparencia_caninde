@@ -261,6 +261,15 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Finanças e SAAE ampliados",
+            data = "18/08/2026",
+            itens = listOf(
+                "Convênios e data da última remessa na aba Finanças",
+                "Receitas agrupadas por rubrica principal com gráfico",
+                "Pagamentos do SAAE (órgão 044) na aba SAAE",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Site e privacidade de fontes",
             data = "18/08/2026",
             itens = listOf(

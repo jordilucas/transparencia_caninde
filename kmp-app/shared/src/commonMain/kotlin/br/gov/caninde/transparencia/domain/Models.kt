@@ -154,6 +154,32 @@ data class GtFornecedorResumo(
 )
 
 @Serializable
+data class GtRemessa(
+    val dataUltimaRemessa: String = "",
+    val dataPrimeiroMovimento: String = "",
+    val dataUltimoMovimento: String = "",
+    val dataConsulta: String = "",
+)
+
+@Serializable
+data class GtConvenio(
+    val numero: String = "",
+    val objeto: String = "",
+    val parceiro: String = "",
+    val valor: String = "",
+    val situacao: String = "",
+    val url: String = "",
+)
+
+@Serializable
+data class GtReceitaRubrica(
+    val nome: String = "",
+    val codigo: String = "",
+    val valorFormatado: String = "",
+    val valorNumerico: Double = 0.0,
+)
+
+@Serializable
 data class ResumoFinanceiroPortal(
     val totalContratosValor: String = "",
     val totalContratos: Int = 0,
@@ -177,6 +203,11 @@ data class ResumoFinanceiroPortal(
     val gtFonte: String = "",
     val gtDisponivel: Boolean = false,
     val linksPortal: List<LinkExterno> = emptyList(),
+    val remessa: GtRemessa? = null,
+    val ultimaRemessa: String = "",
+    val convenios: List<GtConvenio> = emptyList(),
+    val gtConveniosUrl: String = "",
+    val receitasPorRubrica: List<GtReceitaRubrica> = emptyList(),
     val aviso: String = "",
 )
 
@@ -220,22 +251,35 @@ data class SaaeLinhaFinanceira(
 )
 
 @Serializable
+data class SaaePagamento(
+    val data: String = "",
+    val credor: String = "",
+    val valor: String = "",
+    val natureza: String = "",
+    val documento: String = "",
+)
+
+@Serializable
 data class SaaeResumo(
     val exercicio: Int = 0,
     val titulo: String = "",
     val codigoOrgao: String = "",
     val folhaPagamento: String = "",
     val totalDespesasGt: String = "",
+    val totalPagamentosOrgao: String = "",
+    val quantidadePagamentosOrgao: Int = 0,
     val totalContratos: String = "",
     val quantidadeContratos: Int = 0,
     val quantidadeLicitacoes: Int = 0,
     val linhasFinanceiras: List<SaaeLinhaFinanceira> = emptyList(),
+    val pagamentos: List<SaaePagamento> = emptyList(),
     val contratos: List<Contrato> = emptyList(),
     val licitacoes: List<Licitacao> = emptyList(),
     val links: List<LinkExterno> = emptyList(),
     val fonte: String = "",
     val aviso: String = "",
     val dadosAtualizadosEm: String = "",
+    val orgaoNome: String = "",
     val disponivel: Boolean = false,
 )
 
