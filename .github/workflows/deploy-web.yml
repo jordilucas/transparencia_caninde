@@ -1,5 +1,8 @@
 # Publica o site Compose (webApp) na branch gh-pages → GitHub Pages.
 # URL: https://transparenciacaninde.com.br/
+#
+# Manutenção: existe kmp-app/webApp/.maintenance → publica página estática.
+# Remova o arquivo e faça push para voltar ao app.
 
 name: Deploy web (GitHub Pages)
 
@@ -27,36 +30,62 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Detect maintenance mode
+        id: mode
+        run: |
+          if [ -f kmp-app/webApp/.maintenance ]; then
+            echo "maintenance=true" >> "$GITHUB_OUTPUT"
+            echo "→ Modo manutenção (kmp-app/webApp/.maintenance)"
+          else
+            echo "maintenance=false" >> "$GITHUB_OUTPUT"
+            echo "→ Modo normal (app Kotlin/Wasm)"
+          fi
+
       - name: Setup Java 17
+        if: steps.mode.outputs.maintenance != 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Setup Gradle
+        if: steps.mode.outputs.maintenance != 'true'
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: wrapper
 
       - name: Build site (Kotlin/Wasm)
+        if: steps.mode.outputs.maintenance != 'true'
         working-directory: kmp-app
         run: ./gradlew :webApp:wasmJsBrowserDistribution --no-daemon
 
       - name: Prepare GitHub Pages artifact
-        working-directory: kmp-app/webApp/build/dist/wasmJs/productionExecutable
         run: |
-          cp index.html 404.html
-          touch .nojekyll
-          test -f CNAME || echo "transparenciacaninde.com.br" > CNAME
-          HASH=$(sha256sum transparencia-caninde.js | cut -c1-12)
-          sed -i "s|transparencia-caninde.js|transparencia-caninde.js?v=${HASH}|g" index.html 404.html
-          sed -i "s|sw.js|sw.js?v=${HASH}|g" index.html 404.html
+          set -euo pipefail
+          STAGING="${RUNNER_TEMP}/pages"
+          rm -rf "$STAGING"
+          mkdir -p "$STAGING"
+
+          if [ "${{ steps.mode.outputs.maintenance }}" = "true" ]; then
+            cp -r kmp-app/webApp/maintenance/* "$STAGING/"
+            cp "$STAGING/index.html" "$STAGING/404.html"
+          else
+            cp -r kmp-app/webApp/build/dist/wasmJs/productionExecutable/* "$STAGING/"
+            cp "$STAGING/index.html" "$STAGING/404.html"
+            HASH=$(sha256sum "$STAGING/transparencia-caninde.js" | cut -c1-12)
+            sed -i "s|transparencia-caninde.js|transparencia-caninde.js?v=${HASH}|g" "$STAGING/index.html" "$STAGING/404.html"
+            sed -i "s|sw.js|sw.js?v=${HASH}|g" "$STAGING/index.html" "$STAGING/404.html"
+          fi
+
+          touch "$STAGING/.nojekyll"
+          test -f "$STAGING/CNAME" || echo "transparenciacaninde.com.br" > "$STAGING/CNAME"
+          echo "PAGES_DIR=$STAGING" >> "$GITHUB_ENV"
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: kmp-app/webApp/build/dist/wasmJs/productionExecutable
+          publish_dir: ${{ env.PAGES_DIR }}
           publish_branch: gh-pages
           force_orphan: true
 
