@@ -146,6 +146,31 @@
             window.history.back();
         };
 
+        // Skiko (Compose Web) consulta WEBGL_debug_renderer_info sem checar se a extensão
+        // existe — Safari/WebKit bloqueia por privacidade e loga INVALID_ENUM no console.
+        (function patchWebGLDebugRendererInfo() {
+            var UNMASKED_VENDOR = 0x9245;
+            var UNMASKED_RENDERER = 0x9246;
+            var origGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function (type, attrs) {
+                var ctx = origGetContext.call(this, type, attrs);
+                if (!ctx || (type !== "webgl" && type !== "webgl2" && type !== "experimental-webgl")) {
+                    return ctx;
+                }
+                var origGetParameter = ctx.getParameter.bind(ctx);
+                ctx.getParameter = function (pname) {
+                    if (pname === UNMASKED_VENDOR || pname === UNMASKED_RENDERER) {
+                        var ext = ctx.getExtension("WEBGL_debug_renderer_info");
+                        if (!ext) {
+                            return origGetParameter(pname === UNMASKED_VENDOR ? ctx.VENDOR : ctx.RENDERER);
+                        }
+                    }
+                    return origGetParameter(pname);
+                };
+                return ctx;
+            };
+        })();
+
         function hideBootScreen() {
             var loading = document.getElementById("app-loading");
             if (loading) loading.style.display = "none";
