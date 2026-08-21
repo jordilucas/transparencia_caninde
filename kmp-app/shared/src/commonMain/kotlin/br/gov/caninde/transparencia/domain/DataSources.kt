@@ -261,6 +261,15 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Dados e estabilidade",
+            data = "21/08/2026",
+            itens = listOf(
+                "Correção no carregamento de contratos, licitações e secretarias no servidor",
+                "Retry automático quando o portal municipal responde com página HTML",
+                "Site web restaurado após manutenção",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Estabilidade dos dados",
             data = "18/08/2026",
             itens = listOf(

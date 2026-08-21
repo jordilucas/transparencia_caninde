@@ -2,7 +2,9 @@
 
 const BASE = 'https://www.caninde.ce.gov.br';
 const EXPORT_URL = `${BASE}/dadosabertosexportar.php`;
+const CANINDE_REFERER = `${BASE}/acessoainformacao.php`;
 const { parseBRLNumber, formatBRL } = require('./brl');
+const { sleep } = require('./scrape-guard');
 
 function resolveUrl(href) {
   if (!href || typeof href !== 'string') return '';
@@ -17,22 +19,54 @@ function isEmptyResponse(body) {
   return body.includes('Não há registros') || body.includes('<SCRIPT');
 }
 
-async function fetchDataset(http, dataset, ano) {
+function looksLikeHtml(body) {
+  const text = String(body || '').trimStart().slice(0, 32).toLowerCase();
+  return text.startsWith('<!doctype') || text.startsWith('<html') || text.startsWith('<!');
+}
+
+function buildExportRequestConfig() {
+  return {
+    responseType: 'text',
+    transformResponse: [(r) => r],
+    headers: {
+      Referer: CANINDE_REFERER,
+      Accept: 'application/json,text/plain,*/*',
+    },
+    validateStatus: (status) => status >= 200 && status < 500,
+  };
+}
+
+async function fetchDataset(http, dataset, ano, attempt = 1) {
   const params = new URLSearchParams({ d: dataset, f: 'json' });
   if (dataset !== 'secretarias') {
     params.set('a', String(ano || new Date().getFullYear()));
   }
-  const { data } = await http.get(`${EXPORT_URL}?${params.toString()}`, {
-    responseType: 'text',
-    transformResponse: [(r) => r],
-  });
-  const text = typeof data === 'string' ? data : String(data);
-  if (isEmptyResponse(text)) return [];
+  const url = `${EXPORT_URL}?${params.toString()}`;
+
   try {
+    const { data, status } = await http.get(url, buildExportRequestConfig());
+    const text = typeof data === 'string' ? data : String(data);
+
+    if (status >= 400) {
+      throw new Error(`HTTP ${status}`);
+    }
+    if (looksLikeHtml(text)) {
+      throw new Error(`resposta HTML (${text.length} bytes)`);
+    }
+    if (isEmptyResponse(text)) return [];
+
     const parsed = JSON.parse(text);
     return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+  } catch (err) {
+    if (attempt < 3) {
+      console.warn(
+        `[DadosAbertos] ${dataset} tentativa ${attempt} falhou:`,
+        err.message || err,
+      );
+      await sleep(350 * attempt);
+      return fetchDataset(http, dataset, ano, attempt + 1);
+    }
+    throw err;
   }
 }
 
@@ -156,12 +190,20 @@ async function scrapePrefeituraDadosAbertos(http, ano) {
   const obrasRows = obrasSettled.status === 'fulfilled' ? obrasSettled.value : [];
   const lrfRows = lrfSettled.status === 'fulfilled' ? lrfSettled.value : [];
 
-  if (licSettled.status === 'rejected') {
-    console.warn('[DadosAbertos] licitações indisponível:', licSettled.reason?.message || licSettled.reason);
-  }
-  if (secSettled.status === 'rejected') {
-    console.warn('[DadosAbertos] secretarias indisponível:', secSettled.reason?.message || secSettled.reason);
-  }
+  const failures = [];
+  const track = (name, settled) => {
+    if (settled.status === 'rejected') {
+      const msg = settled.reason?.message || String(settled.reason);
+      failures.push(`${name}: ${msg}`);
+      console.warn(`[DadosAbertos] ${name} indisponível:`, msg);
+    }
+  };
+  track('licitações', licSettled);
+  track('contratos', contSettled);
+  track('secretarias', secSettled);
+  track('publicações', pubSettled);
+  track('obras', obrasSettled);
+  track('LRF', lrfSettled);
 
   const licitacoes = mapLicitacoes(licRows);
   const contratos = mapContratos(contRows);
@@ -169,6 +211,11 @@ async function scrapePrefeituraDadosAbertos(http, ano) {
   const publicacoes = mapPublicacoes(pubRows);
   const obras = mapObras(obrasRows);
   const lrf = mapLrf(lrfRows);
+
+  const hasCoreData = contratos.length > 0 || licitacoes.length > 0 || secretarias.length > 0;
+  const scrapeError = !hasCoreData && failures.length > 0
+    ? `Portal municipal indisponível (${failures.slice(0, 3).join('; ')})`
+    : null;
 
   return {
     contratos,
@@ -179,6 +226,7 @@ async function scrapePrefeituraDadosAbertos(http, ano) {
     lrf,
     fonte: `${EXPORT_URL} (dados abertos JSON, exercício ${year})`,
     dataSource: 'dadosabertos',
+    scrapeError,
   };
 }
 
@@ -187,6 +235,7 @@ module.exports = {
   EXPORT_URL,
   fetchDataset,
   isEmptyResponse,
+  looksLikeHtml,
   mapContratos,
   mapLicitacoes,
   mapSecretarias,

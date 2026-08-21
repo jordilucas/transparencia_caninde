@@ -10,6 +10,7 @@ const {
   mapSecretarias,
   mapPublicacoes,
   isEmptyResponse,
+  looksLikeHtml,
 } = require('../lib/scraper-prefeitura-dadosabertos');
 
 const fixture = (name) =>
@@ -68,5 +69,10 @@ describe('isEmptyResponse', () => {
   it('detecta resposta sem registros', () => {
     assert.equal(isEmptyResponse('<SCRIPT>alert("Não há registros")'), true);
     assert.equal(isEmptyResponse('[]'), false);
+  });
+
+  it('detecta HTML disfarçado de exportação', () => {
+    assert.equal(looksLikeHtml('<!DOCTYPE html><html>'), true);
+    assert.equal(looksLikeHtml('[{"Id":1}]'), false);
   });
 });

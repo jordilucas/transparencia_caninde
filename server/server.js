@@ -32,7 +32,7 @@ const saaeScraper = require('./lib/scraper-saae');
 const camaraWp = require('./lib/scraper-camara-wp');
 const camaraPortal = require('./lib/scraper-camara-portal');
 const mergeCamara = require('./lib/merge-camara-sources');
-const { createGuardedHttp, createRefreshGuard, createScrapeLock } = require('./lib/scrape-guard');
+const { createGuardedHttp, createRefreshGuard, createScrapeLock, sleep } = require('./lib/scrape-guard');
 const { corsHeaders, handleOptionsPreflight } = require('./lib/cors');
 const { handleMediaProxy } = require('./lib/media-proxy');
 
@@ -45,17 +45,31 @@ const rateLimit = createRateLimiter({
   max: config.rateLimitMax,
 });
 
+const PORTAL_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'pt-BR,pt;q=0.9',
+};
+
 const httpClient = axios.create({
-  timeout: 15_000,
+  timeout: 25_000,
+  httpsAgent: httpAgent,
+  headers: PORTAL_HEADERS,
+});
+
+/** JSON de dados abertos — fila própria para não competir com HTML/GT na mesma fila serial. */
+const jsonHttpClient = axios.create({
+  timeout: 25_000,
   httpsAgent: httpAgent,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'pt-BR,pt;q=0.9',
-  }
+    ...PORTAL_HEADERS,
+    Accept: 'application/json,text/plain,*/*',
+    Referer: 'https://www.caninde.ce.gov.br/acessoainformacao.php',
+  },
 });
 
 const scrapeHttp = createGuardedHttp(httpClient, { minDelayMs: config.fetchMinDelayMs });
+const scrapeHttpJson = createGuardedHttp(jsonHttpClient, { minDelayMs: 80 });
 const scrapeHttpGtExt = createGuardedHttp(httpClient, { minDelayMs: 100 });
 const refreshGuard = createRefreshGuard(config.refreshCooldownMs);
 const scrapeLock = createScrapeLock();
@@ -101,7 +115,7 @@ async function scrapePrefeituraInner() {
     pendingPrefeituraExercicio = null;
 
     const [jsonResult, htmlResult, folhaResult, gtResult] = await Promise.allSettled([
-      dadosAbertos.scrapePrefeituraDadosAbertos(scrapeHttp, year),
+      dadosAbertos.scrapePrefeituraDadosAbertos(scrapeHttpJson, year),
       scraperPrefeitura.scrapePrefeituraHtml(scrapeHttp, cheerio),
       scrapeFolha.scrapeFolhaPagamento(scrapeHttp, cheerio, year),
       scrapeGt.scrapeGtResumo(scrapeHttp, year, scrapeHttpGtExt),
@@ -171,6 +185,12 @@ async function scrapePrefeituraInner() {
     const obras = (merged.obras || jsonBundle?.obras || []).slice(0, 30);
     const lrf = (merged.lrf || jsonBundle?.lrf || []).slice(0, 30);
 
+    const jsonScrapeError = jsonBundle?.scrapeError || null;
+    const htmlScrapeError = htmlResult.status === 'rejected'
+      ? (htmlResult.reason?.message || String(htmlResult.reason))
+      : null;
+    const upstreamScrapeError = [jsonScrapeError, htmlScrapeError].filter(Boolean).join(' ') || null;
+
     const result = {
       ...scrapeResult.buildPrefeituraPayload({
         contratos,
@@ -189,6 +209,7 @@ async function scrapePrefeituraInner() {
         fonte: fonteParts.join(' + ') || 'https://www.caninde.ce.gov.br/acessoainformacao.php',
         fontesUtilizadas: merged.fontesUtilizadas,
         exercicio: year,
+        scrapeError: upstreamScrapeError,
       }),
       scrapedAt: now(),
     };
@@ -324,6 +345,19 @@ const httpServer = http.createServer(async (req, res) => {
       service: 'transparencia-caninde-ws',
       wsClients: wss.clients.size,
       lastUpdated: cache.lastUpdated,
+      cache: {
+        prefeitura: {
+          contratos: cache.prefeitura?.contratos?.length ?? 0,
+          licitacoes: cache.prefeitura?.licitacoes?.length ?? 0,
+          secretarias: cache.prefeitura?.secretarias?.length ?? 0,
+          error: cache.prefeitura?.error || null,
+        },
+        camara: {
+          parlamentares: cache.camara?.parlamentares?.length ?? 0,
+          sessoes: cache.camara?.sessoes?.length ?? 0,
+          error: cache.camara?.error || null,
+        },
+      },
     }));
     return;
   }
@@ -436,15 +470,36 @@ wss.on('connection', (ws, req) => {
 // ─── ciclos periódicos de scraping ───────────────────────────────────────────
 async function initAndSchedule() {
   console.log('[Init] fazendo scraping inicial...');
-  try {
-    cache.prefeitura = await scrapePrefeitura();
-  } catch (err) {
-    console.error('[Init] prefeitura falhou:', err.message);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const pref = await scrapePrefeitura();
+      const hasPrefData = (pref?.contratos?.length ?? 0) > 0
+        || (pref?.secretarias?.length ?? 0) > 0
+        || (pref?.licitacoes?.length ?? 0) > 0;
+      cache.prefeitura = pref;
+      if (hasPrefData || attempt === 2) break;
+      console.warn(`[Init] prefeitura sem dados (tentativa ${attempt}/2), repetindo em 5s...`);
+      await sleep(5000);
+    } catch (err) {
+      console.error('[Init] prefeitura falhou:', err.message);
+      if (attempt === 2) break;
+      await sleep(5000);
+    }
   }
-  try {
-    cache.camara = await scrapeCamara();
-  } catch (err) {
-    console.error('[Init] câmara falhou:', err.message);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const cam = await scrapeCamara();
+      const hasCamData = (cam?.parlamentares?.length ?? 0) > 0
+        || (cam?.sessoes?.length ?? 0) > 0;
+      cache.camara = cam;
+      if (hasCamData || attempt === 2) break;
+      console.warn(`[Init] câmara sem dados (tentativa ${attempt}/2), repetindo em 5s...`);
+      await sleep(5000);
+    } catch (err) {
+      console.error('[Init] câmara falhou:', err.message);
+      if (attempt === 2) break;
+      await sleep(5000);
+    }
   }
   console.log('[Init] scraping inicial concluído.');
 

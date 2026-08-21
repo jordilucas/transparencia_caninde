@@ -23,6 +23,7 @@ async function fetchAllPages(http, path, params = {}, pageDelayMs = 0) {
   for (;;) {
     const { data, headers } = await http.get(`${WP_API}/${path}`, {
       params: { ...params, per_page: perPage, page },
+      headers: { Referer: `${BASE}/caninde-transparente/` },
       validateStatus: (s) => s === 200 || s === 400,
     });
     if (!Array.isArray(data) || data.length === 0) break;
