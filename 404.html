@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta name="description" content="Portal de transparência pública — Prefeitura e Câmara Municipal de Canindé, CE.">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
+    <link rel="canonical" href="https://transparenciacaninde.com.br/">
+    <meta name="theme-color" content="#0d2137">
+    <link rel="manifest" href="manifest.webmanifest">
+    <title>Transparência Canindé</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <script>
+        (function () {
+            var path = window.location.pathname || "/";
+            if (path.indexOf("/transparencia_caninde") === 0) {
+                var tag = document.createElement("base");
+                tag.href = "/transparencia_caninde/";
+                document.head.appendChild(tag);
+            }
+        })();
+        window.transparenciaDownloadText = function (fileName, content, mimeType) {
+            var blob = new Blob([content], { type: mimeType || "text/csv;charset=utf-8" });
+            var url = URL.createObjectURL(blob);
+            var anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = fileName || "download.csv";
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            URL.revokeObjectURL(url);
+        };
+
+        var ANALYTICS_CONSENT_KEY = "tc_analytics_consent";
+
+        function hasAnalyticsConsent() {
+            try { return localStorage.getItem(ANALYTICS_CONSENT_KEY) === "1"; } catch (e) { return false; }
+        }
+
+        function enableAnalytics() {
+            if (window.__tcAnalyticsLoaded) return;
+            window.__tcAnalyticsLoaded = true;
+            var script = document.createElement("script");
+            script.async = true;
+            script.src = "https://www.googletagmanager.com/gtag/js?id=G-JRKC3S7WK7";
+            document.head.appendChild(script);
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            window.gtag = gtag;
+            gtag("js", new Date());
+            gtag("config", "G-JRKC3S7WK7", { send_page_view: false, anonymize_ip: true });
+        }
+
+        window.transparenciaAcceptAnalytics = function () {
+            try { localStorage.setItem(ANALYTICS_CONSENT_KEY, "1"); } catch (e) { /* ignore */ }
+            var banner = document.getElementById("consent-banner");
+            if (banner) banner.style.display = "none";
+            enableAnalytics();
+        };
+
+        window.transparenciaDeclineAnalytics = function () {
+            try { localStorage.setItem(ANALYTICS_CONSENT_KEY, "0"); } catch (e) { /* ignore */ }
+            var banner = document.getElementById("consent-banner");
+            if (banner) banner.style.display = "none";
+        };
+
+        window.transparenciaShareContent = function (title, text) {
+            if (navigator.share) {
+                navigator.share({ title: title, text: text }).catch(function () {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text);
+                    } else {
+                        alert(title + "\n\n" + text);
+                    }
+                });
+            } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function () {
+                    alert(title + "\n\n" + text);
+                });
+            } else {
+                alert(title + "\n\n" + text);
+            }
+        };
+        var appBootComplete = false;
+        var TC_BUILD_ID = "c9029a575d44";
+
+        function clearSiteCachesAndReload() {
+            var finished = false;
+            function finish() {
+                if (finished) return;
+                finished = true;
+                window.location.reload();
+            }
+            setTimeout(finish, 5000);
+            try {
+                if (TC_BUILD_ID && TC_BUILD_ID.indexOf("__TC") !== 0) {
+                    localStorage.setItem("tc_web_build", TC_BUILD_ID);
+                }
+            } catch (e) { /* ignore */ }
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function (regs) {
+                    return Promise.all(regs.map(function (r) { return r.unregister(); }));
+                }).then(function () {
+                    if (typeof caches === "undefined") return finish();
+                    return caches.keys().then(function (keys) {
+                        return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                    }).then(finish);
+                }).catch(finish);
+            } else {
+                finish();
+            }
+        }
+
+        function ensureFreshBuild(onReady) {
+            if (!TC_BUILD_ID || TC_BUILD_ID.indexOf("__TC") === 0) {
+                onReady();
+                return;
+            }
+            var prev = null;
+            try { prev = localStorage.getItem("tc_web_build"); } catch (e) { /* ignore */ }
+            if (prev && prev !== TC_BUILD_ID) {
+                clearSiteCachesAndReload();
+                return;
+            }
+            try { localStorage.setItem("tc_web_build", TC_BUILD_ID); } catch (e) { /* ignore */ }
+            onReady();
+        }
+
+        function recoverFromStaleCache() {
+            if (window.__tcCacheRecoveryAttempted) return false;
+            window.__tcCacheRecoveryAttempted = true;
+            clearSiteCachesAndReload();
+            return true;
+        }
+
+        window.transparenciaHideLoading = function () {
+            appBootComplete = true;
+            var el = document.getElementById("app-loading");
+            if (el) el.style.display = "none";
+            var err = document.getElementById("app-boot-error");
+            if (err) err.style.display = "none";
+        };
+        window.transparenciaLogScreen = function (screenName) {
+            if (!hasAnalyticsConsent()) return;
+            if (typeof gtag === "function" && screenName) {
+                gtag("event", "screen_view", {
+                    screen_name: screenName,
+                    firebase_screen: screenName,
+                });
+            }
+        };
+        window.transparenciaLogEvent = function (name, paramsJson) {
+            if (!hasAnalyticsConsent()) return;
+            if (typeof gtag !== "function" || !name) return;
+            var params = {};
+            try {
+                if (paramsJson) params = JSON.parse(paramsJson);
+            } catch (e) { /* ignore */ }
+            gtag("event", name, params);
+        };
+        window.transparenciaCacheSave = function (key, value) {
+            try { localStorage.setItem("tc_" + key, value); } catch (e) { /* ignore */ }
+        };
+        window.transparenciaCacheLoad = function (key) {
+            try { return localStorage.getItem("tc_" + key); } catch (e) { return null; }
+        };
+        window.transparenciaEncodeUri = function (value) {
+            return encodeURIComponent(value || "");
+        };
+        window.transparenciaDecodeUri = function (value) {
+            try { return decodeURIComponent(value || ""); } catch (e) { return value || ""; }
+        };
+        window.transparenciaCurrentAppPath = function () {
+            var hash = window.location.hash || "";
+            if (hash.charAt(0) === "#") hash = hash.substring(1);
+            if (hash && hash !== "/") {
+                return hash.charAt(0) === "/" ? hash : ("/" + hash);
+            }
+            var path = window.location.pathname || "/";
+            if (path !== "/" && path.indexOf(".") === -1) return path;
+            return "/";
+        };
+        window.transparenciaUpdatePath = function (path, replace) {
+            var normalized = (!path || path === "/") ? "/" : path;
+            var hash = normalized === "/" ? "#/" : ("#" + normalized);
+            var url = window.location.pathname + window.location.search + hash;
+            if (replace) {
+                window.history.replaceState({ tcPath: normalized }, "", url);
+            } else {
+                window.history.pushState({ tcPath: normalized }, "", url);
+            }
+        };
+        window.transparenciaHistoryBack = function () {
+            window.history.back();
+        };
+
+        // Skiko (Compose Web) consulta WEBGL_debug_renderer_info sem checar se a extensão
+        // existe — Safari/WebKit bloqueia por privacidade e loga INVALID_ENUM no console.
+        (function patchWebGLDebugRendererInfo() {
+            var UNMASKED_VENDOR = 0x9245;
+            var UNMASKED_RENDERER = 0x9246;
+            var origGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function (type, attrs) {
+                var ctx = origGetContext.call(this, type, attrs);
+                if (!ctx || (type !== "webgl" && type !== "webgl2" && type !== "experimental-webgl")) {
+                    return ctx;
+                }
+                var origGetParameter = ctx.getParameter.bind(ctx);
+                ctx.getParameter = function (pname) {
+                    if (pname === UNMASKED_VENDOR || pname === UNMASKED_RENDERER) {
+                        var ext = ctx.getExtension("WEBGL_debug_renderer_info");
+                        if (!ext) {
+                            return origGetParameter(pname === UNMASKED_VENDOR ? ctx.VENDOR : ctx.RENDERER);
+                        }
+                    }
+                    return origGetParameter(pname);
+                };
+                return ctx;
+            };
+        })();
+
+        function hideBootScreen() {
+            var loading = document.getElementById("app-loading");
+            if (loading) loading.style.display = "none";
+        }
+
+        function showBootError(title, subtitle, showRetry) {
+            hideBootScreen();
+            var panel = document.getElementById("app-boot-error");
+            var titleEl = document.getElementById("boot-error-title");
+            var subtitleEl = document.getElementById("boot-error-subtitle");
+            var retryEl = document.getElementById("boot-error-retry");
+            if (!panel || !titleEl || !subtitleEl || !retryEl) return;
+
+            if (showRetry && location.search.indexOf("tc_refresh=") === -1) {
+                try {
+                    if (!sessionStorage.getItem("tc_refresh_attempted")) {
+                        sessionStorage.setItem("tc_refresh_attempted", "1");
+                        titleEl.textContent = "Atualizando o app";
+                        subtitleEl.textContent = "Baixando a versão mais recente…";
+                        retryEl.style.display = "none";
+                        panel.style.display = "flex";
+                        setTimeout(function () {
+                            var hash = location.hash || "#/";
+                            window.location.replace("/?tc_refresh=1" + hash);
+                        }, 800);
+                        return;
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
+            titleEl.textContent = title;
+            subtitleEl.textContent = subtitle || "";
+            retryEl.style.display = showRetry ? "inline-block" : "none";
+            panel.style.display = "flex";
+        }
+
+        function supportsKotlinWasm() {
+            if (typeof WebAssembly !== "object") return false;
+            var ua = navigator.userAgent || "";
+            var isSafari = /Safari/i.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/i.test(ua);
+            if (!isSafari) return true;
+            var iosMatch = ua.match(/OS (\d+)[_.](\d+)/i);
+            if (iosMatch) {
+                var iosMajor = parseInt(iosMatch[1], 10);
+                var iosMinor = parseInt(iosMatch[2], 10);
+                return iosMajor > 18 || (iosMajor === 18 && iosMinor >= 2);
+            }
+            var versionMatch = ua.match(/Version\/(\d+)[.](\d+)/i);
+            if (versionMatch) {
+                var major = parseInt(versionMatch[1], 10);
+                var minor = parseInt(versionMatch[2], 10);
+                return major > 18 || (major === 18 && minor >= 2);
+            }
+            return true;
+        }
+
+        function loadAppScript() {
+            var script = document.createElement("script");
+            script.src = "transparencia-caninde.js?v=c9029a575d44";
+            script.async = true;
+            script.onerror = function () {
+                showBootError(
+                    "Não foi possível carregar o app",
+                    "Verifique sua conexão com a internet e tente novamente.",
+                    true
+                );
+            };
+            document.body.appendChild(script);
+        }
+
+        window.addEventListener("error", function (event) {
+            if (appBootComplete || !event || !event.message) return;
+            if (/wasm|WebAssembly|instantiate|404|failed/i.test(event.message)) {
+                if (recoverFromStaleCache()) return;
+                showBootError(
+                    "Seu navegador não conseguiu iniciar o app",
+                    "Atualize o Safari/Chrome ou tente em outro aparelho.",
+                    true
+                );
+            }
+        });
+
+        window.addEventListener("unhandledrejection", function (event) {
+            if (appBootComplete) return;
+            var reason = event && event.reason ? String(event.reason) : "";
+            if (/wasm|WebAssembly|instantiate|404|failed/i.test(reason)) {
+                if (recoverFromStaleCache()) return;
+                showBootError(
+                    "Erro ao iniciar o app",
+                    "O navegador pode estar desatualizado ou sem memória suficiente.",
+                    true
+                );
+            }
+        });
+
+        function startAppBoot() {
+            var loading = document.getElementById("app-loading");
+            if (loading) loading.style.display = "flex";
+
+            ensureFreshBuild(function () {
+            if (hasAnalyticsConsent()) {
+                enableAnalytics();
+            } else {
+                var banner = document.getElementById("consent-banner");
+                if (banner) banner.style.display = "flex";
+            }
+
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.register("sw.js?v=c9029a575d44").catch(function () { /* ignore */ });
+            }
+
+            loadAppScript();
+
+            setTimeout(function () {
+                var loadingEl = document.getElementById("app-loading");
+                if (loadingEl && loadingEl.style.display !== "none") {
+                    var hint = document.getElementById("loader-slow-hint");
+                    var retrySlow = document.getElementById("loader-slow-retry");
+                    if (hint) hint.style.display = "block";
+                    if (retrySlow) retrySlow.style.display = "inline-block";
+                }
+            }, 30000);
+            });
+        }
+
+        function initDisclaimerGate() {
+            var modal = document.getElementById("disclaimer-modal");
+            var checkbox = document.getElementById("disclaimer-checkbox");
+            var acceptBtn = document.getElementById("disclaimer-accept");
+            var loading = document.getElementById("app-loading");
+            if (!modal || !checkbox || !acceptBtn) {
+                startAppBoot();
+                return;
+            }
+
+            if (loading) loading.style.display = "none";
+            modal.style.display = "flex";
+            document.body.classList.add("disclaimer-open");
+            acceptBtn.disabled = true;
+
+            checkbox.addEventListener("change", function () {
+                acceptBtn.disabled = !checkbox.checked;
+            });
+
+            acceptBtn.addEventListener("click", function () {
+                if (!checkbox.checked) return;
+                modal.style.display = "none";
+                document.body.classList.remove("disclaimer-open");
+                startAppBoot();
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var retry = document.getElementById("boot-error-retry");
+            if (retry) {
+                retry.addEventListener("click", function () {
+                    try { localStorage.removeItem("tc_web_build"); } catch (e) { /* ignore */ }
+                    recoverFromStaleCache();
+                });
+            }
+
+            if (!supportsKotlinWasm()) {
+                var disclaimer = document.getElementById("disclaimer-modal");
+                if (disclaimer) disclaimer.style.display = "none";
+                document.body.classList.remove("disclaimer-open");
+                showBootError(
+                    "Navegador não suportado neste aparelho",
+                    "Use Safari 18.2+ (iOS 18.2+) ou Chrome atualizado. Também funciona no computador.",
+                    false
+                );
+                return;
+            }
+
+            initDisclaimerGate();
+        });
+    </script>
+</head>
+<body class="disclaimer-open">
+    <div id="app-loading" role="status" aria-live="polite" style="display:none">
+        <div class="loader-card">
+            <div class="loader-spinner" aria-hidden="true"></div>
+            <p class="loader-title">Transparência Canindé</p>
+            <p class="loader-subtitle">Carregando dados públicos…</p>
+            <p class="loader-hint">Prefeitura e Câmara Municipal de Canindé/CE</p>
+            <p id="loader-slow-hint" class="loader-hint" style="display:none;">
+                A primeira carga no celular pode levar até 1 minuto…
+            </p>
+            <button id="loader-slow-retry" class="loader-retry" type="button" style="display:none;" onclick="location.reload()">
+                Recarregar
+            </button>
+        </div>
+    </div>
+    <div id="app-boot-error" role="alert" aria-live="assertive">
+        <div class="loader-card">
+            <p id="boot-error-title" class="loader-title">Erro</p>
+            <p id="boot-error-subtitle" class="loader-subtitle"></p>
+            <button id="boot-error-retry" class="loader-retry" type="button">Tentar novamente</button>
+        </div>
+    </div>
+    <div id="disclaimer-modal" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title" aria-describedby="disclaimer-body-text">
+        <div class="disclaimer-card">
+            <div class="disclaimer-header">
+                <p class="disclaimer-badge">Aviso importante</p>
+                <h1 id="disclaimer-title" class="disclaimer-title">Transparência Canindé</h1>
+                <p class="disclaimer-subtitle">Portal independente de facilitação do acesso a dados públicos</p>
+            </div>
+            <div id="disclaimer-body-text" class="disclaimer-body">
+                <p>
+                    Este site <strong>não é oficial</strong> da Prefeitura de Canindé nem da Câmara Municipal.
+                    Trata-se de um projeto <strong>independente e voluntário</strong>, sem vínculo institucional
+                    e sem fins comerciais, criado para reunir em um só lugar informações já
+                    <strong>publicadas na internet</strong> pelos portais de transparência.
+                </p>
+                <ul>
+                    <li>Os dados vêm de fontes públicas — por exemplo, portais da Prefeitura, da Câmara,
+                        Governo Transparente, plataforma S&amp;S e páginas de acesso à informação.</li>
+                    <li>Qualquer cidadão pode consultar esses mesmos dados diretamente nos sites oficiais.</li>
+                    <li><strong>A referência correta são sempre os portais oficiais.</strong> Em caso de dúvida,
+                        divergência ou decisão importante, consulte a fonte original.</li>
+                    <li>As informações aqui podem estar <strong>desatualizadas, incompletas ou diferentes</strong>
+                        do que consta no site oficial no momento da sua consulta.</li>
+                    <li>Não há garantia de exatidão, completude ou disponibilidade contínua dos dados exibidos.</li>
+                </ul>
+                <p class="disclaimer-highlight">
+                    Ao continuar, você declara que leu e compreendeu que este portal apenas organiza dados
+                    públicos de transparência e <strong>não substitui</strong> a consulta nos canais oficiais.
+                </p>
+            </div>
+            <div class="disclaimer-footer">
+                <label class="disclaimer-check" for="disclaimer-checkbox">
+                    <input type="checkbox" id="disclaimer-checkbox" name="disclaimer-read">
+                    <span>Li e compreendi que este site é independente, usa dados públicos da internet e que
+                        somente os portais oficiais fazem autoridade sobre as informações.</span>
+                </label>
+                <button type="button" id="disclaimer-accept" class="disclaimer-accept" disabled>
+                    OK — continuar para o portal
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="consent-banner" role="dialog" aria-live="polite" aria-label="Consentimento de cookies">
+        <div class="consent-card">
+            <p class="consent-title">Privacidade</p>
+            <p class="consent-text">
+                Usamos cookies de analytics (Google Analytics, IP anonimizado) para entender o uso do portal e melhorar o serviço.
+                Você pode aceitar ou continuar sem estatísticas. Dados públicos exibidos seguem as fontes oficiais.
+            </p>
+            <div class="consent-actions">
+                <button type="button" class="consent-decline" onclick="transparenciaDeclineAnalytics()">Recusar</button>
+                <button type="button" class="consent-accept" onclick="transparenciaAcceptAnalytics()">Aceitar</button>
+            </div>
+        </div>
+    </div>
+    <div id="ComposeTarget"></div>
+</body>
+</html>
