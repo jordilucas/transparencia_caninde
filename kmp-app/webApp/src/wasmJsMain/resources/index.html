@@ -321,23 +321,9 @@
             }
         });
 
-        document.addEventListener("DOMContentLoaded", function () {
-            var retry = document.getElementById("boot-error-retry");
-            if (retry) {
-                retry.addEventListener("click", function () {
-                    try { localStorage.removeItem("tc_web_build"); } catch (e) { /* ignore */ }
-                    recoverFromStaleCache();
-                });
-            }
-
-            if (!supportsKotlinWasm()) {
-                showBootError(
-                    "Navegador não suportado neste aparelho",
-                    "Use Safari 18.2+ (iOS 18.2+) ou Chrome atualizado. Também funciona no computador.",
-                    false
-                );
-                return;
-            }
+        function startAppBoot() {
+            var loading = document.getElementById("app-loading");
+            if (loading) loading.style.display = "flex";
 
             ensureFreshBuild(function () {
             if (hasAnalyticsConsent()) {
@@ -354,8 +340,8 @@
             loadAppScript();
 
             setTimeout(function () {
-                var loading = document.getElementById("app-loading");
-                if (loading && loading.style.display !== "none") {
+                var loadingEl = document.getElementById("app-loading");
+                if (loadingEl && loadingEl.style.display !== "none") {
                     var hint = document.getElementById("loader-slow-hint");
                     var retrySlow = document.getElementById("loader-slow-retry");
                     if (hint) hint.style.display = "block";
@@ -363,11 +349,62 @@
                 }
             }, 30000);
             });
+        }
+
+        function initDisclaimerGate() {
+            var modal = document.getElementById("disclaimer-modal");
+            var checkbox = document.getElementById("disclaimer-checkbox");
+            var acceptBtn = document.getElementById("disclaimer-accept");
+            var loading = document.getElementById("app-loading");
+            if (!modal || !checkbox || !acceptBtn) {
+                startAppBoot();
+                return;
+            }
+
+            if (loading) loading.style.display = "none";
+            modal.style.display = "flex";
+            document.body.classList.add("disclaimer-open");
+            acceptBtn.disabled = true;
+
+            checkbox.addEventListener("change", function () {
+                acceptBtn.disabled = !checkbox.checked;
+            });
+
+            acceptBtn.addEventListener("click", function () {
+                if (!checkbox.checked) return;
+                modal.style.display = "none";
+                document.body.classList.remove("disclaimer-open");
+                startAppBoot();
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var retry = document.getElementById("boot-error-retry");
+            if (retry) {
+                retry.addEventListener("click", function () {
+                    try { localStorage.removeItem("tc_web_build"); } catch (e) { /* ignore */ }
+                    recoverFromStaleCache();
+                });
+            }
+
+            if (!supportsKotlinWasm()) {
+                var disclaimer = document.getElementById("disclaimer-modal");
+                if (disclaimer) disclaimer.style.display = "none";
+                document.body.classList.remove("disclaimer-open");
+                showBootError(
+                    "Navegador não suportado neste aparelho",
+                    "Use Safari 18.2+ (iOS 18.2+) ou Chrome atualizado. Também funciona no computador.",
+                    false
+                );
+                return;
+            }
+
+            initDisclaimerGate();
         });
     </script>
 </head>
-<body>
-    <div id="app-loading" role="status" aria-live="polite">
+<body class="disclaimer-open">
+    <div id="app-loading" role="status" aria-live="polite" style="display:none">
         <div class="loader-card">
             <div class="loader-spinner" aria-hidden="true"></div>
             <p class="loader-title">Transparência Canindé</p>
@@ -386,6 +423,47 @@
             <p id="boot-error-title" class="loader-title">Erro</p>
             <p id="boot-error-subtitle" class="loader-subtitle"></p>
             <button id="boot-error-retry" class="loader-retry" type="button">Tentar novamente</button>
+        </div>
+    </div>
+    <div id="disclaimer-modal" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title" aria-describedby="disclaimer-body-text">
+        <div class="disclaimer-card">
+            <div class="disclaimer-header">
+                <p class="disclaimer-badge">Aviso importante</p>
+                <h1 id="disclaimer-title" class="disclaimer-title">Transparência Canindé</h1>
+                <p class="disclaimer-subtitle">Portal independente de facilitação do acesso a dados públicos</p>
+            </div>
+            <div id="disclaimer-body-text" class="disclaimer-body">
+                <p>
+                    Este site <strong>não é oficial</strong> da Prefeitura de Canindé nem da Câmara Municipal.
+                    Trata-se de um projeto <strong>independente e voluntário</strong>, sem vínculo institucional
+                    e sem fins comerciais, criado para reunir em um só lugar informações já
+                    <strong>publicadas na internet</strong> pelos portais de transparência.
+                </p>
+                <ul>
+                    <li>Os dados vêm de fontes públicas — por exemplo, portais da Prefeitura, da Câmara,
+                        Governo Transparente, plataforma S&amp;S e páginas de acesso à informação.</li>
+                    <li>Qualquer cidadão pode consultar esses mesmos dados diretamente nos sites oficiais.</li>
+                    <li><strong>A referência correta são sempre os portais oficiais.</strong> Em caso de dúvida,
+                        divergência ou decisão importante, consulte a fonte original.</li>
+                    <li>As informações aqui podem estar <strong>desatualizadas, incompletas ou diferentes</strong>
+                        do que consta no site oficial no momento da sua consulta.</li>
+                    <li>Não há garantia de exatidão, completude ou disponibilidade contínua dos dados exibidos.</li>
+                </ul>
+                <p class="disclaimer-highlight">
+                    Ao continuar, você declara que leu e compreendeu que este portal apenas organiza dados
+                    públicos de transparência e <strong>não substitui</strong> a consulta nos canais oficiais.
+                </p>
+            </div>
+            <div class="disclaimer-footer">
+                <label class="disclaimer-check" for="disclaimer-checkbox">
+                    <input type="checkbox" id="disclaimer-checkbox" name="disclaimer-read">
+                    <span>Li e compreendi que este site é independente, usa dados públicos da internet e que
+                        somente os portais oficiais fazem autoridade sobre as informações.</span>
+                </label>
+                <button type="button" id="disclaimer-accept" class="disclaimer-accept" disabled>
+                    OK — continuar para o portal
+                </button>
+            </div>
         </div>
     </div>
     <div id="consent-banner" role="dialog" aria-live="polite" aria-label="Consentimento de cookies">

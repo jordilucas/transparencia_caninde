@@ -266,6 +266,15 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Aviso na abertura do site",
+            data = "21/08/2026",
+            itens = listOf(
+                "Aviso obrigatório ao entrar — explica que o portal é independente e usa dados públicos",
+                "Só é possível navegar após confirmar que leu e compreendeu o conteúdo",
+                "Deixa claro que a referência correta são sempre os sites oficiais de transparência",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Hub de transparência municipal",
             data = "21/08/2026",
             itens = listOf(
