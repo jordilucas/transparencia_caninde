@@ -116,6 +116,15 @@ fun PrefeituraScreen(
             ShimmerContent()
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
+                item {
+                    SstTransparenciaPromoCard(
+                        competenciaReferencia = state.folhaPagamento?.referenciaCompetencia?.takeIf { it.isNotBlank() }
+                            ?: state.folhaPagamento?.competenciaSst?.takeIf { it.isNotBlank() }
+                            ?: "",
+                        portalUrl = state.folhaPagamento?.fonteSstUrl?.takeIf { it.isNotBlank() }
+                            ?: SST_TRANSPARENCIA_PORTAL_URL,
+                    )
+                }
                 item { AguaPromoCard(onClick = onAguaClick) }
                 item {
                     ExercicioSelector(
@@ -1059,6 +1068,55 @@ fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
 }
 
 // ─── Estados auxiliares ───────────────────────────────────────────────────────
+
+@Composable
+fun SstTransparenciaPromoCard(
+    competenciaReferencia: String = "",
+    portalUrl: String = SST_TRANSPARENCIA_PORTAL_URL,
+) {
+    Card(
+        onClick = { openExternalUrl(portalUrl) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.Purple100),
+    ) {
+        Row(
+            Modifier.padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconContainer(AppColors.Purple700.copy(alpha = 0.12f)) {
+                Icon(Icons.Default.AccountBalance, null, tint = AppColors.Purple700, modifier = Modifier.size(22.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "Portal oficial S&S — transparência orçamentária",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.Navy800,
+                )
+                Text(
+                    "Plataforma da Prefeitura de Canindé com receitas, despesas, folha de pessoal " +
+                        "(por secretaria, vínculo e função), contratos, licitações e convênios.",
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    color = AppColors.TextSecondary,
+                )
+                if (competenciaReferencia.isNotBlank()) {
+                    Text(
+                        "Pessoal atualizado · competência $competenciaReferencia",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = AppColors.Purple700,
+                    )
+                }
+            }
+            Icon(Icons.AutoMirrored.Filled.OpenInNew, null, tint = AppColors.Purple700, modifier = Modifier.size(18.dp))
+        }
+    }
+}
 
 @Composable
 fun AguaPromoCard(onClick: () -> Unit) {

@@ -83,6 +83,11 @@ object DataSourcesInfo {
 
     val prefeituraHtml: List<FonteCaptura> = listOf(
         FonteCaptura(
+            titulo = "Portal S&S — transparência orçamentária",
+            url = SST_TRANSPARENCIA_PORTAL_URL,
+            descricao = "Receitas, despesas, folha de pessoal, contratos, licitações e convênios (plataforma oficial S&S).",
+        ),
+        FonteCaptura(
             titulo = "Acesso à Informação",
             url = "$PREFEITURA_PORTAL_BASE/acessoainformacao.php",
             descricao = "Portal principal de transparência da Prefeitura.",
@@ -264,6 +269,7 @@ object DataSourcesInfo {
             titulo = "Folha e carregamento web",
             data = "21/08/2026",
             itens = listOf(
+                "Destaque na página inicial para o portal oficial S&S de transparência orçamentária",
                 "Folha prioriza sempre a competência mais recente (ex.: 01/2026 via quadro S&S)",
                 "Correção da aba Folha em branco no site (layout no navegador)",
                 "Correção ao abrir a Folha — tela de erro falsa por cache antigo do app",
