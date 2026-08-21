@@ -76,6 +76,7 @@ jobs:
             sed -i "s|transparencia-caninde.js|transparencia-caninde.js?v=${HASH}|g" "$STAGING/index.html" "$STAGING/404.html"
             sed -i "s|sw.js|sw.js?v=${HASH}|g" "$STAGING/index.html" "$STAGING/404.html"
             sed -i "s|transparencia-caninde-v1|transparencia-caninde-${HASH}|g" "$STAGING/sw.js"
+            sed -i "s|__TC_BUILD_ID__|${HASH}|g" "$STAGING/index.html" "$STAGING/404.html"
           fi
 
           touch "$STAGING/.nojekyll"

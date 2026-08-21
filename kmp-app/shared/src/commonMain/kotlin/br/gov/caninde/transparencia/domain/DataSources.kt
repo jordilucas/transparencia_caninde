@@ -265,7 +265,7 @@ object DataSourcesInfo {
             data = "21/08/2026",
             itens = listOf(
                 "Correção ao abrir a aba Folha — o app carregava, mas uma tela de erro ficava por cima",
-                "Site atualiza sozinho após novo deploy, sem limpar cache manualmente",
+                "Atualização automática do app após deploy, sem limpar cache manualmente",
                 "Abas da Folha com rolagem no celular",
             ),
         ),

@@ -89,6 +89,56 @@
             }
         };
         var appBootComplete = false;
+        var TC_BUILD_ID = "__TC_BUILD_ID__";
+
+        function clearSiteCachesAndReload() {
+            var finished = false;
+            function finish() {
+                if (finished) return;
+                finished = true;
+                window.location.reload();
+            }
+            setTimeout(finish, 5000);
+            try {
+                if (TC_BUILD_ID && TC_BUILD_ID.indexOf("__TC") !== 0) {
+                    localStorage.setItem("tc_web_build", TC_BUILD_ID);
+                }
+            } catch (e) { /* ignore */ }
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function (regs) {
+                    return Promise.all(regs.map(function (r) { return r.unregister(); }));
+                }).then(function () {
+                    if (typeof caches === "undefined") return finish();
+                    return caches.keys().then(function (keys) {
+                        return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                    }).then(finish);
+                }).catch(finish);
+            } else {
+                finish();
+            }
+        }
+
+        function ensureFreshBuild(onReady) {
+            if (!TC_BUILD_ID || TC_BUILD_ID.indexOf("__TC") === 0) {
+                onReady();
+                return;
+            }
+            var prev = null;
+            try { prev = localStorage.getItem("tc_web_build"); } catch (e) { /* ignore */ }
+            if (prev && prev !== TC_BUILD_ID) {
+                clearSiteCachesAndReload();
+                return;
+            }
+            try { localStorage.setItem("tc_web_build", TC_BUILD_ID); } catch (e) { /* ignore */ }
+            onReady();
+        }
+
+        function recoverFromStaleCache() {
+            if (window.__tcCacheRecoveryAttempted) return false;
+            window.__tcCacheRecoveryAttempted = true;
+            clearSiteCachesAndReload();
+            return true;
+        }
 
         window.transparenciaHideLoading = function () {
             appBootComplete = true;
@@ -188,6 +238,24 @@
             var subtitleEl = document.getElementById("boot-error-subtitle");
             var retryEl = document.getElementById("boot-error-retry");
             if (!panel || !titleEl || !subtitleEl || !retryEl) return;
+
+            if (showRetry && location.search.indexOf("tc_refresh=") === -1) {
+                try {
+                    if (!sessionStorage.getItem("tc_refresh_attempted")) {
+                        sessionStorage.setItem("tc_refresh_attempted", "1");
+                        titleEl.textContent = "Atualizando o app";
+                        subtitleEl.textContent = "Baixando a versão mais recente…";
+                        retryEl.style.display = "none";
+                        panel.style.display = "flex";
+                        setTimeout(function () {
+                            var hash = location.hash || "#/";
+                            window.location.replace("/?tc_refresh=1" + hash);
+                        }, 800);
+                        return;
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
             titleEl.textContent = title;
             subtitleEl.textContent = subtitle || "";
             retryEl.style.display = showRetry ? "inline-block" : "none";
@@ -230,7 +298,8 @@
 
         window.addEventListener("error", function (event) {
             if (appBootComplete || !event || !event.message) return;
-            if (/wasm|WebAssembly|instantiate/i.test(event.message)) {
+            if (/wasm|WebAssembly|instantiate|404|failed/i.test(event.message)) {
+                if (recoverFromStaleCache()) return;
                 showBootError(
                     "Seu navegador não conseguiu iniciar o app",
                     "Atualize o Safari/Chrome ou tente em outro aparelho.",
@@ -242,7 +311,8 @@
         window.addEventListener("unhandledrejection", function (event) {
             if (appBootComplete) return;
             var reason = event && event.reason ? String(event.reason) : "";
-            if (/wasm|WebAssembly|instantiate/i.test(reason)) {
+            if (/wasm|WebAssembly|instantiate|404|failed/i.test(reason)) {
+                if (recoverFromStaleCache()) return;
                 showBootError(
                     "Erro ao iniciar o app",
                     "O navegador pode estar desatualizado ou sem memória suficiente.",
@@ -255,7 +325,8 @@
             var retry = document.getElementById("boot-error-retry");
             if (retry) {
                 retry.addEventListener("click", function () {
-                    window.location.reload();
+                    try { localStorage.removeItem("tc_web_build"); } catch (e) { /* ignore */ }
+                    recoverFromStaleCache();
                 });
             }
 
@@ -268,6 +339,7 @@
                 return;
             }
 
+            ensureFreshBuild(function () {
             if (hasAnalyticsConsent()) {
                 enableAnalytics();
             } else {
@@ -290,6 +362,7 @@
                     if (retrySlow) retrySlow.style.display = "inline-block";
                 }
             }, 30000);
+            });
         });
     </script>
 </head>
