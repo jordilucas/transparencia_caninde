@@ -11,6 +11,8 @@ const ALLOWED_HOSTS = new Set([
   'cmcaninde.ce.gov.br',
   'www.governotransparente.com.br',
   'governotransparente.com.br',
+  'www.sstransparenciamunicipal.net',
+  'sstransparenciamunicipal.net',
 ]);
 
 function isAllowedOutboundUrl(url) {

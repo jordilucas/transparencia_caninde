@@ -30,8 +30,14 @@ fun FolhaPagamentoScreen(
     val folha = prefeituraState.folhaPagamento
     val exercicio = folha?.exercicio?.takeIf { it > 0 } ?: prefeituraState.resumo.exercicio
     var tab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Por secretaria", "Por mês")
+    val tabs = buildList {
+        add("Por secretaria")
+        if (!folha?.porNatureza.isNullOrEmpty()) add("Por vínculo")
+        if (!folha?.porFuncao.isNullOrEmpty()) add("Por função")
+        add("Por mês")
+    }
     val fontePorSetorLabel = when (folha?.fontePorSetor) {
+        "sst_quadro_pessoal" -> "Quadro S&S · ${folha.competenciaSst.ifBlank { "competência atual" }}"
         "governo_transparente", "portal_municipal" -> "Plataforma oficial"
         else -> ""
     }
@@ -107,7 +113,8 @@ fun FolhaPagamentoScreen(
                 )
             }
 
-            if (folha == null || (folha.porSetor.isEmpty() && folha.competencias.isEmpty())) {
+            if (folha == null || (folha.porSetor.isEmpty() && folha.competencias.isEmpty()
+                    && folha.porNatureza.isEmpty() && folha.porFuncao.isEmpty())) {
                 item {
                     EmptyState(
                         "Dados de folha ainda não carregados. Atualize ou consulte o portal oficial.",
@@ -157,22 +164,22 @@ fun FolhaPagamentoScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     MetricCard(
-                        label = "Total pago (setores)",
+                        label = if (folha.fontePorSetor == "sst_quadro_pessoal") "Proventos (bruto)" else "Total pago (setores)",
                         value = folha.totalPagoSetores.ifBlank { "—" },
                         modifier = Modifier.weight(1f),
                     )
                     MetricCard(
-                        label = "Secretarias",
-                        value = "${folha.porSetor.size}",
+                        label = if (folha.totalServidoresSst > 0) "Servidores" else "Secretarias",
+                        value = if (folha.totalServidoresSst > 0) "${folha.totalServidoresSst}" else "${folha.porSetor.size}",
                         modifier = Modifier.weight(1f),
                     )
                 }
                 LastUpdatedText(prefeituraState.lastUpdated)
             }
 
-            when (tab) {
-                0 -> {
-                    item { SectionHeader("Pagamentos de folha por órgão (${folha.porSetor.size})") }
+            when (tabs.getOrNull(tab)) {
+                "Por secretaria" -> {
+                    item { SectionHeader("Folha por secretaria (${folha.porSetor.size})") }
                     if (folha.porSetor.isEmpty()) {
                         item { EmptyState("Nenhum pagamento de folha encontrado no exercício.") }
                     } else {
@@ -187,7 +194,31 @@ fun FolhaPagamentoScreen(
                         }
                     }
                 }
-                1 -> {
+                "Por vínculo" -> {
+                    item { SectionHeader("Folha por vínculo (${folha.porNatureza.size})") }
+                    val maxValor = folha.porNatureza.maxOfOrNull { it.brutoNumerico }?.coerceAtLeast(1.0) ?: 1.0
+                    items(folha.porNatureza, key = { it.nome }) { item ->
+                        FolhaPessoalAgregadoRow(item, maxValor, iconTint = AppColors.Purple700, iconBg = AppColors.Purple100)
+                        HorizontalDivider(
+                            color = AppColors.Divider,
+                            thickness = 0.5.dp,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+                }
+                "Por função" -> {
+                    item { SectionHeader("Folha por função (${folha.porFuncao.size})") }
+                    val maxValor = folha.porFuncao.maxOfOrNull { it.brutoNumerico }?.coerceAtLeast(1.0) ?: 1.0
+                    items(folha.porFuncao, key = { it.nome + it.lei }) { item ->
+                        FolhaPessoalAgregadoRow(item, maxValor, iconTint = AppColors.Green700, iconBg = AppColors.Green100)
+                        HorizontalDivider(
+                            color = AppColors.Divider,
+                            thickness = 0.5.dp,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+                }
+                "Por mês" -> {
                     item { SectionHeader("Totais mensais (${folha.competencias.size})") }
                     if (folha.competencias.isEmpty()) {
                         item {
@@ -225,7 +256,14 @@ private fun FolhaSetorRow(setor: FolhaSetorResumo, maxValor: Double) {
         title = setor.secretaria,
         subtitle = buildString {
             append(setor.totalPago)
-            if (setor.quantidadePagamentos > 0) append(" · ${setor.quantidadePagamentos} pagamento(s)")
+            if (setor.quantidadePagamentos > 0) {
+                append(" · ")
+                append(if (setor.codigoOrgao.isBlank() && setor.quantidadePagamentos > 1) {
+                    "${setor.quantidadePagamentos} servidores"
+                } else {
+                    "${setor.quantidadePagamentos} pagamento(s)"
+                })
+            }
         },
         trailing = {},
     )
@@ -233,6 +271,38 @@ private fun FolhaSetorRow(setor: FolhaSetorResumo, maxValor: Double) {
         label = setor.codigoOrgao.ifBlank { setor.secretaria.take(28) },
         pct = fraction,
         color = AppColors.Blue500,
+    )
+    Spacer(Modifier.height(4.dp))
+}
+
+@Composable
+private fun FolhaPessoalAgregadoRow(
+    item: FolhaPessoalAgregado,
+    maxValor: Double,
+    iconTint: androidx.compose.ui.graphics.Color,
+    iconBg: androidx.compose.ui.graphics.Color,
+) {
+    val fraction = (item.brutoNumerico / maxValor).toFloat().coerceIn(0f, 1f)
+    ListRow(
+        icon = {
+            IconContainer(iconBg) {
+                Icon(Icons.Default.Groups, null, tint = iconTint, modifier = Modifier.size(18.dp))
+            }
+        },
+        title = item.nome,
+        subtitle = buildString {
+            append(item.bruto)
+            append(" bruto")
+            if (item.liquido.isNotBlank()) append(" · ${item.liquido} líquido")
+            if (item.servidores > 0) append(" · ${item.servidores} servidores")
+            if (item.lei.isNotBlank()) append(" · ${item.lei}")
+        },
+        trailing = {},
+    )
+    ProgressRow(
+        label = item.nome.take(28),
+        pct = fraction,
+        color = iconTint,
     )
     Spacer(Modifier.height(4.dp))
 }
@@ -288,6 +358,13 @@ private fun FolhaPortalLinks(folha: FolhaPagamentoResumo?) {
                 Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Consulta oficial agregada", fontSize = 12.sp)
+            }
+        }
+        folha?.fonteSstUrl?.takeIf { it.isNotBlank() }?.let { sstUrl ->
+            OutlinedButton(onClick = { openExternalUrl(sstUrl) }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Quadro de pessoal (S&S)", fontSize = 12.sp)
             }
         }
     }

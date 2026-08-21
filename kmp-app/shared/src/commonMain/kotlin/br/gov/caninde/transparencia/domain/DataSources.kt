@@ -261,6 +261,15 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Folha por secretaria, vínculo e função",
+            data = "21/08/2026",
+            itens = listOf(
+                "Dados agregados do quadro de pessoal oficial (S&S) na aba Folha",
+                "Gráficos por secretaria, tipo de vínculo e função — sem nomes individuais",
+                "Competência recente (ex.: 01/2026) mesmo quando o portal municipal atrasa",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Dados e estabilidade",
             data = "21/08/2026",
             itens = listOf(

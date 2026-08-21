@@ -230,16 +230,33 @@ data class FolhaSetorResumo(
 )
 
 @Serializable
+data class FolhaPessoalAgregado(
+    val nome: String = "",
+    val servidores: Int = 0,
+    val bruto: String = "",
+    val brutoNumerico: Double = 0.0,
+    val desconto: String = "",
+    val liquido: String = "",
+    val liquidoNumerico: Double = 0.0,
+    val lei: String = "",
+)
+
+@Serializable
 data class FolhaPagamentoResumo(
     val exercicio: Int = 0,
     val competencias: List<FolhaCompetencia> = emptyList(),
     val porSetor: List<FolhaSetorResumo> = emptyList(),
+    val porNatureza: List<FolhaPessoalAgregado> = emptyList(),
+    val porFuncao: List<FolhaPessoalAgregado> = emptyList(),
+    val competenciaSst: String = "",
+    val totalServidoresSst: Int = 0,
     val totalPagoSetores: String = "",
     val avisoPrivacidade: String = "",
     val avisoDados: String = "",
     val fontePorSetor: String = "",
     val fonteUrl: String = "",
     val fontePagamentosUrl: String = "",
+    val fonteSstUrl: String = "",
     val gtConsultaUrl: String = "",
 )
 

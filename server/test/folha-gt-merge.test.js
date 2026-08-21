@@ -24,6 +24,7 @@ describe('folha-gt-merge', () => {
       ],
       2026,
       { gtFolhaConsultaUrl: 'https://example.com/gt-folha' },
+      null,
     );
 
     assert.equal(merged.fontePorSetor, 'governo_transparente');

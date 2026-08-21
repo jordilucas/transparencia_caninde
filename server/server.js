@@ -28,6 +28,7 @@ const scrapeFolha = require('./lib/scraper-folha-pagamento');
 const scrapeGt = require('./lib/scraper-governo-transparente');
 const mergeSources = require('./lib/merge-sources');
 const mergeFolha = require('./lib/folha-gt-merge');
+const scrapeSst = require('./lib/scraper-sst-pessoal');
 const saaeScraper = require('./lib/scraper-saae');
 const camaraWp = require('./lib/scraper-camara-wp');
 const camaraPortal = require('./lib/scraper-camara-portal');
@@ -114,22 +115,25 @@ async function scrapePrefeituraInner() {
     const year = pendingPrefeituraExercicio || new Date().getFullYear();
     pendingPrefeituraExercicio = null;
 
-    const [jsonResult, htmlResult, folhaResult, gtResult] = await Promise.allSettled([
+    const [jsonResult, htmlResult, folhaResult, gtResult, sstResult] = await Promise.allSettled([
       dadosAbertos.scrapePrefeituraDadosAbertos(scrapeHttpJson, year),
       scraperPrefeitura.scrapePrefeituraHtml(scrapeHttp, cheerio),
       scrapeFolha.scrapeFolhaPagamento(scrapeHttp, cheerio, year),
       scrapeGt.scrapeGtResumo(scrapeHttp, year, scrapeHttpGtExt),
+      scrapeSst.scrapeSstPessoal(cheerio, year),
     ]);
 
     const jsonBundle = jsonResult.status === 'fulfilled' ? jsonResult.value : null;
     const htmlBundle = htmlResult.status === 'fulfilled' ? htmlResult.value : null;
     const folhaRaw = folhaResult.status === 'fulfilled' ? folhaResult.value : null;
     const gtResumo = gtResult.status === 'fulfilled' ? gtResult.value : null;
+    const sstFolha = sstResult.status === 'fulfilled' ? sstResult.value : null;
     const folhaPagamento = mergeFolha.mergeFolhaPagamento(
       folhaRaw,
       gtResumo?.folhaPorSetor,
       year,
       { gtFolhaConsultaUrl: gtResumo?.gtFolhaConsultaUrl },
+      sstFolha,
     );
 
     if (jsonResult.status === 'rejected') {
@@ -143,6 +147,14 @@ async function scrapePrefeituraInner() {
     }
     if (gtResult.status === 'rejected') {
       console.warn('[Prefeitura] Governo Transparente indisponível:', gtResult.reason?.message || gtResult.reason);
+    }
+    if (sstResult.status === 'rejected') {
+      console.warn('[Prefeitura] quadro S&S indisponível:', sstResult.reason?.message || sstResult.reason);
+    } else if (sstFolha?.disponivel) {
+      console.log(
+        `[Prefeitura] SST — ${sstFolha.porSecretaria.length} secretarias, `
+        + `${sstFolha.porNatureza.length} naturezas, competência ${sstFolha.competencia || '?'}`,
+      );
     }
 
     const merged = mergeSources.mergePrefeituraSources(jsonBundle || {}, htmlBundle || {});
@@ -220,7 +232,8 @@ async function scrapePrefeituraInner() {
     console.log(`[Prefeitura] OK — ${contratos.length} contratos, ${licitacoes.length} licitações`
       + (folhaPagamento?.porSetor?.length ? `, folha ${folhaPagamento.porSetor.length} setores` : '')
       + (saaeResumo?.disponivel ? ', SAAE OK' : '')
-      + (gtResumo?.gtDisponivel ? ', GT financeiro OK' : ''));
+      + (gtResumo?.gtDisponivel ? ', GT financeiro OK' : '')
+      + (sstFolha?.disponivel ? ', SST pessoal OK' : ''));
     if (result.error) console.warn(`[Prefeitura] aviso: ${result.error}`);
     return result;
   } catch (err) {

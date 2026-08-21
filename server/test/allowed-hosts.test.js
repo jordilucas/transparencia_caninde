@@ -12,6 +12,7 @@ describe('allowed-hosts', () => {
     assert.equal(isAllowedOutboundUrl('https://www.caninde.ce.gov.br/contratos.php?id=1'), true);
     assert.equal(isAllowedOutboundUrl('https://cmcaninde.ce.gov.br/wp-json/wp/v2/vereadores'), true);
     assert.equal(isAllowedOutboundUrl('https://www.governotransparente.com.br/id/11979490'), true);
+    assert.equal(isAllowedOutboundUrl('https://www.sstransparenciamunicipal.net/transparencia/transparenciaisapi.dll/$/?entcod=117'), true);
   });
 
   it('rejeita HTTP, hosts desconhecidos e URLs inválidas', () => {
