@@ -36,6 +36,10 @@ fun FolhaPagamentoScreen(
         if (!folha?.porFuncao.isNullOrEmpty()) add("Por função")
         add("Por mês")
     }
+    val selectedTab = tab.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
+    LaunchedEffect(tabs.size) {
+        if (tab >= tabs.size) tab = 0
+    }
     val fontePorSetorLabel = when (folha?.fontePorSetor) {
         "sst_quadro_pessoal" -> "Quadro S&S · ${folha.competenciaSst.ifBlank { "competência atual" }}"
         "governo_transparente", "portal_municipal" -> "Plataforma oficial"
@@ -80,16 +84,17 @@ fun FolhaPagamentoScreen(
                         }
                     }
                 }
-                TabRow(
-                    selectedTabIndex = tab,
+                ScrollableTabRow(
+                    selectedTabIndex = selectedTab,
                     containerColor = AppColors.Navy800,
                     contentColor = AppColors.Blue100,
+                    edgePadding = 8.dp,
                 ) {
                     tabs.forEachIndexed { index, label ->
                         Tab(
-                            selected = tab == index,
+                            selected = selectedTab == index,
                             onClick = { tab = index },
-                            text = { Text(label, fontSize = 12.sp) },
+                            text = { Text(label, fontSize = 12.sp, maxLines = 1) },
                         )
                     }
                 }
@@ -177,7 +182,7 @@ fun FolhaPagamentoScreen(
                 LastUpdatedText(prefeituraState.lastUpdated)
             }
 
-            when (tabs.getOrNull(tab)) {
+            when (tabs.getOrNull(selectedTab)) {
                 "Por secretaria" -> {
                     item { SectionHeader("Folha por secretaria (${folha.porSetor.size})") }
                     if (folha.porSetor.isEmpty()) {

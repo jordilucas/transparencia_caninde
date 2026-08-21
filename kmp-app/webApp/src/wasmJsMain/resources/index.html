@@ -88,9 +88,14 @@
                 alert(title + "\n\n" + text);
             }
         };
+        var appBootComplete = false;
+
         window.transparenciaHideLoading = function () {
+            appBootComplete = true;
             var el = document.getElementById("app-loading");
             if (el) el.style.display = "none";
+            var err = document.getElementById("app-boot-error");
+            if (err) err.style.display = "none";
         };
         window.transparenciaLogScreen = function (screenName) {
             if (!hasAnalyticsConsent()) return;
@@ -224,7 +229,7 @@
         }
 
         window.addEventListener("error", function (event) {
-            if (!event || !event.message) return;
+            if (appBootComplete || !event || !event.message) return;
             if (/wasm|WebAssembly|instantiate/i.test(event.message)) {
                 showBootError(
                     "Seu navegador não conseguiu iniciar o app",
@@ -235,6 +240,7 @@
         });
 
         window.addEventListener("unhandledrejection", function (event) {
+            if (appBootComplete) return;
             var reason = event && event.reason ? String(event.reason) : "";
             if (/wasm|WebAssembly|instantiate/i.test(reason)) {
                 showBootError(

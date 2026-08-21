@@ -75,6 +75,7 @@ jobs:
             HASH=$(sha256sum "$STAGING/transparencia-caninde.js" | cut -c1-12)
             sed -i "s|transparencia-caninde.js|transparencia-caninde.js?v=${HASH}|g" "$STAGING/index.html" "$STAGING/404.html"
             sed -i "s|sw.js|sw.js?v=${HASH}|g" "$STAGING/index.html" "$STAGING/404.html"
+            sed -i "s|transparencia-caninde-v1|transparencia-caninde-${HASH}|g" "$STAGING/sw.js"
           fi
 
           touch "$STAGING/.nojekyll"

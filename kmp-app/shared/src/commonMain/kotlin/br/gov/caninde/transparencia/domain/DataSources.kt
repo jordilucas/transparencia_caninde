@@ -261,6 +261,15 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Folha e carregamento web",
+            data = "21/08/2026",
+            itens = listOf(
+                "Correção ao abrir a aba Folha — o app carregava, mas uma tela de erro ficava por cima",
+                "Site atualiza sozinho após novo deploy, sem limpar cache manualmente",
+                "Abas da Folha com rolagem no celular",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Folha por secretaria, vínculo e função",
             data = "21/08/2026",
             itens = listOf(
