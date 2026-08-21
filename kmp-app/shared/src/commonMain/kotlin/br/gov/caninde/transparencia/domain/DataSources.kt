@@ -264,10 +264,10 @@ object DataSourcesInfo {
             titulo = "Folha e carregamento web",
             data = "21/08/2026",
             itens = listOf(
+                "Folha prioriza sempre a competência mais recente (ex.: 01/2026 via quadro S&S)",
                 "Correção da aba Folha em branco no site (layout no navegador)",
                 "Correção ao abrir a Folha — tela de erro falsa por cache antigo do app",
                 "Atualização automática do app após deploy, sem limpar cache manualmente",
-                "Abas da Folha com rolagem no celular",
             ),
         ),
         ChangelogEntry(

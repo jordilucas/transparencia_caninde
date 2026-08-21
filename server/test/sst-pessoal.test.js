@@ -75,6 +75,9 @@ describe('folha-gt-merge SST', () => {
     assert.equal(merged.porSetor[0].quantidadePagamentos, 10);
     assert.equal(merged.porNatureza.length, 1);
     assert.equal(merged.competenciaSst, '01/2026');
+    assert.equal(merged.referenciaCompetencia, '01/2026');
+    assert.equal(merged.referenciaExercicio, 2026);
+    assert.equal(merged.exercicio, 2026);
     assert.equal(merged.fonteSstUrl, 'https://example.com/sst');
   });
 

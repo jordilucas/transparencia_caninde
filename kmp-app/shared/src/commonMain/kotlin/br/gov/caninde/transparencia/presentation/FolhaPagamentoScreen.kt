@@ -28,7 +28,25 @@ fun FolhaPagamentoScreen(
     onSobreClick: () -> Unit = {},
 ) {
     val folha = prefeituraState.folhaPagamento
-    val exercicio = folha?.exercicio?.takeIf { it > 0 } ?: prefeituraState.resumo.exercicio
+    val referenciaExercicio = folha?.referenciaExercicio?.takeIf { it > 0 }
+        ?: folha?.exercicio?.takeIf { it > 0 }
+        ?: prefeituraState.resumo.exercicio
+    val exercicio = referenciaExercicio
+    val referenciaCompetencia = folha?.referenciaCompetencia?.takeIf { it.isNotBlank() }
+        ?: folha?.competenciaSst?.takeIf { it.isNotBlank() }
+        ?: ""
+    var requestedLatest by remember { mutableStateOf(false) }
+    LaunchedEffect(folha?.referenciaExercicio, prefeituraState.isLoading) {
+        if (requestedLatest || prefeituraState.isLoading) return@LaunchedEffect
+        val loaded = folha?.referenciaExercicio?.takeIf { it > 0 }
+            ?: folha?.exercicio?.takeIf { it > 0 }
+            ?: 0
+        val current = currentCalendarYear()
+        if (loaded in 1 until current) {
+            requestedLatest = true
+            onExercicioChange(current)
+        }
+    }
     var tab by remember { mutableIntStateOf(0) }
     val tabs = buildList {
         add("Por secretaria")
@@ -68,7 +86,8 @@ fun FolhaPagamentoScreen(
                         Text(
                             buildString {
                                 append("Totais por secretaria · Exercício $exercicio")
-                                if (fontePorSetorLabel.isNotBlank()) append(" · $fontePorSetorLabel")
+                                if (referenciaCompetencia.isNotBlank()) append(" · Competência $referenciaCompetencia")
+                                else if (fontePorSetorLabel.isNotBlank()) append(" · $fontePorSetorLabel")
                             },
                             fontSize = 11.sp,
                             color = AppColors.Blue300,

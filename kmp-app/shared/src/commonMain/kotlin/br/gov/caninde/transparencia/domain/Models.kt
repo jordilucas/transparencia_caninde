@@ -244,6 +244,8 @@ data class FolhaPessoalAgregado(
 @Serializable
 data class FolhaPagamentoResumo(
     val exercicio: Int = 0,
+    val referenciaExercicio: Int = 0,
+    val referenciaCompetencia: String = "",
     val competencias: List<FolhaCompetencia> = emptyList(),
     val porSetor: List<FolhaSetorResumo> = emptyList(),
     val porNatureza: List<FolhaPessoalAgregado> = emptyList(),
