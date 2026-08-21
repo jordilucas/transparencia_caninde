@@ -30,6 +30,9 @@ const mergeSources = require('./lib/merge-sources');
 const mergeFolha = require('./lib/folha-gt-merge');
 const scrapeSst = require('./lib/scraper-sst-pessoal');
 const saaeScraper = require('./lib/scraper-saae');
+const scrapeHub = require('./lib/scraper-acesso-informacao');
+const scrapePortalHtml = require('./lib/scraper-portal-html-pages');
+const mergeLinks = require('./lib/transparencia-links-merge');
 const camaraWp = require('./lib/scraper-camara-wp');
 const camaraPortal = require('./lib/scraper-camara-portal');
 const mergeCamara = require('./lib/merge-camara-sources');
@@ -115,12 +118,15 @@ async function scrapePrefeituraInner() {
     const year = pendingPrefeituraExercicio || new Date().getFullYear();
     pendingPrefeituraExercicio = null;
 
-    const [jsonResult, htmlResult, folhaResult, gtResult, sstResult] = await Promise.allSettled([
+    const [jsonResult, htmlResult, folhaResult, gtResult, sstResult, hubResult, lrfHtmlResult, instResult] = await Promise.allSettled([
       dadosAbertos.scrapePrefeituraDadosAbertos(scrapeHttpJson, year),
       scraperPrefeitura.scrapePrefeituraHtml(scrapeHttp, cheerio),
       scrapeFolha.scrapeFolhaPagamento(scrapeHttp, cheerio, year),
       scrapeGt.scrapeGtResumo(scrapeHttp, year, scrapeHttpGtExt),
       scrapeSst.scrapeSstPessoal(cheerio, year),
+      scrapeHub.fetchAcessoInformacaoHub(scrapeHttp, cheerio),
+      scrapePortalHtml.scrapeLrfPortalPages(scrapeHttp, cheerio),
+      scrapePortalHtml.scrapeInstitucionalPortalPages(scrapeHttp, cheerio),
     ]);
 
     const jsonBundle = jsonResult.status === 'fulfilled' ? jsonResult.value : null;
@@ -156,8 +162,16 @@ async function scrapePrefeituraInner() {
         + `${sstFolha.porNatureza.length} naturezas, competência ${sstFolha.competencia || '?'}`,
       );
     }
+    if (hubResult.status === 'fulfilled' && hubResult.value?.total) {
+      console.log(`[Prefeitura] hub acesso à informação — ${hubResult.value.total} links`);
+    } else if (hubResult.status === 'rejected') {
+      console.warn('[Prefeitura] hub acesso à informação indisponível:', hubResult.reason?.message || hubResult.reason);
+    }
 
-    const merged = mergeSources.mergePrefeituraSources(jsonBundle || {}, htmlBundle || {});
+    const lrfHtml = lrfHtmlResult.status === 'fulfilled' ? lrfHtmlResult.value : [];
+    const htmlBundleWithLrf = { ...(htmlBundle || {}), lrfHtml };
+
+    const merged = mergeSources.mergePrefeituraSources(jsonBundle || {}, htmlBundleWithLrf);
 
     const contratos = merged.contratos.slice(0, 30);
     const licitacoes = merged.licitacoes.slice(0, 25);
@@ -203,6 +217,15 @@ async function scrapePrefeituraInner() {
       : null;
     const upstreamScrapeError = [jsonScrapeError, htmlScrapeError].filter(Boolean).join(' ') || null;
 
+    const hubLinks = hubResult.status === 'fulfilled' ? (hubResult.value?.links || []) : [];
+    const instLinks = instResult.status === 'fulfilled' ? instResult.value : [];
+    const linksTransparencia = mergeLinks.mergeTransparenciaLinks(
+      camaraTransp.buildLinksTransparenciaPrefeitura(),
+      gtResumo?.linksPortal,
+      hubLinks,
+      instLinks,
+    );
+
     const result = {
       ...scrapeResult.buildPrefeituraPayload({
         contratos,
@@ -214,7 +237,7 @@ async function scrapePrefeituraInner() {
         obras,
         lrf,
         gestores,
-        linksTransparencia: camaraTransp.buildLinksTransparenciaPrefeitura(),
+        linksTransparencia,
         resumoFinanceiro,
         folhaPagamento,
         saaeResumo,

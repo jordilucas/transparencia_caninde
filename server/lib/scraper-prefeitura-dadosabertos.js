@@ -171,16 +171,29 @@ function mapLrf(rows) {
   })).filter((d) => d.titulo);
 }
 
+async function fetchDatasetMultiYear(http, dataset, primaryYear) {
+  const year = primaryYear || new Date().getFullYear();
+  const years = dataset === 'secretarias' ? [year] : [year, year - 1];
+  const chunks = await Promise.allSettled(
+    years.map((y) => fetchDataset(http, dataset, y)),
+  );
+  const rows = [];
+  for (const chunk of chunks) {
+    if (chunk.status === 'fulfilled') rows.push(...chunk.value);
+  }
+  return rows;
+}
+
 async function scrapePrefeituraDadosAbertos(http, ano) {
   const year = ano || new Date().getFullYear();
 
   const [licSettled, contSettled, secSettled, pubSettled, obrasSettled, lrfSettled] = await Promise.allSettled([
-    fetchDataset(http, 'licitacoes', year),
-    fetchDataset(http, 'contratos', year),
+    fetchDatasetMultiYear(http, 'licitacoes', year),
+    fetchDatasetMultiYear(http, 'contratos', year),
     fetchDataset(http, 'secretarias', year),
-    fetchDataset(http, 'publicacoes', year),
-    fetchDataset(http, 'obras', year),
-    fetchDataset(http, 'LRF', year),
+    fetchDatasetMultiYear(http, 'publicacoes', year),
+    fetchDatasetMultiYear(http, 'obras', year),
+    fetchDatasetMultiYear(http, 'LRF', year),
   ]);
 
   const licRows = licSettled.status === 'fulfilled' ? licSettled.value : [];
@@ -205,12 +218,14 @@ async function scrapePrefeituraDadosAbertos(http, ano) {
   track('obras', obrasSettled);
   track('LRF', lrfSettled);
 
-  const licitacoes = mapLicitacoes(licRows);
-  const contratos = mapContratos(contRows);
+  const { mergeEntitiesByRecency } = require('./entity-recency');
+
+  const licitacoes = mergeEntitiesByRecency([mapLicitacoes(licRows)]);
+  const contratos = mergeEntitiesByRecency([mapContratos(contRows)]);
   const secretarias = mapSecretarias(secRows);
-  const publicacoes = mapPublicacoes(pubRows);
-  const obras = mapObras(obrasRows);
-  const lrf = mapLrf(lrfRows);
+  const publicacoes = mergeEntitiesByRecency([mapPublicacoes(pubRows)]);
+  const obras = mergeEntitiesByRecency([mapObras(obrasRows)]);
+  const lrf = mergeEntitiesByRecency([mapLrf(lrfRows)]);
 
   const hasCoreData = contratos.length > 0 || licitacoes.length > 0 || secretarias.length > 0;
   const scrapeError = !hasCoreData && failures.length > 0
@@ -224,7 +239,7 @@ async function scrapePrefeituraDadosAbertos(http, ano) {
     publicacoes,
     obras,
     lrf,
-    fonte: `${EXPORT_URL} (dados abertos JSON, exercício ${year})`,
+    fonte: `${EXPORT_URL} (dados abertos JSON, exercícios ${year}/${year - 1})`,
     dataSource: 'dadosabertos',
     scrapeError,
   };
@@ -234,6 +249,7 @@ module.exports = {
   BASE,
   EXPORT_URL,
   fetchDataset,
+  fetchDatasetMultiYear,
   isEmptyResponse,
   looksLikeHtml,
   mapContratos,

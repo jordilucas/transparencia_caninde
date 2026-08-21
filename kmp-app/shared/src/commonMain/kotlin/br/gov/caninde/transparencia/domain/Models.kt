@@ -354,6 +354,7 @@ data class LinkExterno(
     val titulo: String = "",
     val url: String = "",
     val categoria: String = "",
+    val secao: String = "",
 )
 
 @Serializable

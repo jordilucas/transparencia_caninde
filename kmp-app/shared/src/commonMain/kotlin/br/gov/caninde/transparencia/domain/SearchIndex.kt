@@ -92,7 +92,10 @@ sealed class SearchHit {
 
     data class LinkPrefeituraHit(val item: LinkExterno) : SearchHit() {
         override val title get() = item.titulo
-        override val subtitle get() = item.categoria.replaceFirstChar { it.uppercase() }
+        override val subtitle get() = listOfNotNull(
+            item.secao.takeIf { it.isNotBlank() },
+            item.categoria.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() },
+        ).joinToString(" · ")
         override val section = "Transparência Prefeitura"
     }
 
@@ -154,7 +157,12 @@ object SearchIndex {
                 matchesAnySearch(q, it.nome, it.cargo)
             }.forEach { hits.add(SearchHit.GestorHit(it)) }
             prefeitura.linksTransparencia.filter {
-                matchesAnySearch(q, it.titulo, it.categoria, it.url)
+                matchesAnySearch(q, it.titulo, it.categoria, it.secao, it.url)
+            }.forEach { hits.add(SearchHit.LinkPrefeituraHit(it)) }
+            prefeitura.resumoFinanceiro?.linksPortal.orEmpty().filter { portalLink ->
+                prefeitura.linksTransparencia.none { it.url.equals(portalLink.url, ignoreCase = true) }
+            }.filter {
+                matchesAnySearch(q, it.titulo, it.categoria, it.secao, it.url)
             }.forEach { hits.add(SearchHit.LinkPrefeituraHit(it)) }
         }
         if (showCam && allow(SearchEntityFilter.Vereadores)) {

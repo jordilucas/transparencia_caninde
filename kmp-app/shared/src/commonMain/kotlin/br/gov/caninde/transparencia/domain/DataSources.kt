@@ -266,6 +266,16 @@ object DataSourcesInfo {
 
     val changelog: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            titulo = "Hub de transparência municipal",
+            data = "21/08/2026",
+            itens = listOf(
+                "Card do portal Acesso à Informação na página inicial e na aba Transparência",
+                "Dezenas de links oficiais agrupados por seção (e-SIC, ouvidoria, LRF, obras, convênios…)",
+                "Obras, LRF e publicações priorizam sempre o exercício e a data mais recentes",
+                "Busca encontra links do hub municipal e do Governo Transparente",
+            ),
+        ),
+        ChangelogEntry(
             titulo = "Folha e carregamento web",
             data = "21/08/2026",
             itens = listOf(

@@ -125,6 +125,11 @@ fun PrefeituraScreen(
                             ?: SST_TRANSPARENCIA_PORTAL_URL,
                     )
                 }
+                item {
+                    AcessoInformacaoPromoCard(
+                        totalLinks = state.linksTransparencia.size,
+                    )
+                }
                 item { AguaPromoCard(onClick = onAguaClick) }
                 item {
                     ExercicioSelector(
@@ -262,13 +267,9 @@ fun PrefeituraScreen(
                     5 -> obrasLrfItems(state.obras, state.lrf, onObraClick, onLrfClick)
                     6 -> {
                         item { TransparenciaDestaquesCard(state.linksTransparencia) }
+                        item { AcessoInformacaoPromoCard(totalLinks = state.linksTransparencia.size) }
                         item { TransparenciaLinksIntro("a Prefeitura") }
-                        transparenciaLinksItems(state.linksTransparencia, onClick = onTransparenciaLinkClick)
-                        state.resumoFinanceiro?.linksPortal?.let { portalLinks ->
-                            if (portalLinks.isNotEmpty()) {
-                                gtPortalLinksItems(portalLinks, onClick = onTransparenciaLinkClick)
-                            }
-                        }
+                        hubLinksGroupedItems(state.linksTransparencia, onClick = onTransparenciaLinkClick)
                     }
                 }
 
@@ -1068,6 +1069,55 @@ fun ResumoFinanceiroCard(resumo: ResumoFinanceiroPortal) {
 }
 
 // ─── Estados auxiliares ───────────────────────────────────────────────────────
+
+@Composable
+fun AcessoInformacaoPromoCard(
+    totalLinks: Int = 0,
+    hubUrl: String = ACESSO_INFORMACAO_HUB_URL,
+) {
+    Card(
+        onClick = { openExternalUrl(hubUrl) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.Blue100),
+    ) {
+        Row(
+            Modifier.padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconContainer(AppColors.Navy800.copy(alpha = 0.12f)) {
+                Icon(Icons.Default.MenuBook, null, tint = AppColors.Navy800, modifier = Modifier.size(22.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "Acesso à Informação — portal oficial",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.Navy800,
+                )
+                Text(
+                    "Hub municipal com e-SIC, ouvidoria, receitas, despesas, LRF, obras, convênios, " +
+                        "diárias, quadro de pessoal e demais seções de transparência.",
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    color = AppColors.TextSecondary,
+                )
+                if (totalLinks > 0) {
+                    Text(
+                        "$totalLinks links indexados · dados priorizados por data mais recente",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = AppColors.Navy800,
+                    )
+                }
+            }
+            Icon(Icons.AutoMirrored.Filled.OpenInNew, null, tint = AppColors.Navy800, modifier = Modifier.size(18.dp))
+        }
+    }
+}
 
 @Composable
 fun SstTransparenciaPromoCard(

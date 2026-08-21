@@ -1,5 +1,7 @@
 'use strict';
 
+const { mergeEntitiesByRecency } = require('./entity-recency');
+
 const { filterValidLicitacoes } = require('./licitacao-html');
 const { enrichSecretarias } = require('./secretaria-enrich');
 const { parseBRLNumber } = require('./brl');
@@ -306,8 +308,10 @@ function mergePrefeituraSources(jsonBundle, htmlBundle) {
     licitacoes: licitacoes.items,
     secretarias: secretariasEnriched,
     publicacoes: mergedPublicacoes,
-    obras: (jsonBundle?.obras || []).map((o) => ({ ...o, fonteOrigem: 'json' })),
-    lrf: (jsonBundle?.lrf || []).map((d) => ({ ...d, fonteOrigem: 'json' })),
+    obras: mergeEntitiesByRecency([jsonBundle?.obras || []])
+      .map((o) => ({ ...o, fonteOrigem: o.fonteOrigem || 'json' })),
+    lrf: mergeEntitiesByRecency([jsonBundle?.lrf || [], htmlBundle?.lrfHtml || []])
+      .map((d) => ({ ...d, fonteOrigem: d.fonteOrigem || 'json' })),
     gestores: gestores.items,
     diariosOficiais: publicacoesToDiariosStrings(mergedPublicacoes),
     diarios: (htmlBundle?.diariosEstruturados || []).slice(0, 30),

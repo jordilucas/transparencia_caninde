@@ -43,6 +43,30 @@ fun LazyListScope.transparenciaLinksItems(
     }
 }
 
+fun LazyListScope.hubLinksGroupedItems(
+    links: List<LinkExterno>,
+    onClick: (LinkExterno) -> Unit = {},
+) {
+    if (links.isEmpty()) {
+        item { EmptyState("Nenhum link de transparência disponível") }
+        return
+    }
+    val grouped = links.groupBy { link ->
+        link.secao.ifBlank { link.categoria.replaceFirstChar { it.uppercase() } }
+    }
+    grouped.forEach { (secao, secaoLinks) ->
+        item { SectionHeader(title = secao, action = "") }
+        items(secaoLinks, key = { it.url.ifBlank { it.titulo } }) { link ->
+            TransparenciaLinkRow(link, onClick)
+            HorizontalDivider(
+                color = AppColors.Divider,
+                thickness = 0.5.dp,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
+    }
+}
+
 @Composable
 fun TransparenciaLinkRow(link: LinkExterno, onClick: (LinkExterno) -> Unit = {}) {
     val icon = when (link.categoria) {
@@ -54,8 +78,17 @@ fun TransparenciaLinkRow(link: LinkExterno, onClick: (LinkExterno) -> Unit = {})
         "emendas" -> Icons.Default.HowToVote
         "dadosabertos" -> Icons.Default.CloudDownload
         "fiscal" -> Icons.Default.Assessment
+        "cidadania" -> Icons.Default.SupportAgent
+        "pessoal" -> Icons.Default.Groups
+        "saude" -> Icons.Default.LocalHospital
+        "institucional" -> Icons.Default.Apartment
+        "legislativo" -> Icons.Default.Gavel
+        "atricon" -> Icons.Default.Verified
         else -> Icons.Default.OpenInNew
     }
+    val subtitle = link.secao.takeIf { it.isNotBlank() && link.categoria.isNotBlank() }
+        ?.let { link.categoria.replaceFirstChar { it.uppercase() } }
+        ?: link.categoria.replaceFirstChar { it.uppercase() }
     ListRow(
         icon = {
             IconContainer(AppColors.Blue100) {
@@ -63,7 +96,7 @@ fun TransparenciaLinkRow(link: LinkExterno, onClick: (LinkExterno) -> Unit = {})
             }
         },
         title = link.titulo,
-        subtitle = link.categoria.replaceFirstChar { it.uppercase() },
+        subtitle = subtitle,
         trailing = {
             Icon(Icons.Default.ChevronRight, contentDescription = null,
                 tint = AppColors.TextTertiary, modifier = Modifier.size(16.dp))
