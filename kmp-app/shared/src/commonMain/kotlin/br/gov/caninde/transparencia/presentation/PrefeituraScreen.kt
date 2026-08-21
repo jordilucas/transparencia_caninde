@@ -1170,8 +1170,8 @@ fun EmptyState(msg: String) {
 }
 
 @Composable
-fun ShimmerContent() {
-    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+fun ShimmerContent(modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ShimmerBox(Modifier.weight(1f).height(72.dp))
             ShimmerBox(Modifier.weight(1f).height(72.dp))

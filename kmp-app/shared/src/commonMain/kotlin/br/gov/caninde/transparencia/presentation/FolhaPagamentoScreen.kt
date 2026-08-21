@@ -102,11 +102,12 @@ fun FolhaPagamentoScreen(
         }
 
         if (prefeituraState.isLoading && folha == null) {
-            ShimmerContent()
+            ShimmerContent(Modifier.fillMaxSize())
             return@Column
         }
 
         LazyColumn(
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 88.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -189,7 +190,8 @@ fun FolhaPagamentoScreen(
                         item { EmptyState("Nenhum pagamento de folha encontrado no exercício.") }
                     } else {
                         val maxValor = folha.porSetor.maxOfOrNull { it.totalPagoNumerico }?.coerceAtLeast(1.0) ?: 1.0
-                        items(folha.porSetor, key = { it.secretaria }) { setor ->
+                        items(folha.porSetor.size, key = { folha.porSetor[it].secretaria + "#" + it }) { index ->
+                            val setor = folha.porSetor[index]
                             FolhaSetorRow(setor, maxValor)
                             HorizontalDivider(
                                 color = AppColors.Divider,
@@ -202,7 +204,8 @@ fun FolhaPagamentoScreen(
                 "Por vínculo" -> {
                     item { SectionHeader("Folha por vínculo (${folha.porNatureza.size})") }
                     val maxValor = folha.porNatureza.maxOfOrNull { it.brutoNumerico }?.coerceAtLeast(1.0) ?: 1.0
-                    items(folha.porNatureza, key = { it.nome }) { item ->
+                    items(folha.porNatureza.size, key = { folha.porNatureza[it].nome + "#" + it }) { index ->
+                        val item = folha.porNatureza[index]
                         FolhaPessoalAgregadoRow(item, maxValor, iconTint = AppColors.Purple700, iconBg = AppColors.Purple100)
                         HorizontalDivider(
                             color = AppColors.Divider,
@@ -214,7 +217,8 @@ fun FolhaPagamentoScreen(
                 "Por função" -> {
                     item { SectionHeader("Folha por função (${folha.porFuncao.size})") }
                     val maxValor = folha.porFuncao.maxOfOrNull { it.brutoNumerico }?.coerceAtLeast(1.0) ?: 1.0
-                    items(folha.porFuncao, key = { it.nome + it.lei }) { item ->
+                    items(folha.porFuncao.size, key = { folha.porFuncao[it].nome + "#" + folha.porFuncao[it].lei + "#" + it }) { index ->
+                        val item = folha.porFuncao[index]
                         FolhaPessoalAgregadoRow(item, maxValor, iconTint = AppColors.Green700, iconBg = AppColors.Green100)
                         HorizontalDivider(
                             color = AppColors.Divider,

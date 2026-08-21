@@ -264,7 +264,8 @@ object DataSourcesInfo {
             titulo = "Folha e carregamento web",
             data = "21/08/2026",
             itens = listOf(
-                "Correção ao abrir a aba Folha — o app carregava, mas uma tela de erro ficava por cima",
+                "Correção da aba Folha em branco no site (layout no navegador)",
+                "Correção ao abrir a Folha — tela de erro falsa por cache antigo do app",
                 "Atualização automática do app após deploy, sem limpar cache manualmente",
                 "Abas da Folha com rolagem no celular",
             ),
